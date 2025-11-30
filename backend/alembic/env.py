@@ -16,10 +16,11 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Import models for autogenerate support
-# from models.base import Base
-# target_metadata = Base.metadata
-target_metadata = None  # Will be updated when models are created
+# Import all models for autogenerate support
+from models.base import Base
+from models import User, Case, Output, Verse, Commentary, Translation
+
+target_metadata = Base.metadata
 
 def get_url():
     """Get database URL from environment or default to SQLite."""
