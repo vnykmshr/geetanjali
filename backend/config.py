@@ -16,6 +16,10 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "sqlite:///./geetanjali.db"
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_RECYCLE: int = 3600
+    DB_POOL_PRE_PING: bool = True
 
     # Vector Database (ChromaDB)
     CHROMA_PERSIST_DIRECTORY: str = "./chroma_data"
