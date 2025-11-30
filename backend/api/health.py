@@ -10,24 +10,82 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 
-def check_chroma_connection() -> bool:
-    """Check if ChromaDB is accessible."""
+def check_chroma_connection(timeout: int = 2) -> bool:
+    """
+    Check if ChromaDB is accessible.
+
+    Args:
+        timeout: Maximum time to wait in seconds
+
+    Returns:
+        True if accessible, False otherwise
+    """
     try:
-        from services.vector_store import get_vector_store
-        vector_store = get_vector_store()
-        vector_store.count()  # Simple operation to verify connection
-        return True
+        import signal
+
+        def timeout_handler(signum, frame):
+            raise TimeoutError("ChromaDB health check timeout")
+
+        # Set timeout alarm (Unix only)
+        try:
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(timeout)
+
+            from services.vector_store import get_vector_store
+            vector_store = get_vector_store()
+            vector_store.count()  # Simple operation to verify connection
+
+            signal.alarm(0)  # Cancel alarm
+            return True
+        except AttributeError:
+            # SIGALRM not available (Windows), do basic check without timeout
+            from services.vector_store import get_vector_store
+            vector_store = get_vector_store()
+            vector_store.count()
+            return True
+    except TimeoutError:
+        logger.warning(f"ChromaDB health check timed out after {timeout}s")
+        return False
     except Exception as e:
         logger.error(f"ChromaDB health check failed: {e}")
         return False
 
 
-def check_ollama_connection() -> bool:
-    """Check if Ollama is accessible."""
+def check_ollama_connection(timeout: int = 2) -> bool:
+    """
+    Check if Ollama is accessible.
+
+    Args:
+        timeout: Maximum time to wait in seconds
+
+    Returns:
+        True if accessible, False otherwise
+    """
     try:
-        from services.llm import get_llm_service
-        llm_service = get_llm_service()
-        return llm_service.check_health()
+        import signal
+
+        def timeout_handler(signum, frame):
+            raise TimeoutError("Ollama health check timeout")
+
+        # Set timeout alarm (Unix only)
+        try:
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(timeout)
+
+            from services.llm import get_llm_service
+            llm_service = get_llm_service()
+            result = llm_service.check_health()
+
+            signal.alarm(0)  # Cancel alarm
+            return result
+        except AttributeError:
+            # SIGALRM not available (Windows), do basic check without timeout
+            from services.llm import get_llm_service
+            llm_service = get_llm_service()
+            return llm_service.check_health()
+    except TimeoutError:
+        logger.warning(f"Ollama health check timed out after {timeout}s")
+        return False
     except Exception as e:
         logger.error(f"Ollama health check failed: {e}")
         return False

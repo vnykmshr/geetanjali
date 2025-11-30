@@ -53,17 +53,40 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def check_db_connection() -> bool:
+def check_db_connection(timeout: int = 2) -> bool:
     """
     Check if database connection is healthy.
+
+    Args:
+        timeout: Maximum time to wait in seconds
 
     Returns:
         True if connection is healthy, False otherwise
     """
     try:
-        db = SessionLocal()
-        db.execute("SELECT 1")
-        db.close()
-        return True
+        import signal
+
+        def timeout_handler(signum, frame):
+            raise TimeoutError("Database health check timeout")
+
+        # Set timeout alarm (Unix only)
+        try:
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(timeout)
+
+            db = SessionLocal()
+            db.execute("SELECT 1")
+            db.close()
+
+            signal.alarm(0)  # Cancel alarm
+            return True
+        except AttributeError:
+            # SIGALRM not available (Windows), do basic check without timeout
+            db = SessionLocal()
+            db.execute("SELECT 1")
+            db.close()
+            return True
+    except TimeoutError:
+        return False
     except Exception:
         return False
