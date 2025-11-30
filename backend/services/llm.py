@@ -3,6 +3,13 @@
 import logging
 import httpx
 from typing import Dict, Any, Optional
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+    before_sleep_log
+)
 
 from config import settings
 
@@ -34,6 +41,37 @@ class LLMService:
             logger.error(f"Ollama health check failed: {e}")
             return False
 
+    @retry(
+        stop=stop_after_attempt(settings.OLLAMA_MAX_RETRIES),
+        wait=wait_exponential(
+            min=settings.OLLAMA_RETRY_MIN_WAIT,
+            max=settings.OLLAMA_RETRY_MAX_WAIT
+        ),
+        retry=retry_if_exception_type((httpx.TimeoutException, httpx.ConnectError)),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        reraise=True
+    )
+    def _make_llm_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Make LLM request with retry logic.
+
+        Args:
+            payload: Request payload
+
+        Returns:
+            LLM response
+
+        Raises:
+            httpx exceptions on failure after retries
+        """
+        response = httpx.post(
+            f"{self.base_url}/api/generate",
+            json=payload,
+            timeout=self.timeout
+        )
+        response.raise_for_status()
+        return response.json()
+
     def generate(
         self,
         prompt: str,
@@ -54,7 +92,7 @@ class LLMService:
             Generation result with response text
 
         Raises:
-            Exception: If LLM request fails
+            Exception: If LLM request fails after retries
         """
         logger.debug(f"Generating with prompt length: {len(prompt)}")
 
@@ -75,15 +113,8 @@ class LLMService:
             payload["options"]["num_predict"] = max_tokens
 
         try:
-            # Make request
-            response = httpx.post(
-                f"{self.base_url}/api/generate",
-                json=payload,
-                timeout=self.timeout
-            )
-            response.raise_for_status()
-
-            result = response.json()
+            # Make request with retry logic
+            result = self._make_llm_request(payload)
 
             logger.debug(f"Generated {len(result.get('response', ''))} chars")
 
@@ -95,8 +126,8 @@ class LLMService:
             }
 
         except httpx.TimeoutException as e:
-            logger.error(f"LLM request timeout: {e}")
-            raise Exception("LLM request timed out")
+            logger.error(f"LLM request timeout after {settings.OLLAMA_MAX_RETRIES} retries: {e}")
+            raise Exception("LLM request timed out after retries")
         except httpx.HTTPError as e:
             logger.error(f"LLM HTTP error: {e}")
             raise Exception(f"LLM request failed: {str(e)}")

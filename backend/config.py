@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.1:8b"
     OLLAMA_TIMEOUT: int = 60
+    OLLAMA_MAX_RETRIES: int = 3
+    OLLAMA_RETRY_MIN_WAIT: int = 1
+    OLLAMA_RETRY_MAX_WAIT: int = 10
 
     # Embeddings
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
