@@ -1,0 +1,168 @@
+# Geetanjali - Git Ignore Rules
+
+# ============================================================================
+# DEVELOPMENT-ONLY (per project-guidelines.md)
+# ============================================================================
+todos/
+
+# ============================================================================
+# PYTHON / BACKEND
+# ============================================================================
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ============================================================================
+# JAVASCRIPT / FRONTEND
+# ============================================================================
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Vite
+.vite/
+
+# Testing
+coverage/
+
+# ============================================================================
+# ENVIRONMENT & SECRETS
+# ============================================================================
+
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Certificates and keys
+*.pem
+*.key
+*.crt
+
+# ============================================================================
+# DATABASE
+# ============================================================================
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# ChromaDB
+chroma_data/
+.chroma/
+
+# ============================================================================
+# IDE / EDITOR
+# ============================================================================
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm / IntelliJ
+.idea/
+*.iml
+
+# Vim
+*.swp
+*.swo
+*~
+.*.swp
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+
+# ============================================================================
+# OS-SPECIFIC
+# ============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.Trash-*
+
+# ============================================================================
+# LOGS & TEMPORARY FILES
+# ============================================================================
+
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+
+# ============================================================================
+# PROJECT-SPECIFIC
+# ============================================================================
+
+# Alembic migrations (keep directory, ignore generated files)
+# alembic/versions/*.pyc
+
+# Model checkpoints (if storing locally)
+models/*.bin
+models/*.safetensors
+*.gguf
+
+# Data files (uncomment if you want to exclude large datasets)
+# data/*.json
+# data/*.csv
