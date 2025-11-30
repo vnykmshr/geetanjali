@@ -180,50 +180,143 @@ class RAGPipeline:
 
         return output
 
+    def _create_fallback_response(
+        self,
+        case_data: Dict[str, Any],
+        error_message: str
+    ) -> Dict[str, Any]:
+        """
+        Create fallback response when pipeline fails.
+
+        Args:
+            case_data: Original case data
+            error_message: Error description
+
+        Returns:
+            Minimal valid response structure
+        """
+        logger.warning(f"Creating fallback response due to: {error_message}")
+
+        return {
+            "executive_summary": (
+                f"Unable to generate full analysis for '{case_data.get('title', 'this case')}'. "
+                f"The system encountered an issue: {error_message}. "
+                "Please review this case manually or try again later."
+            ),
+            "options": [
+                {
+                    "title": "Option 1: Defer Decision",
+                    "description": "Postpone this decision until the system is available.",
+                    "pros": ["More time for consideration", "System may recover"],
+                    "cons": ["Delayed action", "Uncertainty continues"],
+                    "sources": []
+                },
+                {
+                    "title": "Option 2: Manual Analysis",
+                    "description": "Conduct traditional analysis without AI assistance.",
+                    "pros": ["Human judgment", "No system dependency"],
+                    "cons": ["More time-consuming", "Less comprehensive"],
+                    "sources": []
+                },
+                {
+                    "title": "Option 3: Consult Expert",
+                    "description": "Seek guidance from a domain expert or scholar.",
+                    "pros": ["Expert insight", "Personalized advice"],
+                    "cons": ["May take time", "Requires expert availability"],
+                    "sources": []
+                }
+            ],
+            "recommended_action": {
+                "option": 3,
+                "steps": [
+                    "Document your ethical dilemma clearly",
+                    "Identify relevant stakeholders and constraints",
+                    "Seek expert or peer guidance",
+                    "Consider long-term impact of decisions"
+                ],
+                "sources": []
+            },
+            "reflection_prompts": [
+                "What are my core values in this situation?",
+                "Who will be affected by my decision?",
+                "What would I advise someone else in this situation?"
+            ],
+            "sources": [],
+            "confidence": 0.1,
+            "scholar_flag": True,
+            "error": error_message
+        }
+
     def run(
         self,
         case_data: Dict[str, Any],
         top_k: int = None
     ) -> Dict[str, Any]:
         """
-        Run complete RAG pipeline.
+        Run complete RAG pipeline with graceful degradation.
 
         Args:
             case_data: Case information
             top_k: Number of verses to retrieve (optional)
 
         Returns:
-            Complete consulting brief
+            Complete consulting brief (or fallback response)
 
-        Raises:
-            Exception: If any pipeline step fails
+        Notes:
+            - If verse retrieval fails, uses fallback with no sources
+            - If LLM fails, returns fallback response
+            - Always returns a valid response structure
         """
         logger.info(f"Running RAG pipeline for case: {case_data.get('title', 'N/A')}")
 
+        retrieved_verses = []
+
+        # Step 1: Retrieve relevant verses (with fallback)
         try:
-            # Step 1: Retrieve relevant verses
             query = case_data.get("description", "")
             retrieved_verses = self.retrieve_verses(query, top_k=top_k)
 
             if not retrieved_verses:
-                raise Exception("No verses retrieved from vector store")
+                logger.warning("No verses retrieved - continuing with empty context")
 
-            # Step 2: Construct context
+        except Exception as e:
+            logger.error(f"Verse retrieval failed: {e} - continuing without verses")
+            # Continue pipeline without verses (degraded mode)
+
+        # Step 2: Construct context
+        try:
             prompt = self.construct_context(case_data, retrieved_verses)
+        except Exception as e:
+            logger.error(f"Context construction failed: {e}")
+            return self._create_fallback_response(case_data, "Failed to construct prompt")
 
-            # Step 3: Generate brief with LLM
+        # Step 3: Generate brief with LLM (with fallback)
+        try:
             output = self.generate_brief(prompt)
+        except Exception as e:
+            logger.error(f"LLM generation failed: {e}")
+            return self._create_fallback_response(case_data, "LLM unavailable")
 
-            # Step 4: Validate and enrich
+        # Step 4: Validate and enrich
+        try:
             validated_output = self.validate_output(output)
 
-            logger.info("RAG pipeline completed successfully")
+            # Mark as degraded if no verses were retrieved
+            if not retrieved_verses:
+                validated_output["confidence"] = min(validated_output.get("confidence", 0.5), 0.5)
+                validated_output["scholar_flag"] = True
+                validated_output["warning"] = "Generated without verse retrieval"
 
+            logger.info("RAG pipeline completed successfully")
             return validated_output
 
         except Exception as e:
-            logger.error(f"RAG pipeline failed: {e}")
-            raise
+            logger.error(f"Output validation failed: {e}")
+            # Last resort: return the raw output if validation fails
+            output["confidence"] = 0.3
+            output["scholar_flag"] = True
+            output["warning"] = "Output validation failed"
+            return output
 
 
 # Global RAG pipeline instance
