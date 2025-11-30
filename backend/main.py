@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from utils.logging import setup_logging
-from api import health
+from api import health, cases, verses
 
 # Setup logging
 logger = setup_logging()
@@ -30,6 +30,8 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router, tags=["Health"])
+app.include_router(cases.router, tags=["Cases"])
+app.include_router(verses.router, tags=["Verses"])
 
 logger.info(f"Starting {settings.APP_NAME} in {settings.APP_ENV} mode")
 
