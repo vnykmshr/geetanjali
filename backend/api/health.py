@@ -9,6 +9,18 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
+
+def check_chroma_connection() -> bool:
+    """Check if ChromaDB is accessible."""
+    try:
+        from services.vector_store import get_vector_store
+        vector_store = get_vector_store()
+        vector_store.count()  # Simple operation to verify connection
+        return True
+    except Exception as e:
+        logger.error(f"ChromaDB health check failed: {e}")
+        return False
+
 router = APIRouter()
 
 
@@ -51,8 +63,8 @@ async def readiness_check(db: Session = Depends(get_db)):
     """
     checks = {
         "database": False,
+        "chroma": False,
         "ollama": False,  # Will implement in Phase 4
-        "chroma": False,  # Will implement in Phase 3
     }
 
     # Check database
@@ -61,8 +73,14 @@ async def readiness_check(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
 
+    # Check ChromaDB
+    try:
+        checks["chroma"] = check_chroma_connection()
+    except Exception as e:
+        logger.error(f"ChromaDB health check failed: {e}")
+
     # Overall status
-    all_ready = checks["database"]  # For now, only check DB
+    all_ready = checks["database"] and checks["chroma"]
 
     return {
         "status": "ready" if all_ready else "not_ready",
