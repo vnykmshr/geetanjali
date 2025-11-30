@@ -70,25 +70,37 @@ async def analyze_case(
         rag_pipeline = get_rag_pipeline()
         result = rag_pipeline.run(case_data)
 
-        # Create output record
-        output = Output(
-            id=str(uuid.uuid4()),
-            case_id=case_id,
-            result_json=result,
-            executive_summary=result.get("executive_summary", ""),
-            confidence=result.get("confidence", 0.0),
-            scholar_flag=result.get("scholar_flag", False),
-            created_at=datetime.utcnow()
-        )
+        # Create output record within transaction
+        try:
+            output = Output(
+                id=str(uuid.uuid4()),
+                case_id=case_id,
+                result_json=result,
+                executive_summary=result.get("executive_summary", ""),
+                confidence=result.get("confidence", 0.0),
+                scholar_flag=result.get("scholar_flag", False),
+                created_at=datetime.utcnow()
+            )
 
-        db.add(output)
-        db.commit()
-        db.refresh(output)
+            db.add(output)
+            db.commit()
+            db.refresh(output)
 
-        logger.info(f"Analysis complete. Output ID: {output.id}, Confidence: {output.confidence}")
+            logger.info(f"Analysis complete. Output ID: {output.id}, Confidence: {output.confidence}")
 
-        return output
+            return output
 
+        except Exception as db_error:
+            db.rollback()
+            logger.error(f"Database error saving output for case {case_id}: {db_error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to save analysis result: {str(db_error)}"
+            )
+
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         logger.error(f"Analysis failed for case {case_id}: {e}")
         raise HTTPException(
@@ -181,17 +193,26 @@ async def submit_scholar_review(
             detail=f"Output {output_id} not found"
         )
 
-    # Update review status
-    output.reviewed_by = reviewer_id
-    output.reviewed_at = datetime.utcnow()
+    try:
+        # Update review status within transaction
+        output.reviewed_by = reviewer_id
+        output.reviewed_at = datetime.utcnow()
 
-    if approved:
-        output.scholar_flag = False  # Clear flag if approved
-        logger.info(f"Output {output_id} approved by scholar {reviewer_id}")
-    else:
-        logger.info(f"Output {output_id} rejected by scholar {reviewer_id}")
+        if approved:
+            output.scholar_flag = False  # Clear flag if approved
+            logger.info(f"Output {output_id} approved by scholar {reviewer_id}")
+        else:
+            logger.info(f"Output {output_id} rejected by scholar {reviewer_id}")
 
-    db.commit()
-    db.refresh(output)
+        db.commit()
+        db.refresh(output)
 
-    return output
+        return output
+
+    except Exception as db_error:
+        db.rollback()
+        logger.error(f"Database error updating scholar review for output {output_id}: {db_error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update review status: {str(db_error)}"
+        )
