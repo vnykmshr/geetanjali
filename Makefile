@@ -1,0 +1,106 @@
+# Geetanjali - Development Shortcuts
+
+.PHONY: help dev build up down clean logs test lint format
+
+help: ## Show this help message
+	@echo "Geetanjali Development Commands"
+	@echo "================================"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+# Development
+dev: ## Start development environment
+	docker-compose up -d
+	@echo "✅ Development environment started"
+	@echo "Backend: http://localhost:8000"
+	@echo "Frontend: http://localhost:5173"
+	@echo "API Docs: http://localhost:8000/docs"
+
+build: ## Build all Docker images
+	docker-compose build
+
+up: ## Start all containers
+	docker-compose up -d
+
+down: ## Stop all containers
+	docker-compose down
+
+restart: ## Restart all containers
+	docker-compose restart
+
+# Production
+prod-up: ## Start production environment
+	docker-compose -f docker-compose.prod.yml up -d
+
+prod-down: ## Stop production environment
+	docker-compose -f docker-compose.prod.yml down
+
+# Logs
+logs: ## Show logs for all services
+	docker-compose logs -f
+
+logs-backend: ## Show backend logs
+	docker-compose logs -f backend
+
+logs-ollama: ## Show Ollama logs
+	docker-compose logs -f ollama
+
+# Database
+db-shell: ## Open PostgreSQL shell
+	docker-compose exec postgres psql -U geetanjali -d geetanjali
+
+db-migrate: ## Run database migrations
+	docker-compose exec backend alembic upgrade head
+
+db-reset: ## Reset database (development only!)
+	docker-compose down -v
+	docker-compose up -d postgres
+	@sleep 5
+	docker-compose exec backend alembic upgrade head
+
+# Testing
+test: ## Run backend tests
+	docker-compose exec backend pytest
+
+test-cov: ## Run tests with coverage
+	docker-compose exec backend pytest --cov=. --cov-report=html
+
+# Code Quality
+lint: ## Run linters
+	docker-compose exec backend flake8 .
+
+format: ## Format code with Black
+	docker-compose exec backend black .
+
+typecheck: ## Run MyPy type checker
+	docker-compose exec backend mypy .
+
+# Ollama
+ollama-pull: ## Pull Llama 3.1 model
+	docker-compose exec ollama ollama pull llama3.1:8b
+
+ollama-list: ## List available models
+	docker-compose exec ollama ollama list
+
+ollama-shell: ## Interactive Ollama shell
+	docker-compose exec ollama ollama run llama3.1:8b
+
+# Cleanup
+clean: ## Remove all containers, volumes, and images
+	docker-compose down -v --rmi all
+	@echo "✅ Cleaned up all Docker resources"
+
+clean-cache: ## Remove Python cache files
+	find . -type d -name __pycache__ -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+
+# Shell Access
+shell-backend: ## Open shell in backend container
+	docker-compose exec backend /bin/bash
+
+shell-postgres: ## Open shell in Postgres container
+	docker-compose exec postgres /bin/sh
+
+# Quick Start
+init: build up db-migrate ## Initialize project (build, start, migrate)
+	@echo "✅ Project initialized successfully!"
+	@echo "Backend: http://localhost:8000/docs"

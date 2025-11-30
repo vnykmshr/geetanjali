@@ -45,32 +45,33 @@ geetanjali/
 
 ### Prerequisites
 
-- Python 3.10+
-- Node.js 18+
-- Ollama (for local LLM inference)
+- **Docker** and **Docker Compose** (recommended)
+- OR: Python 3.10+, Node.js 18+, Ollama (for local development)
 
-### Setup
+### Docker Setup (Recommended)
 
 ```bash
 # Clone repository
 git clone <repository-url>
 cd geetanjali
 
-# Backend setup
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+# Start everything with one command
+make init
 
-# Frontend setup
-cd ../frontend
-npm install
-
-# Install Ollama and pull model
-ollama pull llama3.1:8b
+# Or manually
+docker-compose build
+docker-compose up -d
 ```
 
-See [docs/SETUP.md](docs/SETUP.md) for detailed setup instructions.
+**That's it!** All services (backend, frontend, database, Ollama) are running.
+
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+- Frontend: http://localhost:5173
+
+### Local Development (Without Docker)
+
+See [docs/SETUP.md](docs/SETUP.md) for manual setup instructions.
 
 ## 📚 Documentation
 
@@ -80,6 +81,20 @@ See [docs/SETUP.md](docs/SETUP.md) for detailed setup instructions.
 - [Architecture Decisions](docs/ADR/) - ADR records
 
 ## 🧪 Development
+
+### Docker Commands (via Makefile)
+
+```bash
+make dev          # Start development environment
+make logs         # View all logs
+make test         # Run tests
+make lint         # Run linters
+make format       # Format code
+make db-migrate   # Run database migrations
+make clean        # Clean up everything
+```
+
+### Manual Commands
 
 ```bash
 # Run backend (from backend/)
@@ -92,6 +107,8 @@ npm run dev
 pytest  # Backend
 npm test  # Frontend
 ```
+
+See `make help` for all available commands.
 
 ## 📝 License
 
