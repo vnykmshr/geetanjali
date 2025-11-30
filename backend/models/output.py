@@ -20,7 +20,7 @@ class Output(Base):
     scholar_flag = Column(Boolean, default=False, index=True)
     reviewed_by = Column(String(36), ForeignKey("users.id"))
     reviewed_at = Column(DateTime)
-    created_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, index=True)  # Index for chronological queries
 
     # Relationships
     case = relationship("Case", back_populates="outputs")
