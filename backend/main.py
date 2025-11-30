@@ -3,10 +3,17 @@
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 
 from config import settings
 from utils.logging import setup_logging
-from api import health, cases, verses
+from utils.exceptions import (
+    GeetanjaliException,
+    geetanjali_exception_handler,
+    validation_exception_handler,
+    general_exception_handler
+)
+from api import health, cases, verses, outputs
 
 # Setup logging
 logger = setup_logging()
@@ -28,10 +35,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Register exception handlers
+app.add_exception_handler(GeetanjaliException, geetanjali_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
+
 # Include routers
 app.include_router(health.router, tags=["Health"])
 app.include_router(cases.router, tags=["Cases"])
 app.include_router(verses.router, tags=["Verses"])
+app.include_router(outputs.router, tags=["Outputs"])
 
 logger.info(f"Starting {settings.APP_NAME} in {settings.APP_ENV} mode")
 
