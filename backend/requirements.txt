@@ -44,5 +44,12 @@ python-dotenv==1.0.0
 tenacity==8.2.3  # Retry logic for robustness
 slowapi==0.1.9  # Rate limiting
 
+# Data Ingestion
+beautifulsoup4==4.12.3  # HTML parsing
+lxml==5.1.0  # XML/HTML parser
+pyyaml==6.0.1  # YAML config loading
+indic-transliteration==2.3.44  # Sanskrit IAST transliteration
+requests==2.31.0  # HTTP client for fetching
+
 # NumPy compatibility (chromadb requires <2.0)
 numpy<2.0.0

@@ -1,0 +1,311 @@
+"""
+Enricher service for enhancing verse data using LLM and transliteration.
+"""
+
+import json
+import logging
+from pathlib import Path
+from typing import Dict, List, Optional
+
+from services.llm import get_llm_service
+
+logger = logging.getLogger(__name__)
+
+
+class Enricher:
+    """
+    Enrich verse data with consulting principles, paraphrases, and IAST transliteration.
+    """
+
+    def __init__(self, config_dir: str = "./config"):
+        """
+        Initialize enricher with configuration.
+
+        Args:
+            config_dir: Path to configuration directory
+        """
+        self.config_dir = Path(config_dir)
+        self.llm = get_llm_service()
+        self.principle_taxonomy = self._load_principles()
+
+        logger.info(f"Enricher initialized with {len(self.principle_taxonomy)} principles")
+
+    def _load_principles(self) -> Dict:
+        """
+        Load consulting principles taxonomy from config.
+
+        Returns:
+            Dictionary of principles
+        """
+        taxonomy_file = self.config_dir / "principle_taxonomy.json"
+
+        if not taxonomy_file.exists():
+            logger.warning(f"Principle taxonomy not found at {taxonomy_file}")
+            return {}
+
+        try:
+            with open(taxonomy_file, "r", encoding="utf-8") as f:
+                principles = json.load(f)
+            logger.info(f"Loaded {len(principles)} principles from taxonomy")
+            return principles
+        except Exception as e:
+            logger.error(f"Failed to load principle taxonomy: {e}")
+            return {}
+
+    def extract_principles(
+        self,
+        verse_text: str,
+        temperature: float = 0.1
+    ) -> List[str]:
+        """
+        Extract consulting principles from verse using LLM.
+
+        Args:
+            verse_text: English translation of the verse
+            temperature: LLM temperature (low for consistent tagging)
+
+        Returns:
+            List of principle IDs
+        """
+        if not verse_text or not verse_text.strip():
+            logger.warning("Empty verse text provided for principle extraction")
+            return []
+
+        if not self.principle_taxonomy:
+            logger.warning("No principle taxonomy loaded, skipping extraction")
+            return []
+
+        # Build principle list for prompt
+        principle_list = []
+        for pid, data in self.principle_taxonomy.items():
+            label = data.get("label", pid)
+            description = data.get("description", "")
+            principle_list.append(f"- {pid}: {label} - {description}")
+
+        principle_text = "\n".join(principle_list)
+
+        # Build prompt
+        prompt = f"""You are analyzing a verse from the Bhagavad Gita for consulting principles relevant to ethical leadership.
+
+Verse translation:
+{verse_text}
+
+Identify which of these consulting principles apply to this verse:
+
+{principle_text}
+
+Return ONLY a valid JSON object with this exact format:
+{{"principles": ["principle_id_1", "principle_id_2"]}}
+
+Rules:
+- Only use principle IDs from the list provided
+- Select 1-3 most relevant principles
+- Return empty array if no principles clearly apply
+- Must be valid JSON format"""
+
+        try:
+            # Call LLM with low temperature for consistency
+            response_text = self.llm.generate_json(
+                prompt=prompt,
+                temperature=temperature
+            )
+
+            # Parse JSON response
+            response_text = response_text.strip()
+
+            # Extract JSON if wrapped in markdown code blocks
+            if "```json" in response_text:
+                start = response_text.find("```json") + 7
+                end = response_text.find("```", start)
+                response_text = response_text[start:end].strip()
+            elif "```" in response_text:
+                start = response_text.find("```") + 3
+                end = response_text.find("```", start)
+                response_text = response_text[start:end].strip()
+
+            result = json.loads(response_text)
+            principles = result.get("principles", [])
+
+            # Validate principle IDs
+            valid_principles = [
+                p for p in principles
+                if p in self.principle_taxonomy
+            ]
+
+            if len(valid_principles) != len(principles):
+                logger.warning(
+                    f"Filtered invalid principles: {set(principles) - set(valid_principles)}"
+                )
+
+            logger.debug(f"Extracted {len(valid_principles)} principles: {valid_principles}")
+            return valid_principles
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse LLM JSON response: {e}")
+            logger.debug(f"Response was: {response_text[:200]}")
+            return []
+        except Exception as e:
+            logger.error(f"Failed to extract principles: {e}")
+            return []
+
+    def generate_paraphrase(
+        self,
+        verse_text: str,
+        max_words: int = 25,
+        temperature: float = 0.3
+    ) -> str:
+        """
+        Generate short paraphrase for UI display.
+
+        Args:
+            verse_text: English translation of the verse
+            max_words: Maximum words in paraphrase
+            temperature: LLM temperature
+
+        Returns:
+            Paraphrase string
+        """
+        if not verse_text or not verse_text.strip():
+            logger.warning("Empty verse text provided for paraphrasing")
+            return ""
+
+        prompt = f"""Summarize this Bhagavad Gita verse translation in maximum {max_words} words.
+Focus on actionable wisdom for modern leaders and decision-makers.
+
+Verse:
+{verse_text}
+
+Provide a concise, leadership-focused summary:"""
+
+        try:
+            result = self.llm.generate(
+                prompt=prompt,
+                temperature=temperature,
+                max_tokens=100
+            )
+
+            paraphrase = result["response"].strip()
+
+            # Remove quotes if LLM wrapped the response
+            if paraphrase.startswith('"') and paraphrase.endswith('"'):
+                paraphrase = paraphrase[1:-1]
+
+            # Truncate if too long (word count)
+            words = paraphrase.split()
+            if len(words) > max_words:
+                paraphrase = " ".join(words[:max_words]) + "..."
+
+            logger.debug(f"Generated paraphrase: {len(words)} words")
+            return paraphrase
+
+        except Exception as e:
+            logger.error(f"Failed to generate paraphrase: {e}")
+            return ""
+
+    def transliterate_to_iast(self, devanagari: str) -> str:
+        """
+        Convert Devanagari script to IAST (International Alphabet of Sanskrit Transliteration).
+
+        Args:
+            devanagari: Sanskrit text in Devanagari script
+
+        Returns:
+            IAST transliteration
+        """
+        if not devanagari or not devanagari.strip():
+            return ""
+
+        try:
+            from indic_transliteration import sanscript
+
+            iast = sanscript.transliterate(
+                devanagari,
+                sanscript.DEVANAGARI,
+                sanscript.IAST
+            )
+
+            logger.debug(f"Transliterated {len(devanagari)} chars to IAST")
+            return iast
+
+        except ImportError:
+            logger.error("indic-transliteration library not available")
+            return ""
+        except Exception as e:
+            logger.error(f"Transliteration failed: {e}")
+            return ""
+
+    def enrich_verse(
+        self,
+        verse_data: Dict,
+        extract_principles: bool = True,
+        generate_paraphrase: bool = True,
+        transliterate: bool = True
+    ) -> Dict:
+        """
+        Apply all enrichments to a verse.
+
+        Args:
+            verse_data: Verse dictionary
+            extract_principles: Whether to extract consulting principles
+            generate_paraphrase: Whether to generate paraphrase
+            transliterate: Whether to transliterate to IAST
+
+        Returns:
+            Enriched verse dictionary
+        """
+        enriched = verse_data.copy()
+
+        # Extract principles from translation
+        if extract_principles and not enriched.get("consulting_principles"):
+            translation = enriched.get("translation_text", "")
+            if translation:
+                principles = self.extract_principles(translation)
+                enriched["consulting_principles"] = principles
+
+        # Generate paraphrase
+        if generate_paraphrase and not enriched.get("paraphrase_en"):
+            translation = enriched.get("translation_text", "")
+            if translation:
+                paraphrase = self.generate_paraphrase(translation)
+                enriched["paraphrase_en"] = paraphrase
+
+        # Transliterate to IAST
+        if transliterate and not enriched.get("sanskrit_iast"):
+            devanagari = enriched.get("sanskrit_devanagari", "")
+            if devanagari:
+                iast = self.transliterate_to_iast(devanagari)
+                enriched["sanskrit_iast"] = iast
+
+        return enriched
+
+    def enrich_batch(
+        self,
+        verses: List[Dict],
+        **kwargs
+    ) -> List[Dict]:
+        """
+        Enrich multiple verses in batch.
+
+        Args:
+            verses: List of verse dictionaries
+            **kwargs: Arguments passed to enrich_verse
+
+        Returns:
+            List of enriched verse dictionaries
+        """
+        enriched_verses = []
+
+        for i, verse in enumerate(verses):
+            try:
+                enriched = self.enrich_verse(verse, **kwargs)
+                enriched_verses.append(enriched)
+
+                if (i + 1) % 10 == 0:
+                    logger.info(f"Enriched {i + 1}/{len(verses)} verses")
+
+            except Exception as e:
+                logger.error(f"Failed to enrich verse {verse.get('canonical_id')}: {e}")
+                enriched_verses.append(verse)  # Keep original on error
+
+        logger.info(f"Batch enrichment complete: {len(enriched_verses)}/{len(verses)} verses")
+        return enriched_verses

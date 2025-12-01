@@ -1,0 +1,47 @@
+{
+  "duty_focus": {
+    "label": "Duty-focused action",
+    "description": "Act based on dharma and responsibility, not on desired outcomes. Focus on what is right rather than what is advantageous.",
+    "keywords": ["duty", "dharma", "responsibility", "obligation", "right action"]
+  },
+  "detachment": {
+    "label": "Non-attachment to outcomes",
+    "description": "Emphasize process over results. Perform actions without being attached to success or failure.",
+    "keywords": ["detachment", "non-attachment", "equanimity", "process", "renunciation"]
+  },
+  "self_control": {
+    "label": "Leader temperament",
+    "description": "Cultivate self-discipline, mental clarity, and personal integrity as foundation for leadership.",
+    "keywords": ["self-control", "discipline", "temperament", "integrity", "composure"]
+  },
+  "informed_choice": {
+    "label": "Autonomous decision-making",
+    "description": "Make decisions with full knowledge and freedom. Understand options before choosing.",
+    "keywords": ["informed", "autonomous", "knowledge", "awareness", "understanding"]
+  },
+  "role_fit": {
+    "label": "Fit tasks to nature",
+    "description": "Match responsibilities to natural capabilities and temperament. Assign work according to strengths.",
+    "keywords": ["role", "nature", "capability", "temperament", "strength", "svadharma"]
+  },
+  "compassion": {
+    "label": "Compassionate equilibrium",
+    "description": "Minimize harm in decision-making. Balance multiple stakeholder needs with empathy.",
+    "keywords": ["compassion", "harm reduction", "empathy", "care", "stakeholders"]
+  },
+  "self_responsibility": {
+    "label": "Self-effort and example",
+    "description": "Leaders lead through personal action and example. Take responsibility for self-improvement.",
+    "keywords": ["self-effort", "example", "role model", "personal action", "initiative"]
+  },
+  "ethical_character": {
+    "label": "Character traits",
+    "description": "Filter actions through virtuous character traits. Cultivate qualities like truthfulness, courage, and patience.",
+    "keywords": ["character", "virtue", "ethics", "qualities", "values"]
+  },
+  "consistent_duty": {
+    "label": "Consistent performance",
+    "description": "Perform duties regularly and consistently. Avoid impulsive or erratic behavior.",
+    "keywords": ["consistency", "regularity", "steadiness", "discipline", "routine"]
+  }
+}

@@ -1,0 +1,83 @@
+sources:
+  sanskrit:
+    - name: "Sacred Texts Sanskrit"
+      url: "https://www.sacred-texts.com/hin/gita/index.htm"
+      format: "html"
+      license: "Public Domain"
+      enabled: true
+      priority: 1
+      description: "Sanskrit verses in Devanagari from Sacred Texts Archive"
+
+  translations:
+    - name: "Edwin Arnold 1885 - The Song Celestial"
+      url: "https://www.sacred-texts.com/hin/gita/index.htm"
+      format: "html"
+      license: "Public Domain"
+      translator: "Edwin Arnold"
+      year: 1885
+      enabled: true
+      priority: 1
+      school: "Poetic Translation"
+      description: "Classical poetic English translation, accessible to Western audiences"
+
+enrichment:
+  llm_tagging:
+    enabled: true
+    model: "llama3.1:8b"
+    temperature: 0.1
+    prompt_template: |
+      You are analyzing a verse from the Bhagavad Gita for consulting principles relevant to ethical leadership.
+
+      Verse translation:
+      {verse_text}
+
+      Identify which of these consulting principles apply to this verse:
+
+      {principle_list}
+
+      Return ONLY a valid JSON object with this exact format:
+      {{"principles": ["principle_id_1", "principle_id_2"]}}
+
+      Rules:
+      - Only use principle IDs from the list provided
+      - Select 1-3 most relevant principles
+      - Return empty array if no principles clearly apply
+      - Must be valid JSON format
+
+  paraphrasing:
+    enabled: true
+    max_words: 25
+    model: "llama3.1:8b"
+    temperature: 0.3
+    prompt_template: |
+      Summarize this Bhagavad Gita verse translation in maximum {max_words} words.
+      Focus on actionable wisdom for modern leaders and decision-makers.
+
+      Verse:
+      {verse_text}
+
+      Provide a concise, leadership-focused summary:
+
+  transliteration:
+    enabled: true
+    method: "indic_transliteration"
+    from_script: "devanagari"
+    to_script: "iast"
+
+embeddings:
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  batch_size: 32
+  combine_fields:
+    - "sanskrit_iast"
+    - "paraphrase_en"
+  dimension: 384
+
+ingestion:
+  cache_ttl: 86400  # 24 hours in seconds
+  batch_size: 50
+  max_retries: 3
+  retry_delay: 2  # seconds
+  schedule:
+    enabled: false  # Start with manual ingestion
+    cron: "0 2 * * 0"  # Weekly Sunday 2 AM UTC
+    timezone: "UTC"
