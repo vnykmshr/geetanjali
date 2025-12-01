@@ -76,3 +76,35 @@ export interface HealthResponse {
   service: string;
   environment: string;
 }
+
+// Authentication Types
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  org_id: string | null;
+  created_at: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface SignupRequest {
+  email: string;
+  name: string;
+  password: string;
+}
+
+export interface RefreshResponse {
+  access_token: string;
+  token_type: string;
+}

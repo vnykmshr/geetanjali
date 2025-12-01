@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { Case, Output, Verse, HealthResponse, ScholarReviewRequest } from '../types';
+import { tokenStorage } from '../api/auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 const API_V1_PREFIX = import.meta.env.VITE_API_V1_PREFIX || '/api/v1';
@@ -10,6 +11,18 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Request interceptor to attach access token
+api.interceptors.request.use(
+  (config) => {
+    const token = tokenStorage.getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Response interceptor for error handling
 api.interceptors.response.use(

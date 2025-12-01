@@ -1,9 +1,4 @@
-interface Option {
-  title: string;
-  pros: string[];
-  cons: string[];
-  verses: string[];
-}
+import type { Option } from '../types';
 
 interface OptionTableProps {
   options: Option[];
