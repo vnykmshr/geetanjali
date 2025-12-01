@@ -5,28 +5,40 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from api.schemas import MessageCreate, MessageResponse
+from api.middleware.auth import get_current_user
 from db.connection import get_db
 from db.repositories.message_repository import MessageRepository
 from db.repositories.case_repository import CaseRepository
+from models.user import User
 
 router = APIRouter()
 
 
 @router.get("/cases/{case_id}/messages", response_model=List[MessageResponse])
-def get_case_messages(case_id: str, db: Session = Depends(get_db)):
+def get_case_messages(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """
     Get all messages for a case, ordered chronologically.
 
     Returns the conversation thread including both user questions
     and assistant responses.
     """
-    # Verify case exists
+    # Verify case exists and user has access
     case_repo = CaseRepository(db)
     case = case_repo.get(case_id)
     if not case:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Case {case_id} not found"
+        )
+
+    if case.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this case"
         )
 
     # Get all messages for the case
@@ -40,7 +52,8 @@ def get_case_messages(case_id: str, db: Session = Depends(get_db)):
 def create_message(
     case_id: str,
     message: MessageCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Create a new user message (follow-up question) for a case.
@@ -48,13 +61,19 @@ def create_message(
     This adds a message to the conversation thread. The frontend
     should then trigger analysis to generate an assistant response.
     """
-    # Verify case exists
+    # Verify case exists and user has access
     case_repo = CaseRepository(db)
     case = case_repo.get(case_id)
     if not case:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Case {case_id} not found"
+        )
+
+    if case.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this case"
         )
 
     # Create user message

@@ -13,7 +13,9 @@ from db import get_db
 from db.repositories.case_repository import CaseRepository
 from db.repositories.message_repository import MessageRepository
 from models.output import Output
+from models.user import User
 from api.schemas import OutputResponse
+from api.middleware.auth import get_current_user, require_role
 from services.rag import get_rag_pipeline
 from config import settings
 
@@ -30,7 +32,8 @@ router = APIRouter(prefix="/api/v1")
 async def analyze_case(
     request: Request,
     case_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Analyze a case using the RAG pipeline.
@@ -44,16 +47,17 @@ async def analyze_case(
     Args:
         case_id: Case ID to analyze
         db: Database session
+        current_user: Authenticated user
 
     Returns:
         Generated output with consulting brief
 
     Raises:
-        HTTPException: If case not found or RAG pipeline fails
+        HTTPException: If case not found or user doesn't have access, or RAG pipeline fails
     """
     logger.info(f"Analyzing case: {case_id}")
 
-    # Get case
+    # Get case and verify ownership
     case_repo = CaseRepository(db)
     case = case_repo.get(case_id)
 
@@ -61,6 +65,12 @@ async def analyze_case(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Case {case_id} not found"
+        )
+
+    if case.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this case"
         )
 
     try:
@@ -129,7 +139,8 @@ async def analyze_case(
 @router.get("/outputs/{output_id}", response_model=OutputResponse)
 async def get_output(
     output_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get an output by ID.
@@ -137,12 +148,13 @@ async def get_output(
     Args:
         output_id: Output ID
         db: Database session
+        current_user: Authenticated user
 
     Returns:
         Output details
 
     Raises:
-        HTTPException: If output not found
+        HTTPException: If output not found or user doesn't have access
     """
     output = db.query(Output).filter(Output.id == output_id).first()
 
@@ -152,13 +164,24 @@ async def get_output(
             detail=f"Output {output_id} not found"
         )
 
+    # Verify ownership via case
+    case_repo = CaseRepository(db)
+    case = case_repo.get(output.case_id)
+
+    if not case or case.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this output"
+        )
+
     return output
 
 
 @router.get("/cases/{case_id}/outputs", response_model=List[OutputResponse])
 async def list_case_outputs(
     case_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     List all outputs for a case.
@@ -166,10 +189,27 @@ async def list_case_outputs(
     Args:
         case_id: Case ID
         db: Database session
+        current_user: Authenticated user
 
     Returns:
         List of outputs for the case
     """
+    # Verify case ownership
+    case_repo = CaseRepository(db)
+    case = case_repo.get(case_id)
+
+    if not case:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Case {case_id} not found"
+        )
+
+    if case.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this case"
+        )
+
     outputs = (
         db.query(Output)
         .filter(Output.case_id == case_id)
@@ -185,7 +225,7 @@ async def submit_scholar_review(
     output_id: str,
     approved: bool,
     db: Session = Depends(get_db),
-    reviewer_id: str = "dev-scholar-id"  # TODO: Replace with actual auth
+    scholar_user: User = Depends(require_role("scholar"))
 ):
     """
     Submit scholar review for an output.
@@ -194,13 +234,13 @@ async def submit_scholar_review(
         output_id: Output ID
         approved: Whether the output is approved
         db: Database session
-        reviewer_id: Reviewer user ID (from auth)
+        scholar_user: Authenticated scholar user (requires 'scholar' role)
 
     Returns:
         Updated output
 
     Raises:
-        HTTPException: If output not found
+        HTTPException: If output not found or user is not a scholar
     """
     output = db.query(Output).filter(Output.id == output_id).first()
 
@@ -212,14 +252,14 @@ async def submit_scholar_review(
 
     try:
         # Update review status within transaction
-        output.reviewed_by = reviewer_id
+        output.reviewed_by = scholar_user.id
         output.reviewed_at = datetime.utcnow()
 
         if approved:
             output.scholar_flag = False  # Clear flag if approved
-            logger.info(f"Output {output_id} approved by scholar {reviewer_id}")
+            logger.info(f"Output {output_id} approved by scholar {scholar_user.id}")
         else:
-            logger.info(f"Output {output_id} rejected by scholar {reviewer_id}")
+            logger.info(f"Output {output_id} rejected by scholar {scholar_user.id}")
 
         db.commit()
         db.refresh(output)

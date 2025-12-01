@@ -1,0 +1,325 @@
+"""Authentication API endpoints."""
+
+import logging
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+
+from api.schemas import SignupRequest, LoginRequest, AuthResponse, RefreshResponse, UserResponse
+from api.middleware.auth import get_current_user
+from db.connection import get_db
+from db.repositories.user_repository import UserRepository
+from db.repositories.refresh_token_repository import RefreshTokenRepository
+from models.user import User
+from utils.auth import hash_password, verify_password, validate_password_strength, validate_email
+from utils.jwt import create_access_token, create_refresh_token, hash_token
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
+
+# Cookie settings for refresh token
+REFRESH_TOKEN_COOKIE_KEY = "refresh_token"
+REFRESH_TOKEN_COOKIE_MAX_AGE = 90 * 24 * 60 * 60  # 90 days in seconds
+
+
+@router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
+async def signup(
+    signup_data: SignupRequest,
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new user account.
+
+    Args:
+        signup_data: Signup request data (email, name, password)
+        response: FastAPI response object (for setting cookies)
+        db: Database session
+
+    Returns:
+        AuthResponse with access token and user profile
+
+    Raises:
+        HTTPException: 400 if validation fails, 409 if email already exists
+    """
+    logger.info(f"Signup attempt for email: {signup_data.email}")
+
+    # Validate email format
+    if not validate_email(signup_data.email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email format"
+        )
+
+    # Validate password strength
+    is_valid, error_msg = validate_password_strength(signup_data.password)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg
+        )
+
+    # Check if email already exists
+    user_repo = UserRepository(db)
+    if user_repo.email_exists(signup_data.email):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered"
+        )
+
+    # Hash password
+    password_hash = hash_password(signup_data.password)
+
+    # Create user
+    user = user_repo.create_user(
+        email=signup_data.email,
+        name=signup_data.name,
+        password_hash=password_hash,
+        role="user"
+    )
+
+    # Create refresh token
+    refresh_token = create_refresh_token()
+    token_repo = RefreshTokenRepository(db)
+    token_repo.create_for_user(user.id, refresh_token)
+
+    # Create access token
+    access_token = create_access_token(user.id, user.role)
+
+    # Set refresh token as httpOnly cookie
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE_KEY,
+        value=refresh_token,
+        max_age=REFRESH_TOKEN_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=False,  # Set to True in production with HTTPS
+        samesite="lax"
+    )
+
+    logger.info(f"User created successfully: {user.id}")
+
+    return AuthResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=UserResponse(
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            role=user.role,
+            org_id=user.org_id,
+            created_at=user.created_at
+        )
+    )
+
+
+@router.post("/login", response_model=AuthResponse)
+async def login(
+    login_data: LoginRequest,
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    """
+    Authenticate user and return access token.
+
+    Args:
+        login_data: Login credentials (email, password)
+        response: FastAPI response object (for setting cookies)
+        db: Database session
+
+    Returns:
+        AuthResponse with access token and user profile
+
+    Raises:
+        HTTPException: 401 if credentials are invalid
+    """
+    logger.info(f"Login attempt for email: {login_data.email}")
+
+    # Fetch user by email
+    user_repo = UserRepository(db)
+    user = user_repo.get_by_email(login_data.email)
+
+    if not user or not user.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+
+    # Verify password
+    if not verify_password(login_data.password, user.password_hash):
+        logger.warning(f"Failed login attempt for: {login_data.email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+
+    # Update last login timestamp
+    user_repo.update(user.id, {"last_login": datetime.utcnow()})
+
+    # Create refresh token
+    refresh_token = create_refresh_token()
+    token_repo = RefreshTokenRepository(db)
+    token_repo.create_for_user(user.id, refresh_token)
+
+    # Create access token
+    access_token = create_access_token(user.id, user.role)
+
+    # Set refresh token as httpOnly cookie
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE_KEY,
+        value=refresh_token,
+        max_age=REFRESH_TOKEN_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=False,  # Set to True in production with HTTPS
+        samesite="lax"
+    )
+
+    logger.info(f"User logged in successfully: {user.id}")
+
+    return AuthResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=UserResponse(
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            role=user.role,
+            org_id=user.org_id,
+            created_at=user.created_at
+        )
+    )
+
+
+@router.post("/refresh", response_model=RefreshResponse)
+async def refresh(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    """
+    Refresh access token using refresh token from cookie.
+
+    Args:
+        request: FastAPI request object (to read cookies)
+        response: FastAPI response object (to set new cookie)
+        db: Database session
+
+    Returns:
+        RefreshResponse with new access token
+
+    Raises:
+        HTTPException: 401 if refresh token is invalid or expired
+    """
+    # Get refresh token from cookie
+    refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_KEY)
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found"
+        )
+
+    # Validate refresh token
+    token_repo = RefreshTokenRepository(db)
+    token_record = token_repo.get_by_token(refresh_token)
+
+    if not token_record or not token_record.is_valid():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token"
+        )
+
+    # Get user
+    user_repo = UserRepository(db)
+    user = user_repo.get(token_record.user_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+
+    # Create new access token
+    access_token = create_access_token(user.id, user.role)
+
+    # Optional: Rotate refresh token (security best practice)
+    # Revoke old token and create new one
+    token_repo.revoke_token(token_record.id)
+    new_refresh_token = create_refresh_token()
+    token_repo.create_for_user(user.id, new_refresh_token)
+
+    # Set new refresh token cookie
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE_KEY,
+        value=new_refresh_token,
+        max_age=REFRESH_TOKEN_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=False,  # Set to True in production
+        samesite="lax"
+    )
+
+    logger.info(f"Token refreshed for user: {user.id}")
+
+    return RefreshResponse(
+        access_token=access_token,
+        token_type="bearer"
+    )
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    """
+    Logout user by revoking refresh token.
+
+    Args:
+        request: FastAPI request object (to read cookies)
+        response: FastAPI response object (to clear cookie)
+        db: Database session
+
+    Returns:
+        204 No Content
+    """
+    # Get refresh token from cookie
+    refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_KEY)
+
+    if refresh_token:
+        # Revoke refresh token
+        token_repo = RefreshTokenRepository(db)
+        token_record = token_repo.get_by_token(refresh_token)
+
+        if token_record:
+            token_repo.revoke_token(token_record.id)
+            logger.info(f"User logged out: {token_record.user_id}")
+
+    # Clear refresh token cookie
+    response.delete_cookie(key=REFRESH_TOKEN_COOKIE_KEY)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_profile(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get current authenticated user's profile.
+
+    Args:
+        current_user: Current authenticated user (from JWT)
+
+    Returns:
+        User profile
+    """
+    return UserResponse(
+        id=current_user.id,
+        email=current_user.email,
+        name=current_user.name,
+        role=current_user.role,
+        org_id=current_user.org_id,
+        created_at=current_user.created_at
+    )

@@ -16,7 +16,7 @@ from utils.exceptions import (
     validation_exception_handler,
     general_exception_handler
 )
-from api import health, cases, verses, outputs, messages
+from api import health, cases, verses, outputs, messages, auth
 
 # Setup logging
 logger = setup_logging()
@@ -52,6 +52,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 # Include routers
 app.include_router(health.router, tags=["Health"])
+app.include_router(auth.router, tags=["Authentication"])
 app.include_router(cases.router, tags=["Cases"])
 app.include_router(verses.router, tags=["Verses"])
 app.include_router(outputs.router, tags=["Outputs"])

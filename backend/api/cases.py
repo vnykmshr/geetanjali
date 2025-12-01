@@ -9,7 +9,9 @@ from db import get_db
 from db.repositories.case_repository import CaseRepository
 from db.repositories.message_repository import MessageRepository
 from api.schemas import CaseCreate, CaseResponse
+from api.middleware.auth import get_current_user
 from models.case import Case
+from models.user import User
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -21,7 +23,7 @@ router = APIRouter(prefix="/api/v1/cases")
 async def create_case(
     case_data: CaseCreate,
     db: Session = Depends(get_db),
-    user_id: str = "dev-user-id"  # TODO: Replace with actual auth
+    current_user: User = Depends(get_current_user)
 ):
     """
     Create a new ethical dilemma case.
@@ -38,7 +40,7 @@ async def create_case(
 
     case_dict = case_data.model_dump()
     case_dict["id"] = str(uuid.uuid4())
-    case_dict["user_id"] = user_id
+    case_dict["user_id"] = current_user.id
 
     repo = CaseRepository(db)
     case = repo.create(case_dict)
@@ -57,7 +59,8 @@ async def create_case(
 @router.get("/{case_id}", response_model=CaseResponse)
 async def get_case(
     case_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get a case by ID.
@@ -65,12 +68,13 @@ async def get_case(
     Args:
         case_id: Case ID
         db: Database session
+        current_user: Authenticated user
 
     Returns:
         Case details
 
     Raises:
-        HTTPException: If case not found
+        HTTPException: If case not found or user doesn't have access
     """
     repo = CaseRepository(db)
     case = repo.get(case_id)
@@ -81,6 +85,13 @@ async def get_case(
             detail=f"Case {case_id} not found"
         )
 
+    # Verify ownership
+    if case.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this case"
+        )
+
     return case
 
 
@@ -89,7 +100,7 @@ async def list_cases(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    user_id: str = "dev-user-id"  # TODO: Replace with actual auth
+    current_user: User = Depends(get_current_user)
 ):
     """
     List cases for the authenticated user.
@@ -98,12 +109,12 @@ async def list_cases(
         skip: Number of records to skip
         limit: Maximum number of records
         db: Database session
-        user_id: User ID (from auth)
+        current_user: Authenticated user
 
     Returns:
         List of cases
     """
     repo = CaseRepository(db)
-    cases = repo.get_by_user(user_id, skip=skip, limit=limit)
+    cases = repo.get_by_user(current_user.id, skip=skip, limit=limit)
 
     return cases

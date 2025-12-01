@@ -34,6 +34,11 @@ black==24.1.1
 flake8==7.0.0
 mypy==1.8.0
 
+# Authentication
+python-jose[cryptography]==3.5.0  # JWT tokens
+passlib[bcrypt]==1.7.4  # Password hashing
+bcrypt==4.0.1  # Pin compatible version (5.x has issues with passlib 1.7.4)
+
 # Utilities
 python-dotenv==1.0.0
 tenacity==8.2.3  # Retry logic for robustness

@@ -36,6 +36,41 @@ class UserResponse(UserBase):
 
 
 # ============================================================================
+# Authentication Schemas
+# ============================================================================
+
+
+class SignupRequest(BaseModel):
+    """Schema for user signup request."""
+
+    email: EmailStr = Field(..., description="User email address")
+    name: str = Field(..., min_length=1, max_length=255, description="User full name")
+    password: str = Field(..., min_length=8, description="Password (minimum 8 characters)")
+
+
+class LoginRequest(BaseModel):
+    """Schema for user login request."""
+
+    email: EmailStr = Field(..., description="User email address")
+    password: str = Field(..., description="User password")
+
+
+class AuthResponse(BaseModel):
+    """Schema for authentication response (signup/login)."""
+
+    access_token: str = Field(..., description="JWT access token (15 min expiry)")
+    token_type: str = Field(default="bearer", description="Token type")
+    user: UserResponse = Field(..., description="User profile")
+
+
+class RefreshResponse(BaseModel):
+    """Schema for token refresh response."""
+
+    access_token: str = Field(..., description="New JWT access token")
+    token_type: str = Field(default="bearer", description="Token type")
+
+
+# ============================================================================
 # Case Schemas
 # ============================================================================
 
