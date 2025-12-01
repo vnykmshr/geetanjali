@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from db import get_db
 from db.repositories.case_repository import CaseRepository
+from db.repositories.message_repository import MessageRepository
 from api.schemas import CaseCreate, CaseResponse
 from models.case import Case
 import uuid
@@ -41,6 +42,13 @@ async def create_case(
 
     repo = CaseRepository(db)
     case = repo.create(case_dict)
+
+    # Create initial user message with the case description
+    message_repo = MessageRepository(db)
+    message_repo.create_user_message(
+        case_id=case.id,
+        content=case_data.description
+    )
 
     logger.info(f"Case created: {case.id}")
     return case

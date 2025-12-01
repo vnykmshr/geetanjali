@@ -11,6 +11,7 @@ import uuid
 
 from db import get_db
 from db.repositories.case_repository import CaseRepository
+from db.repositories.message_repository import MessageRepository
 from models.output import Output
 from api.schemas import OutputResponse
 from services.rag import get_rag_pipeline
@@ -93,6 +94,14 @@ async def analyze_case(
             db.add(output)
             db.commit()
             db.refresh(output)
+
+            # Create assistant message linked to this output
+            message_repo = MessageRepository(db)
+            message_repo.create_assistant_message(
+                case_id=case_id,
+                content=result.get("executive_summary", ""),
+                output_id=output.id
+            )
 
             logger.info(f"Analysis complete. Output ID: {output.id}, Confidence: {output.confidence}")
 
