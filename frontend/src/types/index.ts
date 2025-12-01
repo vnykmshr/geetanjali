@@ -27,7 +27,7 @@ export interface Option {
   title: string;
   pros: string[];
   cons: string[];
-  verses: string[]; // canonical_ids
+  verses?: string[]; // canonical_ids (optional - may be missing in fallback responses)
 }
 
 export interface Output {

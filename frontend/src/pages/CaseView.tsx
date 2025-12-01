@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { casesApi } from '../lib/api';
+import { casesApi, outputsApi } from '../lib/api';
 import type { Case, Output } from '../types';
 import ProvenancePanel from '../components/ProvenancePanel';
 import OptionTable from '../components/OptionTable';
@@ -20,6 +20,17 @@ export default function CaseView() {
       try {
         const data = await casesApi.get(id);
         setCaseData(data);
+
+        // Try to load existing analysis
+        try {
+          const outputs = await outputsApi.listByCaseId(id);
+          if (outputs && outputs.length > 0) {
+            setOutput(outputs[0]); // Use most recent output
+          }
+        } catch (outputErr) {
+          // No outputs yet - this is fine
+          console.log('No existing analysis found');
+        }
       } catch (err: any) {
         setError(err.response?.data?.detail || err.message || 'Failed to load case');
       } finally {

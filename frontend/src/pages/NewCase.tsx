@@ -68,6 +68,15 @@ export default function NewCase() {
       };
 
       const createdCase = await casesApi.create(caseData);
+
+      // Automatically trigger analysis
+      try {
+        await casesApi.analyze(createdCase.id);
+      } catch (analyzeErr) {
+        // Log but don't fail - user can manually analyze later
+        console.warn('Auto-analyze failed:', analyzeErr);
+      }
+
       navigate(`/cases/${createdCase.id}`);
     } catch (err: any) {
       setError(err.response?.data?.detail || err.message || 'Failed to submit question');

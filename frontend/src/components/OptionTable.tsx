@@ -52,7 +52,7 @@ export default function OptionTable({ options }: OptionTableProps) {
           </div>
 
           {/* Referenced Verses */}
-          {option.verses.length > 0 && (
+          {option.verses && option.verses.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <h4 className="font-medium text-gray-700 text-sm mb-2">
                 Supporting Verses:
