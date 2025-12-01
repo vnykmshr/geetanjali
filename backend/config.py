@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     CHROMA_RETRY_MAX_WAIT: int = 5
 
     # LLM (Ollama)
+    OLLAMA_ENABLED: bool = True  # Set to False to disable Ollama dependency
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.1:8b"
     OLLAMA_TIMEOUT: int = 60

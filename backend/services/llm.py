@@ -21,11 +21,15 @@ class LLMService:
 
     def __init__(self):
         """Initialize LLM service."""
+        self.enabled = settings.OLLAMA_ENABLED
         self.base_url = settings.OLLAMA_BASE_URL
         self.model = settings.OLLAMA_MODEL
         self.timeout = settings.OLLAMA_TIMEOUT
 
-        logger.info(f"LLM Service initialized: {self.base_url} / {self.model}")
+        if self.enabled:
+            logger.info(f"LLM Service initialized: {self.base_url} / {self.model}")
+        else:
+            logger.warning("LLM Service disabled - running in mock mode")
 
     def check_health(self) -> bool:
         """
@@ -34,6 +38,10 @@ class LLMService:
         Returns:
             True if healthy, False otherwise
         """
+        if not self.enabled:
+            logger.debug("LLM disabled, skipping health check")
+            return True  # Return True in mock mode
+
         try:
             response = httpx.get(f"{self.base_url}/api/tags", timeout=5)
             return response.status_code == 200
@@ -94,6 +102,16 @@ class LLMService:
         Raises:
             Exception: If LLM request fails after retries
         """
+        # Mock response when LLM is disabled
+        if not self.enabled:
+            logger.info("LLM disabled - returning mock response")
+            return {
+                "response": "[LLM disabled] This is a mock response. Enable Ollama for real LLM responses.",
+                "model": "mock",
+                "total_duration": 0,
+                "eval_count": 0,
+            }
+
         logger.debug(f"Generating with prompt length: {len(prompt)}")
 
         # Prepare request
