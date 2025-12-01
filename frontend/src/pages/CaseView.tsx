@@ -60,17 +60,17 @@ export default function CaseView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading case...</div>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading consultation...</div>
       </div>
     );
   }
 
   if (!caseData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Case not found</p>
+          <p className="text-gray-600 mb-4">Consultation not found</p>
           <Link to="/" className="text-red-600 hover:text-red-700">
             ← Back to Home
           </Link>
@@ -80,16 +80,26 @@ export default function CaseView() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 py-12">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
-          <Link to="/" className="text-red-600 hover:text-red-700 mb-4 inline-block">
-            ← Back to Home
-          </Link>
+          <div className="flex justify-between items-start mb-4">
+            <Link to="/" className="text-red-600 hover:text-red-700">
+              ← Back to Home
+            </Link>
+            <Link to="/consultations" className="text-red-600 hover:text-red-700">
+              View All Consultations →
+            </Link>
+          </div>
           <h1 className="text-3xl font-bold text-gray-900">{caseData.title}</h1>
-          <p className="text-gray-600 mt-2">
-            Role: {caseData.role} • Horizon: {caseData.horizon} • Sensitivity: {caseData.sensitivity}
+          <p className="text-gray-500 text-sm mt-2">
+            {new Date(caseData.created_at || '').toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
           </p>
         </div>
 
@@ -103,43 +113,51 @@ export default function CaseView() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Case Details */}
+            {/* Question */}
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4">Case Description</h2>
-              <p className="text-gray-700 whitespace-pre-wrap">{caseData.description}</p>
+              <h2 className="text-xl font-semibold mb-4">Your Question</h2>
+              <p className="text-gray-700 whitespace-pre-wrap text-lg leading-relaxed">{caseData.description}</p>
 
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Stakeholders</h3>
-                  <ul className="list-disc list-inside text-gray-700">
-                    {caseData.stakeholders.map((s, i) => (
-                      <li key={i}>{s}</li>
-                    ))}
-                  </ul>
+              {(caseData.stakeholders.length > 1 || caseData.stakeholders[0] !== 'self' ||
+                caseData.constraints.length > 0 || caseData.role !== 'Individual') && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h3 className="font-medium text-gray-700 text-sm mb-3">Context</h3>
+                  <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                    {caseData.role !== 'Individual' && (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Role:</span>
+                        <span>{caseData.role}</span>
+                      </div>
+                    )}
+                    {(caseData.stakeholders.length > 1 || caseData.stakeholders[0] !== 'self') && (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Affects:</span>
+                        <span>{caseData.stakeholders.join(', ')}</span>
+                      </div>
+                    )}
+                    {caseData.constraints.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Constraints:</span>
+                        <span>{caseData.constraints.join(', ')}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Constraints</h3>
-                  <ul className="list-disc list-inside text-gray-700">
-                    {caseData.constraints.map((c, i) => (
-                      <li key={i}>{c}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Analysis Section */}
             {!output && (
               <div className="bg-white rounded-lg shadow-md p-6 text-center">
                 <p className="text-gray-600 mb-4">
-                  No analysis yet. Click below to generate guidance from the Bhagavad Gita.
+                  Analyzing your question...
                 </p>
                 <button
                   onClick={handleAnalyze}
                   disabled={analyzing}
                   className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                 >
-                  {analyzing ? 'Analyzing...' : 'Analyze Case'}
+                  {analyzing ? 'Seeking guidance...' : 'Refresh Guidance'}
                 </button>
               </div>
             )}
@@ -158,10 +176,10 @@ export default function CaseView() {
                   </div>
                 )}
 
-                {/* Executive Summary */}
+                {/* Guidance Summary */}
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-semibold mb-4">Executive Summary</h2>
-                  <p className="text-gray-700">{output.result_json.executive_summary}</p>
+                  <h2 className="text-xl font-semibold mb-4">Guidance</h2>
+                  <p className="text-gray-700 text-lg leading-relaxed">{output.result_json.executive_summary}</p>
                   <div className="mt-4 flex items-center text-sm">
                     <span className="text-gray-600">Confidence:</span>
                     <div className="ml-2 flex-1 bg-gray-200 rounded-full h-2 max-w-xs">
@@ -184,23 +202,23 @@ export default function CaseView() {
 
                 {/* Options */}
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-semibold mb-4">Options & Tradeoffs</h2>
+                  <h2 className="text-xl font-semibold mb-4">Paths Forward</h2>
                   <OptionTable options={output.result_json.options} />
                 </div>
 
                 {/* Recommended Action */}
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-semibold mb-4">Recommended Action</h2>
-                  <p className="text-gray-700 whitespace-pre-wrap">{output.result_json.recommended_action}</p>
+                  <h2 className="text-xl font-semibold mb-4">Recommended Path</h2>
+                  <p className="text-gray-700 whitespace-pre-wrap text-lg leading-relaxed">{output.result_json.recommended_action}</p>
                 </div>
 
                 {/* Reflection Prompts */}
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-semibold mb-4">Reflection Prompts</h2>
-                  <ul className="space-y-2">
+                  <h2 className="text-xl font-semibold mb-4">Questions to Reflect On</h2>
+                  <ul className="space-y-3">
                     {output.result_json.reflection_prompts.map((prompt, i) => (
-                      <li key={i} className="text-gray-700">
-                        <span className="font-medium text-red-600">•</span> {prompt}
+                      <li key={i} className="text-gray-700 text-base">
+                        <span className="font-medium text-red-600 mr-2">•</span> {prompt}
                       </li>
                     ))}
                   </ul>
