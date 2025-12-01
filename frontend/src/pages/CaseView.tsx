@@ -93,14 +93,16 @@ export default function CaseView() {
             </Link>
           </div>
           <h1 className="text-3xl font-bold text-gray-900">{caseData.title}</h1>
-          <p className="text-gray-500 text-sm mt-2">
-            {new Date(caseData.created_at || '').toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </p>
+          {caseData.created_at && (
+            <p className="text-gray-500 text-sm mt-2">
+              {new Date(caseData.created_at).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </p>
+          )}
         </div>
 
         {/* Error Alert */}
@@ -209,7 +211,29 @@ export default function CaseView() {
                 {/* Recommended Action */}
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <h2 className="text-xl font-semibold mb-4">Recommended Path</h2>
-                  <p className="text-gray-700 whitespace-pre-wrap text-lg leading-relaxed">{output.result_json.recommended_action}</p>
+                  {typeof output.result_json.recommended_action === 'string' ? (
+                    <p className="text-gray-700 whitespace-pre-wrap text-lg leading-relaxed">
+                      {output.result_json.recommended_action}
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {output.result_json.recommended_action.option && (
+                        <p className="text-gray-700">
+                          <span className="font-medium">Recommended:</span> Option {output.result_json.recommended_action.option}
+                        </p>
+                      )}
+                      {output.result_json.recommended_action.steps && output.result_json.recommended_action.steps.length > 0 && (
+                        <div>
+                          <h3 className="font-medium text-gray-900 mb-2">Steps:</h3>
+                          <ol className="list-decimal list-inside space-y-1 text-gray-700">
+                            {output.result_json.recommended_action.steps.map((step, i) => (
+                              <li key={i}>{step}</li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Reflection Prompts */}

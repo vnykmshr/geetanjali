@@ -36,7 +36,11 @@ export interface Output {
   result_json: {
     executive_summary: string;
     options: Option[];
-    recommended_action: string;
+    recommended_action: string | {
+      option?: number;
+      steps?: string[];
+      sources?: string[];
+    };
     reflection_prompts: string[];
     sources: {
       canonical_id: string;
