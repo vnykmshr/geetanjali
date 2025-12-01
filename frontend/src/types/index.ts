@@ -58,6 +58,19 @@ export interface ScholarReviewRequest {
   approved: boolean;
 }
 
+export interface Message {
+  id: string;
+  case_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  output_id?: string;
+  created_at: string;
+}
+
+export interface MessageCreate {
+  content: string;
+}
+
 export interface HealthResponse {
   status: string;
   service: string;
