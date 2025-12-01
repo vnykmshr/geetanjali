@@ -12,35 +12,14 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public routes */}
+        {/* Public routes - accessible to everyone */}
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/cases/new" element={<NewCase />} />
+        <Route path="/cases/:id" element={<CaseView />} />
 
-        {/* Protected routes */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/cases/new"
-          element={
-            <ProtectedRoute>
-              <NewCase />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/cases/:id"
-          element={
-            <ProtectedRoute>
-              <CaseView />
-            </ProtectedRoute>
-          }
-        />
+        {/* Protected routes - require authentication */}
         <Route
           path="/consultations"
           element={

@@ -1,7 +1,8 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { checkHealth, casesApi } from '../lib/api';
 import type { HealthResponse, Case } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Home() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -9,6 +10,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [recentCases, setRecentCases] = useState<Case[]>([]);
   const [casesLoading, setCasesLoading] = useState(true);
+  const { user, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     checkHealth()
@@ -16,23 +19,90 @@ export default function Home() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
 
-    // Load recent consultations
-    casesApi.list(0, 5)
-      .then(setRecentCases)
-      .catch((err) => console.error('Failed to load recent cases:', err))
-      .finally(() => setCasesLoading(false));
-  }, []);
+    // Load recent consultations only if authenticated
+    if (isAuthenticated) {
+      casesApi.list(0, 5)
+        .then(setRecentCases)
+        .catch((err) => console.error('Failed to load recent cases:', err))
+        .finally(() => setCasesLoading(false));
+    } else {
+      setCasesLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
+      {/* Navigation Header */}
+      <nav className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <img src="/logo.svg" alt="Geetanjali" className="h-10 w-10" />
+              <span className="text-2xl font-serif font-bold text-orange-600">Geetanjali</span>
+            </Link>
+            <div className="flex items-center space-x-4">
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to="/consultations"
+                    className="text-gray-700 hover:text-orange-600 font-medium"
+                  >
+                    My Consultations
+                  </Link>
+                  <span className="text-gray-500">|</span>
+                  <span className="text-gray-700">
+                    {user?.name}
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="text-gray-700 hover:text-orange-600 font-medium"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="text-gray-700 hover:text-orange-600 font-medium"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
-            Geetanjali
-          </h1>
-          <p className="text-xl text-gray-600 mb-8">
+          <div className="flex justify-center mb-6">
+            <img src="/logo.svg" alt="Geetanjali" className="h-24 w-24" />
+          </div>
+          <p className="text-xl text-gray-600 mb-4">
             Ethical leadership guidance from the Bhagavad Gita
           </p>
+          {!isAuthenticated && (
+            <p className="text-sm text-gray-500 mb-8">
+              Try it now - no signup required. Create an account to save your consultations.
+            </p>
+          )}
 
           {/* Backend Status */}
           <div className="mb-12">
