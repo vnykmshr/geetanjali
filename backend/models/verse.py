@@ -1,6 +1,6 @@
 """Verse, Commentary, and Translation models."""
 
-from sqlalchemy import Column, String, Text, Integer, ForeignKey, JSON, CheckConstraint
+from sqlalchemy import Column, String, Text, Integer, ForeignKey, JSON, CheckConstraint, Boolean
 from sqlalchemy.orm import relationship
 import uuid
 
@@ -21,6 +21,7 @@ class Verse(Base, TimestampMixin):
     translation_en = Column(Text)  # Primary English translation (from source)
     paraphrase_en = Column(Text)  # LLM-generated leadership summary
     consulting_principles = Column(JSON)  # Array of principle tags
+    is_featured = Column(Boolean, default=False, index=True)  # Showcase-worthy verse
     source = Column(String(255))
     license = Column(String(100))
 
