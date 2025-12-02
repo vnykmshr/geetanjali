@@ -126,7 +126,13 @@ class IngestionPipeline:
                 return stats
 
             # Stage 4: Enrich (optional, can be slow with LLM)
-            if enrich:
+            # Skip enrichment for translation-only data (it already has human translations)
+            is_translation_source = source_config.get("json_type") == "gita_translations"
+
+            if is_translation_source:
+                logger.info("Skipping enrichment for translation source (translations don't need LLM enrichment)")
+                enriched_data = valid_data
+            elif enrich:
                 enriched_data = self._enrich_stage(valid_data, source_config)
             else:
                 logger.info("Skipping enrichment (enrich=False)")

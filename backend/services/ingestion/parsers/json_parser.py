@@ -29,7 +29,7 @@ class JSONParser:
             source_config: Source configuration dict with metadata
 
         Returns:
-            List of parsed verse dictionaries
+            List of parsed verse/translation dictionaries
 
         Raises:
             ValueError: If JSON is invalid or format unknown
@@ -39,6 +39,11 @@ class JSONParser:
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON: {e}")
             raise ValueError(f"Invalid JSON format: {e}")
+
+        # Check if this is a translations source
+        json_type = source_config.get("json_type", "")
+        if json_type == "gita_translations":
+            return self._parse_translations_array(data, source_config)
 
         # Determine JSON schema based on structure
         if isinstance(data, list):
@@ -211,3 +216,119 @@ class JSONParser:
             if value:
                 return str(value).strip()
         return ""
+
+    def _parse_translations_array(self, translations: List, source_config: Dict) -> List[Dict]:
+        """
+        Parse array of translation objects from gita/gita translation.json format.
+
+        Format: [{"authorName": "...", "description": "...", "lang": "english", "verse_id": 1, ...}, ...]
+
+        Groups translations by verse and returns structured data for ingestion.
+
+        Args:
+            translations: List of translation dictionaries
+            source_config: Source configuration
+
+        Returns:
+            List of translation dictionaries grouped by verse
+        """
+        from collections import defaultdict
+
+        # Filter to English only and group by verse_id
+        by_verse = defaultdict(list)
+        default_translator = source_config.get("default_translator", "Swami Gambirananda")
+
+        # Build translator priority and school mapping
+        translator_priority = {}
+        translator_school = {}
+        for tp in source_config.get("translator_priority", []):
+            translator_priority[tp["name"]] = tp.get("priority", 99)
+            translator_school[tp["name"]] = tp.get("school", "")
+
+        for t in translations:
+            if t.get("lang") != "english":
+                continue
+
+            verse_id = t.get("verse_id")
+            if not verse_id:
+                continue
+
+            translator_name = t.get("authorName", "")
+            by_verse[verse_id].append({
+                "text": t.get("description", "").strip(),
+                "translator": translator_name,
+                "school": translator_school.get(translator_name, ""),
+                "priority": translator_priority.get(translator_name, 99),
+                "author_id": t.get("author_id"),
+                "source": source_config.get("url", ""),
+                "license": source_config.get("license", ""),
+            })
+
+        # Build output: one entry per verse with all translations
+        parsed = []
+        for verse_id, trans_list in by_verse.items():
+            # Sort translations by priority
+            trans_list.sort(key=lambda x: x.get("priority", 99))
+
+            # Calculate chapter and verse from verse_id (1-indexed sequential)
+            chapter, verse_num = self._verse_id_to_chapter_verse(verse_id)
+
+            if not chapter:
+                logger.warning(f"Could not map verse_id {verse_id} to chapter/verse")
+                continue
+
+            canonical_id = f"BG_{chapter}_{verse_num}"
+
+            # Find default translation (by name match or highest priority)
+            default_text = ""
+            for t in trans_list:
+                if t["translator"] == default_translator:
+                    default_text = t["text"]
+                    break
+
+            # Fallback to highest priority translation if default not found
+            if not default_text and trans_list:
+                default_text = trans_list[0]["text"]
+
+            parsed.append({
+                "canonical_id": canonical_id,
+                "chapter": chapter,
+                "verse": verse_num,
+                "translation_en": default_text,  # Primary translation for verse table
+                "translations": trans_list,  # All translations (sorted by priority) for translations table
+                "source": source_config.get("url", ""),
+                "license": source_config.get("license", ""),
+                "_is_translation_data": True,  # Flag for pipeline to handle differently
+            })
+
+        logger.info(f"Parsed translations for {len(parsed)} verses from {len(translations)} records")
+        return parsed
+
+    def _verse_id_to_chapter_verse(self, verse_id: int) -> tuple:
+        """
+        Convert sequential verse_id to chapter and verse number.
+
+        Gita chapter verse counts:
+        Ch 1: 47, Ch 2: 72, Ch 3: 43, Ch 4: 42, Ch 5: 29, Ch 6: 47,
+        Ch 7: 30, Ch 8: 28, Ch 9: 34, Ch 10: 42, Ch 11: 55, Ch 12: 20,
+        Ch 13: 35, Ch 14: 27, Ch 15: 20, Ch 16: 24, Ch 17: 28, Ch 18: 78
+
+        Args:
+            verse_id: 1-indexed sequential verse ID
+
+        Returns:
+            Tuple of (chapter, verse) or (None, None) if invalid
+        """
+        chapter_sizes = [47, 72, 43, 42, 29, 47, 30, 28, 34, 42, 55, 20, 35, 27, 20, 24, 28, 78]
+
+        if verse_id < 1 or verse_id > 701:
+            return None, None
+
+        cumulative = 0
+        for chapter, size in enumerate(chapter_sizes, start=1):
+            if verse_id <= cumulative + size:
+                verse_num = verse_id - cumulative
+                return chapter, verse_num
+            cumulative += size
+
+        return None, None

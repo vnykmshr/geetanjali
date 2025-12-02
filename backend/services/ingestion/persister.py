@@ -90,6 +90,7 @@ class Persister:
             verse=verse_data["verse"],
             sanskrit_iast=verse_data.get("sanskrit_iast", ""),
             sanskrit_devanagari=verse_data.get("sanskrit_devanagari", ""),
+            translation_en=verse_data.get("translation_en", ""),
             paraphrase_en=verse_data.get("paraphrase_en", ""),
             consulting_principles=verse_data.get("consulting_principles"),
             source=verse_data.get("source", ""),
@@ -120,6 +121,9 @@ class Persister:
 
         if verse_data.get("sanskrit_devanagari"):
             existing_verse.sanskrit_devanagari = verse_data["sanskrit_devanagari"]
+
+        if verse_data.get("translation_en"):
+            existing_verse.translation_en = verse_data["translation_en"]
 
         if verse_data.get("paraphrase_en"):
             existing_verse.paraphrase_en = verse_data["paraphrase_en"]
@@ -251,7 +255,7 @@ class Persister:
         Returns:
             Dictionary with statistics (created, updated, errors)
         """
-        stats = {"created": 0, "updated": 0, "errors": 0}
+        stats = {"created": 0, "updated": 0, "errors": 0, "skipped": 0}
 
         total = len(verses_data)
         logger.info(f"Persisting {total} verses in batches of {batch_size}")
@@ -268,20 +272,32 @@ class Persister:
                             canonical_id=canonical_id
                         ).first()
 
+                        # Check if this is translation-only data
+                        is_translation_data = verse_data.get("_is_translation_data", False)
+
                         if existing:
                             self._update_verse(existing, verse_data)
                             stats["updated"] += 1
+                            verse_instance = existing
+                        elif is_translation_data:
+                            # GAP FIX: Translation-only data should NOT create new verses
+                            # Verses must exist first (from sanskrit source)
+                            logger.warning(
+                                f"Skipping translation for non-existent verse: {canonical_id}. "
+                                "Run sanskrit ingestion first."
+                            )
+                            stats["skipped"] += 1
+                            continue
                         else:
                             verse = self._create_verse(verse_data)
                             stats["created"] += 1
+                            verse_instance = verse
 
-                        # Persist embedding
-                        self._persist_embedding(
-                            existing or verse,
-                            verse_data
-                        )
+                        # Persist embedding (skip for translation-only updates to avoid overwriting)
+                        if not is_translation_data:
+                            self._persist_embedding(verse_instance, verse_data)
 
-                        # Handle translation if present
+                        # Handle single translation if present (legacy format)
                         if verse_data.get("translation_text"):
                             translation_data = {
                                 "text": verse_data["translation_text"],
@@ -291,9 +307,31 @@ class Persister:
                                 "license": verse_data.get("license"),
                             }
                             self.persist_translation(
-                                (existing or verse).id,
+                                verse_instance.id,
                                 translation_data
                             )
+
+                        # Handle multiple translations array (from translation.json)
+                        if verse_data.get("translations"):
+                            for trans in verse_data["translations"]:
+                                # Check if this translation already exists
+                                existing_trans = self.db.query(Translation).filter_by(
+                                    verse_id=verse_instance.id,
+                                    translator=trans.get("translator", "")
+                                ).first()
+
+                                if not existing_trans:
+                                    translation_data = {
+                                        "text": trans.get("text", ""),
+                                        "translator": trans.get("translator", ""),
+                                        "school": trans.get("school", ""),
+                                        "source": trans.get("source", ""),
+                                        "license": trans.get("license", ""),
+                                    }
+                                    self.persist_translation(
+                                        verse_instance.id,
+                                        translation_data
+                                    )
 
                     except Exception as e:
                         logger.error(f"Failed to persist verse {verse_data.get('canonical_id')}: {e}")

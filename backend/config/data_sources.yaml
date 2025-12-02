@@ -19,6 +19,33 @@ sources:
       description: "Backup source via CDN for redundancy"
 
   translations:
+    - name: "Gita Translations JSON (Primary)"
+      url: "https://raw.githubusercontent.com/gita/gita/main/data/translation.json"
+      format: "json"
+      json_type: "gita_translations"
+      license: "Unlicense (Public Domain)"
+      enabled: true
+      priority: 1
+      default_translator: "Swami Gambirananda"
+      # Priority order for displaying multiple translations (1 = highest)
+      translator_priority:
+        - name: "Swami Gambirananda"
+          school: "Ramakrishna Math, Shankara commentary"
+          priority: 1
+        - name: "Swami Adidevananda"
+          school: "Ramakrishna Math"
+          priority: 2
+        - name: "Swami Sivananda"
+          school: "Divine Life Society"
+          priority: 3
+        - name: "Dr. S. Sankaranarayan"
+          school: "Kashmir Shaivism"
+          priority: 4
+        - name: "Shri Purohit Swami"
+          school: "Poetic/Literary"
+          priority: 5
+      description: "English translations from 5 scholars with priority ordering"
+
     - name: "Edwin Arnold 1885 - The Song Celestial"
       url: "https://www.sacred-texts.com/hin/gita/index.htm"
       format: "html"
@@ -26,7 +53,7 @@ sources:
       translator: "Edwin Arnold"
       year: 1885
       enabled: false
-      priority: 3
+      priority: 10
       school: "Poetic Translation"
       description: "Classical poetic English translation (disabled - no verse numbers)"
 

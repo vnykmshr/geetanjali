@@ -93,15 +93,24 @@ class Validator:
                 # Not an error - will be handled as update
 
         # Content validation - at least one text field should be present
-        has_content = any([
-            data.get("sanskrit_devanagari"),
-            data.get("sanskrit_iast"),
-            data.get("translation_text"),
-            data.get("paraphrase_en"),
-        ])
+        # For translation-only data, translation_en is the content
+        is_translation_data = data.get("_is_translation_data", False)
 
-        if not has_content:
-            errors.append("Verse must have at least one text field (sanskrit/translation/paraphrase)")
+        if is_translation_data:
+            # Translation data must have translation_en or translations array
+            has_content = data.get("translation_en") or data.get("translations")
+            if not has_content:
+                errors.append("Translation data must have translation_en or translations array")
+        else:
+            # Regular verse data needs sanskrit or paraphrase
+            has_content = any([
+                data.get("sanskrit_devanagari"),
+                data.get("sanskrit_iast"),
+                data.get("translation_text"),
+                data.get("paraphrase_en"),
+            ])
+            if not has_content:
+                errors.append("Verse must have at least one text field (sanskrit/translation/paraphrase)")
 
         # License validation
         license = data.get("license")
