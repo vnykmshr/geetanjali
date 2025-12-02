@@ -14,6 +14,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -38,7 +39,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         try {
           const currentUser = await authApi.getCurrentUser();
           setUser(currentUser);
-        } catch (error) {
+        } catch {
           // Token invalid or expired, clear it
           tokenStorage.clearToken();
         }

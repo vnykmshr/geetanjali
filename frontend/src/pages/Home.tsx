@@ -1,107 +1,61 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { checkHealth, casesApi, versesApi } from '../lib/api';
 import type { Case, Verse } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { VerseCard } from '../components/VerseCard';
+import { Navbar } from '../components/Navbar';
 
 export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [recentCases, setRecentCases] = useState<Case[]>([]);
-  const [casesLoading, setCasesLoading] = useState(true);
   const [dailyVerse, setDailyVerse] = useState<Verse | null>(null);
   const [verseLoading, setVerseLoading] = useState(true);
-  const { user, logout, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
+  // Cases loading state - only relevant when authenticated
+  const [casesLoading, setCasesLoading] = useState(isAuthenticated);
+
+  // Check backend health on mount
   useEffect(() => {
-    checkHealth()
-      .catch((err) => setError(err.message));
+    checkHealth().catch((err) => setError(err.message));
+  }, []);
 
-    // Load recent consultations only if authenticated
-    if (isAuthenticated) {
-      casesApi.list(0, 5)
-        .then(setRecentCases)
-        .catch((err) => console.error('Failed to load recent cases:', err))
-        .finally(() => setCasesLoading(false));
-    } else {
-      setCasesLoading(false);
-    }
+  // Load recent consultations when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-    // Load random verse
-    versesApi.getRandom()
-      .then(setDailyVerse)
-      .catch((err) => console.error('Failed to load verse:', err))
-      .finally(() => setVerseLoading(false));
+    let cancelled = false;
+    casesApi.list(0, 5)
+      .then((data) => {
+        if (!cancelled) setRecentCases(data);
+      })
+      .catch((err) => console.error('Failed to load recent cases:', err))
+      .finally(() => {
+        if (!cancelled) setCasesLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, [isAuthenticated]);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (err) {
-      console.error('Logout failed:', err);
-    }
-  };
+  // Load random verse on mount
+  useEffect(() => {
+    let cancelled = false;
+    versesApi.getRandom()
+      .then((data) => {
+        if (!cancelled) setDailyVerse(data);
+      })
+      .catch((err) => console.error('Failed to load verse:', err))
+      .finally(() => {
+        if (!cancelled) setVerseLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
-      {/* Navigation Header */}
-      <nav className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <img src="/logo.svg" alt="Geetanjali" className="h-10 w-10" />
-              <span className="text-2xl font-serif font-bold text-orange-600">Geetanjali</span>
-            </Link>
-            <div className="flex items-center space-x-4">
-              <Link
-                to="/verses"
-                className="text-gray-700 hover:text-orange-600 font-medium"
-              >
-                Browse Verses
-              </Link>
-              {isAuthenticated ? (
-                <>
-                  <span className="text-gray-500">|</span>
-                  <Link
-                    to="/consultations"
-                    className="text-gray-700 hover:text-orange-600 font-medium"
-                  >
-                    My Consultations
-                  </Link>
-                  <span className="text-gray-500">|</span>
-                  <span className="text-gray-700">
-                    {user?.name}
-                  </span>
-                  <button
-                    onClick={handleLogout}
-                    className="text-gray-700 hover:text-orange-600 font-medium"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className="text-gray-500">|</span>
-                  <Link
-                    to="/login"
-                    className="text-gray-700 hover:text-orange-600 font-medium"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/signup"
-                    className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
-                  >
-                    Sign Up
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+      <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center">
