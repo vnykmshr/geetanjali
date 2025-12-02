@@ -9,8 +9,8 @@ from sqlalchemy import func
 
 from db import get_db
 from db.repositories.verse_repository import VerseRepository
-from api.schemas import VerseResponse
-from models.verse import Verse
+from api.schemas import VerseResponse, TranslationResponse
+from models.verse import Verse, Translation
 
 logger = logging.getLogger(__name__)
 
@@ -157,3 +157,41 @@ async def get_verse(
         )
 
     return verse
+
+
+@router.get("/{canonical_id}/translations", response_model=List[TranslationResponse])
+async def get_verse_translations(
+    canonical_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all translations for a verse by canonical ID.
+
+    Args:
+        canonical_id: Canonical verse ID (e.g., BG_2_47)
+        db: Database session
+
+    Returns:
+        List of translations for the verse
+
+    Raises:
+        HTTPException: If verse not found
+    """
+    # First verify the verse exists
+    repo = VerseRepository(db)
+    verse = repo.get_by_canonical_id(canonical_id)
+
+    if not verse:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Verse {canonical_id} not found"
+        )
+
+    # Get all translations for this verse
+    translations = db.query(Translation).filter(
+        Translation.verse_id == verse.id
+    ).order_by(Translation.translator).all()
+
+    logger.info(f"Found {len(translations)} translations for {canonical_id}")
+
+    return translations
