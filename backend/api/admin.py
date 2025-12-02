@@ -143,7 +143,7 @@ def run_ingestion_task(
     """
     global _ingestion_running
 
-    from database import SessionLocal
+    from db.connection import SessionLocal
 
     db = SessionLocal()
     try:
