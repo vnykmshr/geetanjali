@@ -19,7 +19,7 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from database import SessionLocal
+from db.connection import SessionLocal
 from services.ingestion.pipeline import IngestionPipeline
 
 # Configure logging

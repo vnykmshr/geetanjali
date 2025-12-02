@@ -197,6 +197,45 @@ class IngestionPipeline:
 
         try:
             parsed = parser.parse(raw_data, source_config)
+
+            # If HTML parser returned empty list, check if this is an index page
+            # with chapter links that need to be fetched separately
+            if not parsed and format_type == "html" and hasattr(parser, 'get_chapter_urls'):
+                logger.info("No verses found in main page, checking for chapter links...")
+                chapter_urls = parser.get_chapter_urls(raw_data, source_config.get("url", ""))
+
+                if chapter_urls:
+                    logger.info(f"Found {len(chapter_urls)} chapter pages to fetch")
+                    all_verses = []
+
+                    for chapter_url in chapter_urls:
+                        logger.info(f"Fetching chapter from: {chapter_url}")
+                        try:
+                            # Create a temporary config for this chapter URL
+                            chapter_config = source_config.copy()
+                            chapter_config["url"] = chapter_url
+
+                            # Fetch chapter page
+                            chapter_data = self._fetch_stage(chapter_config, force_refresh=False)
+                            if not chapter_data:
+                                logger.warning(f"Failed to fetch chapter: {chapter_url}")
+                                continue
+
+                            # Parse chapter page
+                            chapter_verses = parser.parse(chapter_data, chapter_config)
+                            if chapter_verses:
+                                logger.info(f"Parsed {len(chapter_verses)} verses from chapter")
+                                all_verses.extend(chapter_verses)
+                            else:
+                                logger.warning(f"No verses found in chapter: {chapter_url}")
+
+                        except Exception as e:
+                            logger.error(f"Failed to process chapter {chapter_url}: {e}")
+                            continue
+
+                    logger.info(f"Total verses parsed from all chapters: {len(all_verses)}")
+                    return all_verses
+
             return parsed
         except Exception as e:
             logger.error(f"Parse failed: {e}")
@@ -285,10 +324,11 @@ class IngestionPipeline:
         source_types: Optional[List[str]] = None,
         force_refresh: bool = False,
         enrich: bool = True,
-        dry_run: bool = False
+        dry_run: bool = False,
+        use_fallback: bool = True
     ) -> Dict[str, Dict]:
         """
-        Ingest data from all configured sources.
+        Ingest data from all configured sources with fallback support.
 
         Args:
             source_types: List of source types to ingest (e.g., ['sanskrit', 'translations'])
@@ -296,6 +336,7 @@ class IngestionPipeline:
             force_refresh: Bypass cache
             enrich: Whether to apply LLM enrichment
             dry_run: Validate only without persisting
+            use_fallback: If True, try backup sources when primary fails
 
         Returns:
             Dictionary mapping source names to their statistics
@@ -320,23 +361,70 @@ class IngestionPipeline:
             if not isinstance(sources, list):
                 sources = [sources]
 
-            for source in sources:
-                # Check if source is enabled
-                if not source.get("enabled", True):
-                    logger.info(f"Skipping disabled source: {source.get('name')}")
-                    continue
+            # Filter enabled sources and sort by priority
+            enabled_sources = [s for s in sources if s.get("enabled", True)]
+            enabled_sources.sort(key=lambda x: x.get("priority", 999))
 
+            logger.info(f"Found {len(enabled_sources)} enabled sources for {source_type}")
+
+            if not enabled_sources:
+                logger.warning(f"No enabled sources for type: {source_type}")
+                continue
+
+            # Try sources in priority order with fallback support
+            source_group_succeeded = False
+
+            for idx, source in enumerate(enabled_sources):
                 source_name = source.get("name", "unnamed")
-                logger.info(f"Processing source: {source_name}")
+                is_fallback = idx > 0 and use_fallback
 
-                stats = self.ingest_source(
-                    source,
-                    force_refresh=force_refresh,
-                    enrich=enrich,
-                    dry_run=dry_run
-                )
+                if is_fallback:
+                    logger.info(f"Trying fallback source {idx + 1}/{len(enabled_sources)}: {source_name}")
+                else:
+                    logger.info(f"Processing primary source: {source_name}")
 
-                all_stats[source_name] = stats
+                try:
+                    stats = self.ingest_source(
+                        source,
+                        force_refresh=force_refresh,
+                        enrich=enrich,
+                        dry_run=dry_run
+                    )
+
+                    all_stats[source_name] = stats
+
+                    # Check if ingestion was successful
+                    total_items = stats.get("created", 0) + stats.get("updated", 0)
+                    has_errors = stats.get("errors", 0) > 0
+
+                    if total_items > 0:
+                        logger.info(f"Successfully ingested {total_items} items from {source_name}")
+                        source_group_succeeded = True
+
+                        # If successful and not forcing all sources, break (don't try fallbacks)
+                        if not is_fallback:
+                            logger.info(f"Primary source succeeded, skipping {len(enabled_sources) - 1} fallback sources")
+                            break
+                    elif has_errors:
+                        logger.warning(f"Source {source_name} failed with errors")
+                        if not use_fallback or idx == len(enabled_sources) - 1:
+                            logger.error(f"All sources failed for {source_type}")
+                    else:
+                        logger.warning(f"No data retrieved from {source_name}")
+
+                except Exception as e:
+                    logger.error(f"Exception during ingestion from {source_name}: {e}", exc_info=True)
+                    all_stats[source_name] = {"created": 0, "updated": 0, "errors": 1, "skipped": 0}
+
+                    # Try next source if fallback is enabled
+                    if use_fallback and idx < len(enabled_sources) - 1:
+                        logger.info(f"Attempting next fallback source...")
+                        continue
+                    else:
+                        break
+
+            if not source_group_succeeded:
+                logger.error(f"Failed to ingest any data for source type: {source_type}")
 
         # Summary
         total_created = sum(s.get("created", 0) for s in all_stats.values())

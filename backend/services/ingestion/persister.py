@@ -165,12 +165,21 @@ class Persister:
         # Generate embedding
         embedding = self.embedding_service.encode(combined_text)
 
-        # Prepare metadata
-        metadata = {
-            "chapter": verse.chapter,
-            "verse": verse.verse,
-            "principles": verse_data.get("consulting_principles", []),
-        }
+        # Prepare metadata (ChromaDB only accepts str, int, float, bool - not None or list)
+        metadata = {}
+
+        # Only add chapter/verse if they have valid values
+        if verse.chapter is not None:
+            metadata["chapter"] = verse.chapter
+        if verse.verse is not None:
+            metadata["verse"] = verse.verse
+
+        # Add consulting principles as comma-separated string if present
+        consulting_principles = verse_data.get("consulting_principles")
+        if consulting_principles and isinstance(consulting_principles, list):
+            metadata["principles"] = ",".join(consulting_principles)
+        elif consulting_principles:
+            metadata["principles"] = str(consulting_principles)
 
         # Add to vector store (will overwrite if exists)
         try:

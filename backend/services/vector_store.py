@@ -23,15 +23,21 @@ class VectorStore:
 
     def __init__(self):
         """Initialize ChromaDB client and collection."""
-        logger.info(f"Initializing ChromaDB at: {settings.CHROMA_PERSIST_DIRECTORY}")
-
-        # Create ChromaDB client
-        self.client = chromadb.Client(
-            ChromaSettings(
-                persist_directory=settings.CHROMA_PERSIST_DIRECTORY,
-                anonymized_telemetry=False
+        # Use HTTP client if CHROMA_HOST is set (for Docker/remote), otherwise local
+        if settings.CHROMA_HOST:
+            logger.info(f"Initializing ChromaDB HTTP client: {settings.CHROMA_HOST}:{settings.CHROMA_PORT}")
+            self.client = chromadb.HttpClient(
+                host=settings.CHROMA_HOST,
+                port=settings.CHROMA_PORT
             )
-        )
+        else:
+            logger.info(f"Initializing ChromaDB local client at: {settings.CHROMA_PERSIST_DIRECTORY}")
+            self.client = chromadb.Client(
+                ChromaSettings(
+                    persist_directory=settings.CHROMA_PERSIST_DIRECTORY,
+                    anonymized_telemetry=False
+                )
+            )
 
         # Get or create collection
         self.collection = self.client.get_or_create_collection(

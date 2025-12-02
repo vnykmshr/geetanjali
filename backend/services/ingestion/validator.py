@@ -19,6 +19,7 @@ class Validator:
 
     ALLOWED_LICENSES = [
         "Public Domain",
+        "Unlicense (Public Domain)",
         "CC-BY",
         "CC-BY-SA",
         "CC-BY-NC",

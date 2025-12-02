@@ -131,12 +131,13 @@ class JSONParser:
         canonical_id = verse_data.get("canonical_id") or f"BG_{chapter}_{verse_num}"
 
         # Extract text fields (flexible field names)
+        # Support gita/gita format: "text" field contains Sanskrit Devanagari
         sanskrit_devanagari = self._extract_text(verse_data, [
-            "sanskrit_devanagari", "sanskrit", "devanagari", "text_sanskrit"
+            "sanskrit_devanagari", "text", "sanskrit", "devanagari", "text_sanskrit"
         ])
 
         sanskrit_iast = self._extract_text(verse_data, [
-            "sanskrit_iast", "iast", "transliteration", "romanized"
+            "sanskrit_iast", "transliteration", "iast", "romanized"
         ])
 
         translation = self._extract_text(verse_data, [
@@ -145,6 +146,11 @@ class JSONParser:
 
         paraphrase = self._extract_text(verse_data, [
             "paraphrase", "paraphrase_en", "summary", "brief"
+        ])
+
+        # Extract word meanings (gita/gita specific field)
+        word_meanings = self._extract_text(verse_data, [
+            "word_meanings", "word_meaning", "pada_artha"
         ])
 
         # Extract metadata
@@ -159,6 +165,7 @@ class JSONParser:
             "sanskrit_iast": sanskrit_iast,
             "translation_text": translation,
             "paraphrase_en": paraphrase,
+            "word_meanings": word_meanings,
             "consulting_principles": consulting_principles,
             "source": source_config.get("url") or source_config.get("source", ""),
             "license": source_config.get("license", ""),

@@ -63,7 +63,7 @@ class HTMLParser:
         logger.info("Parsing sacred-texts.com format")
 
         # Check if this is the index page with chapter links
-        chapter_links = soup.find_all('a', href=re.compile(r'gitax\d+\.htm'))
+        chapter_links = soup.find_all('a', href=re.compile(r'bg\d+\.htm'))
 
         if chapter_links:
             # This is the index page - we need to fetch individual chapters
@@ -116,8 +116,8 @@ class HTMLParser:
         Returns:
             Chapter number or None
         """
-        # Try to extract from URL pattern like "gitax12.htm"
-        url_match = re.search(r'gitax(\d+)\.htm', url)
+        # Try to extract from URL pattern like "bg12.htm"
+        url_match = re.search(r'bg(\d+)\.htm', url)
         if url_match:
             return int(url_match.group(1))
 
@@ -240,7 +240,7 @@ class HTMLParser:
             List of full chapter URLs
         """
         soup = BeautifulSoup(index_html, 'lxml')
-        chapter_links = soup.find_all('a', href=re.compile(r'gitax?\d+\.htm'))
+        chapter_links = soup.find_all('a', href=re.compile(r'bg\d+\.htm'))
 
         urls = []
         for link in chapter_links:

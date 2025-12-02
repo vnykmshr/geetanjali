@@ -1,12 +1,22 @@
 sources:
   sanskrit:
-    - name: "Sacred Texts Sanskrit"
-      url: "https://www.sacred-texts.com/hin/gita/index.htm"
-      format: "html"
-      license: "Public Domain"
+    - name: "Gita Verses JSON (Primary)"
+      url: "https://raw.githubusercontent.com/gita/gita/main/data/verse.json"
+      format: "json"
+      json_type: "gita_verses"
+      license: "Unlicense (Public Domain)"
       enabled: true
       priority: 1
-      description: "Sanskrit verses in Devanagari from Sacred Texts Archive"
+      description: "Complete Bhagavad Gita verses with Sanskrit Devanagari, transliteration, and word meanings from gita/gita repository"
+
+    - name: "Gita Verses JSON (Backup - jsdelivr CDN)"
+      url: "https://cdn.jsdelivr.net/gh/gita/gita@main/data/verse.json"
+      format: "json"
+      json_type: "gita_verses"
+      license: "Unlicense (Public Domain)"
+      enabled: true
+      priority: 2
+      description: "Backup source via CDN for redundancy"
 
   translations:
     - name: "Edwin Arnold 1885 - The Song Celestial"
@@ -15,10 +25,10 @@ sources:
       license: "Public Domain"
       translator: "Edwin Arnold"
       year: 1885
-      enabled: true
-      priority: 1
+      enabled: false
+      priority: 3
       school: "Poetic Translation"
-      description: "Classical poetic English translation, accessible to Western audiences"
+      description: "Classical poetic English translation (disabled - no verse numbers)"
 
 enrichment:
   llm_tagging:
