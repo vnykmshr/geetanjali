@@ -21,8 +21,9 @@ chromadb==0.4.22
 # Embeddings
 sentence-transformers==2.3.1
 
-# LLM Client
+# LLM Clients
 httpx==0.26.0  # For Ollama API calls
+anthropic==0.39.0  # Anthropic Claude API
 
 # Testing
 pytest==7.4.4
@@ -51,5 +52,5 @@ pyyaml==6.0.1  # YAML config loading
 indic-transliteration==2.3.44  # Sanskrit IAST transliteration
 requests==2.31.0  # HTTP client for fetching
 
-# NumPy compatibility (chromadb requires <2.0)
+# NumPy compatibility (chromadb 0.4.x requires <2.0)
 numpy<2.0.0

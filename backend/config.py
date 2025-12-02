@@ -1,7 +1,8 @@
 """Application configuration."""
 
 import os
-from typing import List
+from typing import List, Union, Optional
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -15,27 +16,42 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     # Database
-    DATABASE_URL: str = "sqlite:///./geetanjali.db"
+    DATABASE_URL: str = "postgresql://geetanjali:geetanjali_dev_pass@localhost:5432/geetanjali"
     DB_POOL_SIZE: int = 5
     DB_MAX_OVERFLOW: int = 10
     DB_POOL_RECYCLE: int = 3600
     DB_POOL_PRE_PING: bool = True
 
     # Vector Database (ChromaDB)
+    CHROMA_HOST: Optional[str] = None  # If set, use HTTP client instead of local
+    CHROMA_PORT: int = 8000
     CHROMA_PERSIST_DIRECTORY: str = "./chroma_data"
     CHROMA_COLLECTION_NAME: str = "gita_verses"
     CHROMA_MAX_RETRIES: int = 3
     CHROMA_RETRY_MIN_WAIT: int = 1
     CHROMA_RETRY_MAX_WAIT: int = 5
 
-    # LLM (Ollama)
+    # LLM Configuration
+    # Primary LLM Provider: anthropic, ollama, or mock
+    LLM_PROVIDER: str = "anthropic"  # Primary provider
+    LLM_FALLBACK_ENABLED: bool = True  # Enable fallback to secondary provider
+    USE_MOCK_LLM: bool = False  # Use mock LLM for testing (overrides provider setting)
+
+    # Anthropic (Claude)
+    ANTHROPIC_API_KEY: Optional[str] = None  # Required for Anthropic
+    ANTHROPIC_MODEL: str = "claude-3-5-haiku-20241022"  # Fast, affordable model
+    ANTHROPIC_MAX_TOKENS: int = 2048
+    ANTHROPIC_TIMEOUT: int = 30
+
+    # Ollama (Local fallback)
     OLLAMA_ENABLED: bool = True  # Set to False to disable Ollama dependency
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2:3b"
-    OLLAMA_TIMEOUT: int = 60
-    OLLAMA_MAX_RETRIES: int = 3
+    OLLAMA_TIMEOUT: int = 120  # Increased timeout for fallback
+    OLLAMA_MAX_RETRIES: int = 2
     OLLAMA_RETRY_MIN_WAIT: int = 1
     OLLAMA_RETRY_MAX_WAIT: int = 10
+    OLLAMA_MAX_TOKENS: int = 512  # Limit tokens for faster response
 
     # Embeddings
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
@@ -49,7 +65,14 @@ class Settings(BaseSettings):
 
     # API
     API_V1_PREFIX: str = "/api/v1"
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    CORS_ORIGINS: Union[str, List[str]] = [
+        "http://localhost",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173"
+    ]
     API_KEY: str = "dev-api-key-12345"
     ANALYZE_RATE_LIMIT: str = "10/hour"  # Rate limit for analyze endpoint
 
@@ -61,6 +84,14 @@ class Settings(BaseSettings):
 
     # Frontend
     FRONTEND_URL: str = "http://localhost:5173"
+
+    @field_validator('CORS_ORIGINS', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        """Parse CORS_ORIGINS from comma-separated string or list."""
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(',')]
+        return v
 
     class Config:
         env_file = ".env"
