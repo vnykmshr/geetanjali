@@ -7,7 +7,13 @@ from typing import Dict, Any, List
 from config import settings
 from services.vector_store import get_vector_store
 from services.llm import get_llm_service
-from services.prompts import SYSTEM_PROMPT, build_user_prompt
+from services.prompts import (
+    SYSTEM_PROMPT,
+    build_user_prompt,
+    OLLAMA_SYSTEM_PROMPT,
+    build_ollama_prompt,
+    post_process_ollama_response
+)
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +93,10 @@ class RAGPipeline:
     def generate_brief(
         self,
         prompt: str,
-        temperature: float = 0.7
+        temperature: float = 0.7,
+        fallback_prompt: str = None,
+        fallback_system: str = None,
+        retrieved_verses: List[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Generate consulting brief using LLM.
@@ -95,6 +104,9 @@ class RAGPipeline:
         Args:
             prompt: Formatted prompt with context
             temperature: Sampling temperature
+            fallback_prompt: Simplified prompt for Ollama fallback
+            fallback_system: Simplified system prompt for fallback
+            retrieved_verses: Retrieved verses for post-processing
 
         Returns:
             Parsed JSON response
@@ -104,12 +116,17 @@ class RAGPipeline:
         """
         logger.info("Generating consulting brief with LLM")
 
-        # Generate JSON response
-        response_text = self.llm_service.generate_json(
+        # Generate JSON response with fallback support
+        result = self.llm_service.generate(
             prompt=prompt,
             system_prompt=SYSTEM_PROMPT,
-            temperature=temperature
+            temperature=temperature,
+            fallback_prompt=fallback_prompt,
+            fallback_system=fallback_system
         )
+
+        response_text = result["response"]
+        provider = result.get("provider", "unknown")
 
         # Parse JSON
         try:
@@ -125,11 +142,26 @@ class RAGPipeline:
 
             result = json.loads(response_text)
             logger.info("Successfully parsed JSON response")
+
+            # Post-process if using Ollama (fallback mode)
+            if provider == "ollama" and retrieved_verses:
+                logger.info("Post-processing Ollama response")
+                result = post_process_ollama_response(response_text, retrieved_verses)
+
             return result
 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse LLM JSON response: {e}")
             logger.error(f"Response text: {response_text[:500]}")
+
+            # If Ollama, try post-processing the raw text
+            if provider == "ollama" and retrieved_verses:
+                logger.warning("Attempting Ollama post-processing on malformed JSON")
+                try:
+                    return post_process_ollama_response(response_text, retrieved_verses)
+                except Exception as pp_error:
+                    logger.error(f"Post-processing also failed: {pp_error}")
+
             raise Exception("LLM returned invalid JSON")
 
     def validate_output(self, output: Dict[str, Any]) -> Dict[str, Any]:
@@ -286,13 +318,20 @@ class RAGPipeline:
         # Step 2: Construct context
         try:
             prompt = self.construct_context(case_data, retrieved_verses)
+            # Also prepare simplified fallback prompt for Ollama
+            fallback_prompt = build_ollama_prompt(case_data, retrieved_verses)
         except Exception as e:
             logger.error(f"Context construction failed: {e}")
             return self._create_fallback_response(case_data, "Failed to construct prompt")
 
         # Step 3: Generate brief with LLM (with fallback)
         try:
-            output = self.generate_brief(prompt)
+            output = self.generate_brief(
+                prompt,
+                fallback_prompt=fallback_prompt,
+                fallback_system=OLLAMA_SYSTEM_PROMPT,
+                retrieved_verses=retrieved_verses
+            )
         except Exception as e:
             logger.error(f"LLM generation failed: {e}")
             return self._create_fallback_response(case_data, "LLM unavailable")
