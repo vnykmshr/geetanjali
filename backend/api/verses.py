@@ -61,11 +61,23 @@ async def search_verses(
 
 
 @router.get("/random", response_model=VerseResponse)
-async def get_random_verse(db: Session = Depends(get_db)):
+async def get_random_verse(
+    featured_only: bool = Query(
+        True,
+        description="If true, only return from curated showcase-worthy verses"
+    ),
+    db: Session = Depends(get_db)
+):
     """
     Get a random verse from the Bhagavad Gita.
 
+    By default, returns only from curated "featured" verses (~180 showcase-worthy
+    verses selected for their universal recognition and applicability).
+
+    Set featured_only=false to get any random verse from all 701.
+
     Args:
+        featured_only: Limit to featured/showcase-worthy verses (default: true)
         db: Database session
 
     Returns:
@@ -74,7 +86,18 @@ async def get_random_verse(db: Session = Depends(get_db)):
     Raises:
         HTTPException: If no verses found
     """
-    verse = db.query(Verse).order_by(func.random()).first()
+    query = db.query(Verse)
+
+    if featured_only:
+        query = query.filter(Verse.is_featured == True)
+
+    verse = query.order_by(func.random()).first()
+
+    if not verse:
+        # Fallback to any verse if no featured verses found
+        if featured_only:
+            logger.warning("No featured verses found, falling back to any verse")
+            verse = db.query(Verse).order_by(func.random()).first()
 
     if not verse:
         raise HTTPException(
@@ -90,8 +113,9 @@ async def get_verse_of_the_day(db: Session = Depends(get_db)):
     """
     Get deterministic verse of the day based on current date.
 
-    Uses day of year to deterministically select the same verse for a given day.
-    This ensures all users see the same "verse of the day".
+    Uses day of year to deterministically select the same verse for a given day
+    from the curated featured verses. This ensures all users see the same
+    "verse of the day" and it's always a showcase-worthy verse.
 
     Args:
         db: Database session
@@ -105,19 +129,29 @@ async def get_verse_of_the_day(db: Session = Depends(get_db)):
     today = date.today()
     day_of_year = today.timetuple().tm_yday
 
-    # Get total verse count
-    total_verses = db.query(func.count(Verse.id)).scalar()
+    # Get featured verses count first, fallback to all if none featured
+    featured_count = db.query(func.count(Verse.id)).filter(
+        Verse.is_featured == True
+    ).scalar()
 
-    if not total_verses or total_verses == 0:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No verses found in database"
-        )
+    if featured_count and featured_count > 0:
+        # Use featured verses only
+        verse_index = day_of_year % featured_count
+        verse = db.query(Verse).filter(
+            Verse.is_featured == True
+        ).offset(verse_index).first()
+    else:
+        # Fallback to all verses if no featured ones
+        total_verses = db.query(func.count(Verse.id)).scalar()
 
-    # Use day of year modulo total verses to get deterministic index
-    verse_index = day_of_year % total_verses
+        if not total_verses or total_verses == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No verses found in database"
+            )
 
-    verse = db.query(Verse).offset(verse_index).first()
+        verse_index = day_of_year % total_verses
+        verse = db.query(Verse).offset(verse_index).first()
 
     if not verse:
         raise HTTPException(

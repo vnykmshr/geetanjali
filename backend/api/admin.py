@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from db.connection import get_db
 from models import Verse
 from services.ingestion.pipeline import IngestionPipeline
+from data.featured_verses import get_featured_verse_ids
 
 logger = logging.getLogger(__name__)
 
@@ -183,3 +184,87 @@ def run_ingestion_task(
     finally:
         db.close()
         _ingestion_running = False
+
+
+class SyncFeaturedResponse(BaseModel):
+    """Response model for featured verses sync."""
+
+    status: str
+    message: str
+    total_featured: int
+    synced: int
+    not_found: int
+
+
+def sync_featured_verses(db: Session) -> dict:
+    """
+    Sync featured verses from static list to database.
+
+    This updates the is_featured column based on the curated list in code.
+    Should be called after ingestion or on startup.
+
+    Args:
+        db: Database session
+
+    Returns:
+        Stats dict with synced/not_found counts
+    """
+    featured_ids = get_featured_verse_ids()
+
+    # Reset all to not featured first
+    db.query(Verse).update({"is_featured": False})
+
+    # Mark featured verses
+    synced = 0
+    not_found = []
+
+    for canonical_id in featured_ids:
+        result = db.query(Verse).filter(
+            Verse.canonical_id == canonical_id
+        ).update({"is_featured": True})
+
+        if result > 0:
+            synced += 1
+        else:
+            not_found.append(canonical_id)
+
+    db.commit()
+
+    if not_found:
+        logger.warning(f"Featured verses not found in DB: {not_found[:10]}{'...' if len(not_found) > 10 else ''}")
+
+    logger.info(f"Synced {synced}/{len(featured_ids)} featured verses")
+
+    return {
+        "total_featured": len(featured_ids),
+        "synced": synced,
+        "not_found": len(not_found),
+        "not_found_ids": not_found
+    }
+
+
+@router.post("/sync-featured", response_model=SyncFeaturedResponse)
+def trigger_sync_featured(db: Session = Depends(get_db)):
+    """
+    Sync featured verses from curated list to database.
+
+    This marks verses as is_featured=True based on the static curated list.
+    Run this after data ingestion to ensure featured flags are set.
+
+    Returns:
+        Sync statistics
+    """
+    try:
+        stats = sync_featured_verses(db)
+
+        return SyncFeaturedResponse(
+            status="success",
+            message=f"Synced {stats['synced']} of {stats['total_featured']} featured verses.",
+            total_featured=stats["total_featured"],
+            synced=stats["synced"],
+            not_found=stats["not_found"]
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to sync featured verses: {e}")
+        raise HTTPException(status_code=500, detail="Failed to sync featured verses")
