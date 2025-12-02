@@ -23,6 +23,10 @@ FROM nginx:alpine
 # Copy built files from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+# Fix permissions for all files
+RUN chmod -R 755 /usr/share/nginx/html && \
+    find /usr/share/nginx/html -type f -exec chmod 644 {} \;
+
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 

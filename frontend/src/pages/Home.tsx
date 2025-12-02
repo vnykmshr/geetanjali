@@ -1,13 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { checkHealth, casesApi, versesApi } from '../lib/api';
-import type { HealthResponse, Case, Verse } from '../types';
+import type { Case, Verse } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import VerseCard from '../components/VerseCard';
 
 export default function Home() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recentCases, setRecentCases] = useState<Case[]>([]);
   const [casesLoading, setCasesLoading] = useState(true);
@@ -18,9 +16,7 @@ export default function Home() {
 
   useEffect(() => {
     checkHealth()
-      .then(setHealth)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => setError(err.message));
 
     // Load recent consultations only if authenticated
     if (isAuthenticated) {

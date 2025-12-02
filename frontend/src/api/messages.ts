@@ -1,3 +1,5 @@
+import { api } from '../lib/api';
+
 // Define types inline to avoid module caching issues
 interface Message {
   id: string;
@@ -12,36 +14,20 @@ interface MessageCreate {
   content: string;
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
 export const messagesApi = {
   /**
    * Get all messages for a case (conversation thread)
    */
   async list(caseId: string): Promise<Message[]> {
-    const response = await fetch(`${API_BASE}/api/v1/cases/${caseId}/messages`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch messages: ${response.statusText}`);
-    }
-    return response.json();
+    const response = await api.get(`/cases/${caseId}/messages`);
+    return response.data;
   },
 
   /**
    * Create a new user message (follow-up question)
    */
   async create(caseId: string, data: MessageCreate): Promise<Message> {
-    const response = await fetch(`${API_BASE}/api/v1/cases/${caseId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to create message: ${response.statusText}`);
-    }
-
-    return response.json();
+    const response = await api.post(`/cases/${caseId}/messages`, data);
+    return response.data;
   },
 };

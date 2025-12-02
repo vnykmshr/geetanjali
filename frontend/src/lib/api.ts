@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { Case, Output, Verse, HealthResponse, ScholarReviewRequest } from '../types';
 import { tokenStorage } from '../api/auth';
+import { getSessionId } from './session';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 const API_V1_PREFIX = import.meta.env.VITE_API_V1_PREFIX || '/api/v1';
@@ -12,13 +13,19 @@ export const api = axios.create({
   },
 });
 
-// Request interceptor to attach access token
+// Request interceptor to attach access token and session ID
 api.interceptors.request.use(
   (config) => {
+    // Attach auth token only if available and non-empty
     const token = tokenStorage.getToken();
-    if (token) {
+    if (token && token.trim().length > 0) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Always attach session ID for anonymous user tracking
+    const sessionId = getSessionId();
+    config.headers['X-Session-ID'] = sessionId;
+
     return config;
   },
   (error) => Promise.reject(error)
