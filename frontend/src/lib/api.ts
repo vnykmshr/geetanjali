@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Case, Output, Verse, HealthResponse, ScholarReviewRequest } from '../types';
+import type { Case, Output, Verse, Translation, HealthResponse, ScholarReviewRequest } from '../types';
 import { tokenStorage } from '../api/auth';
 import { getSessionId } from './session';
 
@@ -97,11 +97,20 @@ export const versesApi = {
     return response.data;
   },
 
-  list: async (skip = 0, limit = 100, chapter?: number): Promise<Verse[]> => {
-    const params: any = { skip, limit };
+  list: async (skip = 0, limit = 100, chapter?: number, featured?: boolean): Promise<Verse[]> => {
+    const params: Record<string, number | boolean> = { skip, limit };
     if (chapter) params.chapter = chapter;
+    if (featured !== undefined) params.featured = featured;
     const response = await api.get(`/verses`, { params });
     return response.data;
+  },
+
+  count: async (chapter?: number, featured?: boolean): Promise<number> => {
+    const params: Record<string, number | boolean> = {};
+    if (chapter) params.chapter = chapter;
+    if (featured !== undefined) params.featured = featured;
+    const response = await api.get(`/verses/count`, { params });
+    return response.data.count;
   },
 
   getDaily: async (): Promise<Verse> => {
@@ -116,6 +125,11 @@ export const versesApi = {
 
   get: async (canonicalId: string): Promise<Verse> => {
     const response = await api.get(`/verses/${canonicalId}`);
+    return response.data;
+  },
+
+  getTranslations: async (canonicalId: string): Promise<Translation[]> => {
+    const response = await api.get(`/verses/${canonicalId}/translations`);
     return response.data;
   },
 };

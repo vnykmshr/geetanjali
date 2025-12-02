@@ -113,3 +113,14 @@ export interface RefreshResponse {
   access_token: string;
   token_type: string;
 }
+
+export interface Translation {
+  id: string;
+  verse_id: string;
+  text: string;
+  language: string;
+  translator?: string;
+  school?: string;
+  source?: string;
+  license?: string;
+}

@@ -10,7 +10,7 @@ function formatVerseRef(verse: Verse): string {
 }
 
 function getVerseLink(verse: Verse): string {
-  return `/verses?highlight=${verse.id}`;
+  return `/verses/${verse.canonical_id}`;
 }
 
 /**

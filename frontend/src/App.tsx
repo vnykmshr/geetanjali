@@ -4,6 +4,7 @@ import NewCase from './pages/NewCase';
 import CaseView from './pages/CaseView';
 import Consultations from './pages/Consultations';
 import Verses from './pages/Verses';
+import VerseDetail from './pages/VerseDetail';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -19,6 +20,7 @@ function App() {
         <Route path="/cases/new" element={<NewCase />} />
         <Route path="/cases/:id" element={<CaseView />} />
         <Route path="/verses" element={<Verses />} />
+        <Route path="/verses/:canonicalId" element={<VerseDetail />} />
 
         {/* Protected routes - require authentication */}
         <Route

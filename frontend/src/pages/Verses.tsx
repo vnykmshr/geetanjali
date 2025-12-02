@@ -1,38 +1,146 @@
-import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { versesApi } from '../lib/api';
 import type { Verse } from '../types';
-import VerseCard from '../components/VerseCard';
+import { Navbar } from '../components/Navbar';
+import { errorMessages } from '../lib/errorMessages';
+
+const VERSES_PER_PAGE = 24;
+
+// Filter modes: 'featured' shows curated verses, 'all' shows all 701 verses
+type FilterMode = 'featured' | 'all' | number; // number = specific chapter
 
 export default function Verses() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [verses, setVerses] = useState<Verse[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
+  const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const observerTarget = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    loadVerses();
-  }, [selectedChapter]);
+  // Parse initial filter from URL
+  const getInitialFilter = (): FilterMode => {
+    const chapter = searchParams.get('chapter');
+    if (chapter) return parseInt(chapter);
+    const showAll = searchParams.get('all');
+    if (showAll === 'true') return 'all';
+    return 'featured'; // Default to featured
+  };
 
-  const loadVerses = async () => {
+  const [filterMode, setFilterMode] = useState<FilterMode>(getInitialFilter);
+
+  // Derived state
+  const selectedChapter = typeof filterMode === 'number' ? filterMode : null;
+  const showFeatured = filterMode === 'featured';
+  const showAll = filterMode === 'all';
+
+  // Memoized load functions
+  const loadCount = useCallback(async () => {
     try {
-      setLoading(true);
+      const chapter = typeof filterMode === 'number' ? filterMode : undefined;
+      const featured = filterMode === 'featured' ? true : undefined;
+      const count = await versesApi.count(chapter, featured);
+      setTotalCount(count);
+    } catch {
+      // Silently fail - count is optional
+      setTotalCount(null);
+    }
+  }, [filterMode]);
+
+  const loadVerses = useCallback(async (reset: boolean = false) => {
+    try {
+      if (reset) {
+        setLoading(true);
+        setVerses([]);
+        setHasMore(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError(null);
-      const data = await versesApi.list(0, 100, selectedChapter || undefined);
-      setVerses(data);
+
+      // Determine API parameters based on filter mode
+      const chapter = typeof filterMode === 'number' ? filterMode : undefined;
+      const featured = filterMode === 'featured' ? true : undefined;
+
+      // For non-reset loads, we need to get current verses length
+      const skip = reset ? 0 : undefined;
+
+      const data = await versesApi.list(skip ?? 0, VERSES_PER_PAGE, chapter, featured);
+
+      if (reset) {
+        setVerses(data);
+      } else {
+        setVerses(prev => {
+          // Use previous length for skip calculation in next request
+          return [...prev, ...data];
+        });
+      }
+
+      setHasMore(data.length === VERSES_PER_PAGE);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load verses');
+      setError(errorMessages.verseLoad(err));
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, [filterMode]);
+
+  // Load initial verses and count when filter changes
+  useEffect(() => {
+    loadVerses(true);
+    loadCount();
+  }, [loadVerses, loadCount]);
+
+  // Intersection Observer for infinite scroll - load more based on current verses count
+  const loadMore = useCallback(() => {
+    setVerses(currentVerses => {
+      // Trigger async load with current count
+      (async () => {
+        try {
+          setLoadingMore(true);
+          setError(null);
+
+          const chapter = typeof filterMode === 'number' ? filterMode : undefined;
+          const featured = filterMode === 'featured' ? true : undefined;
+          const data = await versesApi.list(currentVerses.length, VERSES_PER_PAGE, chapter, featured);
+
+          setVerses(prev => [...prev, ...data]);
+          setHasMore(data.length === VERSES_PER_PAGE);
+        } catch (err) {
+          setError(errorMessages.verseLoad(err));
+        } finally {
+          setLoadingMore(false);
+        }
+      })();
+      return currentVerses; // Return unchanged to avoid state mutation
+    });
+  }, [filterMode]);
+
+  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
+    const target = entries[0];
+    if (target.isIntersecting && hasMore && !loadingMore && !loading) {
+      loadMore();
+    }
+  }, [hasMore, loadingMore, loading, loadMore]);
+
+  useEffect(() => {
+    const option = {
+      root: null,
+      rootMargin: '100px',
+      threshold: 0,
+    };
+    const observer = new IntersectionObserver(handleObserver, option);
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => observer.disconnect();
+  }, [handleObserver]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) {
-      loadVerses();
+      loadVerses(true);
       return;
     }
 
@@ -41,60 +149,51 @@ export default function Verses() {
       setError(null);
       const data = await versesApi.search(searchQuery);
       setVerses(data);
+      setHasMore(false); // Search results don't paginate
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to search verses');
+      setError(errorMessages.search(err));
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredVerses = verses.filter(verse => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      verse.canonical_id.toLowerCase().includes(query) ||
-      verse.paraphrase_en?.toLowerCase().includes(query) ||
-      verse.consulting_principles?.some(p => p.toLowerCase().includes(query))
-    );
-  });
+  const handleFilterSelect = (filter: FilterMode) => {
+    setFilterMode(filter);
+    setSearchQuery('');
+
+    // Update URL params
+    if (typeof filter === 'number') {
+      setSearchParams({ chapter: filter.toString() });
+    } else if (filter === 'all') {
+      setSearchParams({ all: 'true' });
+    } else {
+      setSearchParams({}); // Featured is default, no params needed
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    loadVerses(true);
+  };
+
+  // Format canonical ID for display (BG_2_47 -> 2.47)
+  const formatVerseId = (id: string) => id.replace('BG_', '').replace(/_/g, '.');
+
+  // Get filter description for results
+  const getFilterDescription = () => {
+    if (searchQuery) return '';
+    if (showFeatured) return 'featured ';
+    if (selectedChapter) return `from Chapter ${selectedChapter} `;
+    return '';
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <img src="/logo.svg" alt="Geetanjali" className="h-12 w-12" />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Verse Browser</h1>
-                <p className="text-sm text-gray-600">Explore the wisdom of the Bhagavad Gita</p>
-              </div>
-            </Link>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-orange-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Grid
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-orange-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                List
-              </button>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+      <Navbar />
 
+      {/* Sticky Filter Bar */}
+      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="mb-4">
             <div className="flex gap-2">
@@ -102,23 +201,20 @@ export default function Verses() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search verses, principles, or canonical IDs..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="Search verses by text, principles, or ID..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
               <button
                 type="submit"
-                className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-md transition-colors"
+                className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors"
               >
                 Search
               </button>
               {searchQuery && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setSearchQuery('');
-                    loadVerses();
-                  }}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-md transition-colors"
+                  onClick={clearSearch}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors"
                 >
                   Clear
                 </button>
@@ -126,29 +222,44 @@ export default function Verses() {
             </div>
           </form>
 
-          {/* Chapter Filter */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2">
+          {/* Filter Pills - Wrapping */}
+          <div className="flex flex-wrap gap-2">
+            {/* Featured (default) */}
             <button
-              onClick={() => setSelectedChapter(null)}
-              className={`px-4 py-2 rounded-md font-medium whitespace-nowrap transition-colors ${
-                selectedChapter === null
-                  ? 'bg-red-600 text-white'
+              onClick={() => handleFilterSelect('featured')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                showFeatured
+                  ? 'bg-red-600 text-white shadow-md'
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              All Chapters
+              Featured
             </button>
+            {/* All verses */}
+            <button
+              onClick={() => handleFilterSelect('all')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                showAll
+                  ? 'bg-red-600 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+              }`}
+            >
+              All
+            </button>
+            {/* Divider */}
+            <div className="w-px h-10 bg-gray-300 mx-1" />
+            {/* Chapter pills */}
             {Array.from({ length: 18 }, (_, i) => i + 1).map((chapter) => (
               <button
                 key={chapter}
-                onClick={() => setSelectedChapter(chapter)}
-                className={`px-4 py-2 rounded-md font-medium whitespace-nowrap transition-colors ${
+                onClick={() => handleFilterSelect(chapter)}
+                className={`w-12 h-10 rounded-lg font-medium transition-colors ${
                   selectedChapter === chapter
-                    ? 'bg-red-600 text-white'
+                    ? 'bg-red-600 text-white shadow-md'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
                 }`}
               >
-                Ch {chapter}
+                {chapter}
               </button>
             ))}
           </div>
@@ -156,97 +267,113 @@ export default function Verses() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg">
-            <p className="font-semibold">Error loading verses</p>
-            <p className="text-sm">{error}</p>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="text-gray-500 text-lg">Loading verses...</div>
-          </div>
-        ) : filteredVerses.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-gray-500 text-lg mb-4">No verses found</p>
-            {searchQuery && (
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  loadVerses();
-                }}
-                className="text-orange-600 hover:text-orange-700 font-medium"
-              >
-                Clear search and show all verses
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="mb-4 text-sm text-gray-600">
-              Showing {filteredVerses.length} verse{filteredVerses.length !== 1 ? 's' : ''}
-              {selectedChapter && ` from Chapter ${selectedChapter}`}
+      <div className="flex-1 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Error State */}
+          {error && (
+            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg">
+              <p className="font-semibold">Error loading verses</p>
+              <p className="text-sm">{error}</p>
             </div>
+          )}
 
-            {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredVerses.map((verse) => (
-                  <div key={verse.id}>
-                    <VerseCard verse={verse} showExploreLink={false} />
-                  </div>
-                ))}
+          {/* Loading State */}
+          {loading && verses.length === 0 ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="text-gray-500 text-lg">Loading verses...</div>
+            </div>
+          ) : verses.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-gray-500 text-lg mb-4">No verses found</p>
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="text-orange-600 hover:text-orange-700 font-medium"
+                >
+                  Clear search and show featured verses
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Results Count */}
+              <div className="mb-4 text-sm text-gray-600">
+                Showing {verses.length}{totalCount ? ` of ${totalCount}` : ''} {getFilterDescription()}verse{(totalCount || verses.length) !== 1 ? 's' : ''}
+                {hasMore && ' (scroll for more)'}
               </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredVerses.map((verse) => (
-                  <div key={verse.id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900">
-                          {verse.canonical_id.replace('BG_', '').replace(/_/g, '.')}
-                        </h3>
-                        <p className="text-sm text-orange-600">
-                          Chapter {verse.chapter}, Verse {verse.verse}
-                        </p>
-                      </div>
+
+              {/* Verse Grid - Compact Breathable Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {verses.map((verse) => (
+                  <Link
+                    key={verse.id}
+                    to={`/verses/${verse.canonical_id}`}
+                    className="group bg-white rounded-xl shadow-sm hover:shadow-lg border border-gray-100 hover:border-orange-200 transition-all p-5"
+                  >
+                    {/* Verse ID */}
+                    <div className="flex items-baseline justify-between mb-3">
+                      <span className="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
+                        {formatVerseId(verse.canonical_id)}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        Ch {verse.chapter}
+                      </span>
                     </div>
 
+                    {/* Sanskrit Preview */}
                     {verse.sanskrit_devanagari && (
-                      <div className="mb-4">
-                        <p className="text-xl text-gray-800 font-serif leading-relaxed">
-                          {verse.sanskrit_devanagari}
-                        </p>
-                      </div>
+                      <p className="text-gray-700 font-serif text-lg leading-relaxed mb-3 line-clamp-2">
+                        {verse.sanskrit_devanagari}
+                      </p>
                     )}
 
+                    {/* Paraphrase Preview */}
                     {verse.paraphrase_en && (
-                      <div className="mb-4">
-                        <p className="text-gray-700 leading-relaxed italic">
-                          "{verse.paraphrase_en}"
-                        </p>
-                      </div>
+                      <p className="text-gray-500 text-sm italic line-clamp-2 mb-3">
+                        {verse.paraphrase_en}
+                      </p>
                     )}
 
+                    {/* Principles Preview (max 2) */}
                     {verse.consulting_principles && verse.consulting_principles.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {verse.consulting_principles.map((principle, idx) => (
+                      <div className="flex flex-wrap gap-1">
+                        {verse.consulting_principles.slice(0, 2).map((principle, idx) => (
                           <span
                             key={idx}
-                            className="px-3 py-1 bg-orange-50 text-orange-700 text-xs font-medium rounded-full border border-orange-200"
+                            className="px-2 py-0.5 bg-orange-50 text-orange-700 text-xs rounded-full"
                           >
                             {principle}
                           </span>
                         ))}
+                        {verse.consulting_principles.length > 2 && (
+                          <span className="text-xs text-gray-400">
+                            +{verse.consulting_principles.length - 2}
+                          </span>
+                        )}
                       </div>
                     )}
-                  </div>
+                  </Link>
                 ))}
               </div>
-            )}
-          </>
-        )}
+
+              {/* Infinite Scroll Trigger */}
+              <div ref={observerTarget} className="h-10 mt-6">
+                {loadingMore && (
+                  <div className="flex justify-center items-center py-4">
+                    <div className="text-gray-500">Loading more verses...</div>
+                  </div>
+                )}
+              </div>
+
+              {/* End of Results */}
+              {!hasMore && verses.length > 0 && (
+                <div className="text-center py-8 text-gray-400 text-sm">
+                  End of verses
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
