@@ -302,7 +302,7 @@ export default function Verses() {
                 {hasMore && ' (scroll for more)'}
               </div>
 
-              {/* Verse Grid - Compact Breathable Cards */}
+              {/* Verse Grid - Clean Consistent Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {verses.map((verse) => (
                   <Link
@@ -310,7 +310,7 @@ export default function Verses() {
                     to={`/verses/${verse.canonical_id}`}
                     className="group bg-white rounded-xl shadow-sm hover:shadow-lg border border-gray-100 hover:border-orange-200 transition-all p-5"
                   >
-                    {/* Verse ID */}
+                    {/* Verse ID + Chapter */}
                     <div className="flex items-baseline justify-between mb-3">
                       <span className="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
                         {formatVerseId(verse.canonical_id)}
@@ -320,37 +320,18 @@ export default function Verses() {
                       </span>
                     </div>
 
-                    {/* Sanskrit Preview */}
+                    {/* Sanskrit - First line only */}
                     {verse.sanskrit_devanagari && (
-                      <p className="text-gray-700 font-serif text-lg leading-relaxed mb-3 line-clamp-2">
-                        {verse.sanskrit_devanagari}
+                      <p className="text-gray-700 font-serif text-lg leading-relaxed mb-3 line-clamp-1">
+                        {verse.sanskrit_devanagari.split('\n')[0]}
                       </p>
                     )}
 
-                    {/* Paraphrase Preview */}
+                    {/* Paraphrase - 3 lines for consistent height */}
                     {verse.paraphrase_en && (
-                      <p className="text-gray-500 text-sm italic line-clamp-2 mb-3">
+                      <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
                         {verse.paraphrase_en}
                       </p>
-                    )}
-
-                    {/* Principles Preview (max 2) */}
-                    {verse.consulting_principles && verse.consulting_principles.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {verse.consulting_principles.slice(0, 2).map((principle, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 bg-orange-50 text-orange-700 text-xs rounded-full"
-                          >
-                            {principle}
-                          </span>
-                        ))}
-                        {verse.consulting_principles.length > 2 && (
-                          <span className="text-xs text-gray-400">
-                            +{verse.consulting_principles.length - 2}
-                          </span>
-                        )}
-                      </div>
                     )}
                   </Link>
                 ))}
