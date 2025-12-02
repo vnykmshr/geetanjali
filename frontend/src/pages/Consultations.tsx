@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { casesApi } from '../lib/api';
 import type { Case } from '../types';
+import { Navbar } from '../components/Navbar';
+import { errorMessages } from '../lib/errorMessages';
 
 export default function Consultations() {
   const [cases, setCases] = useState<Case[]>([]);
@@ -11,30 +13,29 @@ export default function Consultations() {
   useEffect(() => {
     casesApi.list(0, 100)
       .then(setCases)
-      .catch((err) => setError(err.response?.data?.detail || err.message || 'Failed to load consultations'))
+      .catch((err) => setError(errorMessages.caseLoad(err)))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading your consultations...</div>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-gray-600">Loading your consultations...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 py-12">
-      <div className="max-w-5xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex justify-center mb-6">
-            <Link to="/" className="hover:opacity-80 transition-opacity">
-              <img src="/logo.svg" alt="Geetanjali" className="h-16 w-16" />
-            </Link>
-          </div>
-          <div className="flex justify-between items-center">
-            <h1 className="text-4xl font-bold text-gray-900">Your Consultations</h1>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+      <Navbar />
+      <div className="flex-1 py-8">
+        <div className="max-w-5xl mx-auto px-4">
+          {/* Header */}
+          <div className="mb-8 flex justify-between items-center">
+            <h1 className="text-3xl font-bold text-gray-900">Your Consultations</h1>
             <Link
               to="/cases/new"
               className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
@@ -42,7 +43,6 @@ export default function Consultations() {
               Ask a Question
             </Link>
           </div>
-        </div>
 
         {/* Error Alert */}
         {error && (
@@ -98,6 +98,7 @@ export default function Consultations() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

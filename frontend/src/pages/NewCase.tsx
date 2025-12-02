@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { casesApi } from '../lib/api';
 import type { Case } from '../types';
+import { Navbar } from '../components/Navbar';
+import { errorMessages } from '../lib/errorMessages';
 
 export default function NewCase() {
   const navigate = useNavigate();
@@ -78,8 +80,8 @@ export default function NewCase() {
       }
 
       navigate(`/cases/${createdCase.id}`);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Failed to submit question');
+    } catch (err) {
+      setError(errorMessages.caseCreate(err));
     } finally {
       setLoading(false);
     }
@@ -96,20 +98,19 @@ export default function NewCase() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 py-12">
-      <div className="max-w-3xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <Link to="/" className="inline-block mb-4 hover:opacity-80 transition-opacity">
-            <img src="/logo.svg" alt="Geetanjali" className="h-16 w-16 mx-auto" />
-          </Link>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Seek Guidance
-          </h1>
-          <p className="text-lg text-gray-600">
-            Describe your situation and receive wisdom from the Bhagavad Gita
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+      <Navbar />
+      <div className="flex-1 py-8">
+        <div className="max-w-3xl mx-auto px-4">
+          {/* Header */}
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Seek Guidance
+            </h1>
+            <p className="text-lg text-gray-600">
+              Describe your situation and receive wisdom from the Bhagavad Gita
+            </p>
+          </div>
 
         {/* Error Alert */}
         {error && (
@@ -261,10 +262,11 @@ export default function NewCase() {
           </div>
         </form>
 
-        {/* Helper Text */}
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Your question will be analyzed using wisdom from the Bhagavad Gita to provide thoughtful guidance.
-        </p>
+          {/* Helper Text */}
+          <p className="text-center text-sm text-gray-500 mt-6">
+            Your question will be analyzed using wisdom from the Bhagavad Gita to provide thoughtful guidance.
+          </p>
+        </div>
       </div>
     </div>
   );

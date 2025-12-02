@@ -5,6 +5,8 @@ import { messagesApi } from '../api/messages';
 import type { Case, Message, Output } from '../types';
 import OptionTable from '../components/OptionTable';
 import { useAuth } from '../contexts/AuthContext';
+import { Navbar } from '../components/Navbar';
+import { errorMessages } from '../lib/errorMessages';
 
 export default function CaseView() {
   const { id } = useParams<{ id: string }>();
@@ -40,8 +42,8 @@ export default function CaseView() {
         if (!isAuthenticated && outputsData.length > 0) {
           setShowSignupPrompt(true);
         }
-      } catch (err: any) {
-        setError(err.response?.data?.detail || err.message || 'Failed to load consultation');
+      } catch (err) {
+        setError(errorMessages.caseLoad(err));
       } finally {
         setLoading(false);
       }
@@ -85,8 +87,8 @@ export default function CaseView() {
 
       // Clear the input
       setFollowUp('');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Failed to send follow-up');
+    } catch (err) {
+      setError(errorMessages.caseAnalyze(err));
     } finally {
       setSubmittingFollowUp(false);
     }
@@ -94,55 +96,55 @@ export default function CaseView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading consultation...</div>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-gray-600">Loading consultation...</div>
+        </div>
       </div>
     );
   }
 
   if (!caseData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">Consultation not found</p>
-          <Link to="/" className="text-red-600 hover:text-red-700">
-            ← Back to Home
-          </Link>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">Consultation not found</p>
+            <Link to="/" className="text-red-600 hover:text-red-700">
+              ← Back to Home
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 py-12">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex justify-center mb-4">
-            <Link to="/" className="hover:opacity-80 transition-opacity">
-              <img src="/logo.svg" alt="Geetanjali" className="h-12 w-12" />
-            </Link>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+      <Navbar />
+      <div className="flex-1 py-8">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex justify-between items-start mb-4">
+              <Link to="/consultations" className="text-red-600 hover:text-red-700">
+                ← All Consultations
+              </Link>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900">{caseData.title}</h1>
+            {caseData.created_at && (
+              <p className="text-gray-500 text-sm mt-2">
+                {new Date(caseData.created_at).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            )}
           </div>
-          <div className="flex justify-between items-start mb-4">
-            <Link to="/" className="text-red-600 hover:text-red-700">
-              ← Back to Home
-            </Link>
-            <Link to="/consultations" className="text-red-600 hover:text-red-700">
-              View All Consultations →
-            </Link>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">{caseData.title}</h1>
-          {caseData.created_at && (
-            <p className="text-gray-500 text-sm mt-2">
-              {new Date(caseData.created_at).toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </p>
-          )}
-        </div>
 
         {/* Error Alert */}
         {error && (
@@ -359,6 +361,7 @@ export default function CaseView() {
               </form>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

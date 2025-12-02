@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Navbar } from '../components/Navbar';
+import { errorMessages } from '../lib/errorMessages';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -43,30 +45,29 @@ export default function Signup() {
     try {
       await signup({ name, email, password });
       navigate('/');
-    } catch (err: any) {
-      setError(err.message || 'Signup failed. Please try again.');
+    } catch (err) {
+      setError(errorMessages.signup(err));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-orange-50 to-white px-4">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <Link to="/" className="inline-block mb-4 hover:opacity-80 transition-opacity">
-            <img src="/logo.svg" alt="Geetanjali" className="h-20 w-20 mx-auto" />
-          </Link>
-          <h1 className="text-4xl font-serif font-bold text-orange-600">
-            Geetanjali
-          </h1>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Create Your Account
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Start your journey with ethical guidance from timeless wisdom
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-orange-50 to-white">
+      <Navbar />
+      <div className="flex-1 flex items-center justify-center px-4 py-8">
+        <div className="max-w-md w-full space-y-6">
+          <div className="text-center">
+            <Link to="/" className="inline-block mb-4 hover:opacity-80 transition-opacity">
+              <img src="/logo.svg" alt="Geetanjali" className="h-16 w-16 mx-auto" />
+            </Link>
+            <h2 className="text-3xl font-bold text-gray-900">
+              Create Your Account
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Start your journey with ethical guidance from timeless wisdom
+            </p>
+          </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
@@ -166,8 +167,9 @@ export default function Signup() {
           </div>
         </form>
 
-        <div className="mt-6 text-center text-xs text-gray-500">
-          <p>Ethical guidance rooted in timeless wisdom</p>
+          <div className="mt-6 text-center text-xs text-gray-500">
+            <p>Ethical guidance rooted in timeless wisdom</p>
+          </div>
         </div>
       </div>
     </div>
