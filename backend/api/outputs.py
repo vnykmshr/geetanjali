@@ -15,7 +15,7 @@ from db.repositories.message_repository import MessageRepository
 from models.output import Output
 from models.user import User
 from api.schemas import OutputResponse
-from api.middleware.auth import get_current_user, get_optional_user, require_role
+from api.middleware.auth import get_current_user, get_optional_user, require_role, get_session_id, user_can_access_resource
 from services.rag import get_rag_pipeline
 from config import settings
 
@@ -33,7 +33,8 @@ async def analyze_case(
     request: Request,
     case_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: Optional[User] = Depends(get_optional_user),
+    session_id: Optional[str] = Depends(get_session_id)
 ):
     """
     Analyze a case using the RAG pipeline (supports anonymous users).
@@ -48,6 +49,7 @@ async def analyze_case(
         case_id: Case ID to analyze
         db: Database session
         current_user: Authenticated user (optional)
+        session_id: Session ID from X-Session-ID header (for anonymous users)
 
     Returns:
         Generated output with consulting brief
@@ -55,7 +57,7 @@ async def analyze_case(
     Raises:
         HTTPException: If case not found or user doesn't have access, or RAG pipeline fails
     """
-    logger.info(f"Analyzing case: {case_id} (anonymous={current_user is None})")
+    logger.info(f"Analyzing case: {case_id} (anonymous={current_user is None}, session_id={session_id})")
 
     # Get case and verify ownership
     case_repo = CaseRepository(db)
@@ -67,13 +69,17 @@ async def analyze_case(
             detail=f"Case {case_id} not found"
         )
 
-    # Verify ownership if case belongs to a user
-    if case.user_id is not None:
-        if current_user is None or case.user_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have access to this case"
-            )
+    # Check access using session-based or user-based auth
+    if not user_can_access_resource(
+        resource_user_id=case.user_id,
+        resource_session_id=case.session_id,
+        current_user=current_user,
+        session_id=session_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this case"
+        )
 
     try:
         # Prepare case data for RAG pipeline

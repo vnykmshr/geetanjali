@@ -14,6 +14,7 @@ class Case(Base, TimestampMixin):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    session_id = Column(String(255), index=True)  # For anonymous users
     title = Column(String(500), nullable=False)
     description = Column(Text, nullable=False)
     role = Column(String(100))

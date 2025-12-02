@@ -9,7 +9,7 @@ from db import get_db
 from db.repositories.case_repository import CaseRepository
 from db.repositories.message_repository import MessageRepository
 from api.schemas import CaseCreate, CaseResponse
-from api.middleware.auth import get_current_user, get_optional_user
+from api.middleware.auth import get_current_user, get_optional_user, get_session_id, user_can_access_resource
 from models.case import Case
 from models.user import User
 from typing import Optional
@@ -24,7 +24,8 @@ router = APIRouter(prefix="/api/v1/cases")
 async def create_case(
     case_data: CaseCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: Optional[User] = Depends(get_optional_user),
+    session_id: Optional[str] = Depends(get_session_id)
 ):
     """
     Create a new ethical dilemma case (supports anonymous users).
@@ -33,15 +34,20 @@ async def create_case(
         case_data: Case details
         db: Database session
         current_user: User object if authenticated, None if anonymous
+        session_id: Session ID from X-Session-ID header (for anonymous users)
 
     Returns:
         Created case
     """
-    logger.info(f"Creating case: {case_data.title} (anonymous={current_user is None})")
+    logger.info(f"Creating case: {case_data.title} (anonymous={current_user is None}, session_id={session_id})")
 
     case_dict = case_data.model_dump()
     case_dict["id"] = str(uuid.uuid4())
     case_dict["user_id"] = current_user.id if current_user else None
+
+    # Use session_id from header if provided, otherwise use from request body
+    if not case_dict.get("session_id") and session_id:
+        case_dict["session_id"] = session_id
 
     repo = CaseRepository(db)
     case = repo.create(case_dict)
@@ -61,7 +67,8 @@ async def create_case(
 async def get_case(
     case_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: Optional[User] = Depends(get_optional_user),
+    session_id: Optional[str] = Depends(get_session_id)
 ):
     """
     Get a case by ID (supports anonymous and authenticated users).
@@ -70,6 +77,7 @@ async def get_case(
         case_id: Case ID
         db: Database session
         current_user: Authenticated user (optional)
+        session_id: Session ID from X-Session-ID header (for anonymous users)
 
     Returns:
         Case details
@@ -86,13 +94,17 @@ async def get_case(
             detail=f"Case {case_id} not found"
         )
 
-    # Verify ownership if case belongs to a user
-    if case.user_id is not None:
-        if current_user is None or case.user_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have access to this case"
-            )
+    # Check access using session-based or user-based auth
+    if not user_can_access_resource(
+        resource_user_id=case.user_id,
+        resource_session_id=case.session_id,
+        current_user=current_user,
+        session_id=session_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this case"
+        )
 
     return case
 

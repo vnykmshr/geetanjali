@@ -15,11 +15,16 @@ def init_db():
     Base.metadata.create_all(bind=engine)
     print("✓ Database tables created successfully!")
 
-    # Verify tables were created
+    # Verify tables were created (PostgreSQL-compatible)
     with engine.connect() as conn:
-        result = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+        result = conn.execute(text(
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+        ))
         tables = [row[0] for row in result]
-        print(f"✓ Tables created: {', '.join(tables)}")
+        if tables:
+            print(f"✓ Tables created: {', '.join(tables)}")
+        else:
+            print("✓ Database tables initialized (using create_all)")
 
 if __name__ == "__main__":
     init_db()

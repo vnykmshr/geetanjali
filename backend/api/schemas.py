@@ -91,6 +91,7 @@ class CaseBase(BaseModel):
     sensitivity: str = Field("low", description="Sensitivity level: low/medium/high")
     attachments: Optional[Dict[str, Any]] = Field(None, description="Optional supporting docs")
     locale: str = Field("en", description="Language/locale preference")
+    session_id: Optional[str] = Field(None, description="Session ID for anonymous users")
 
 
 class CaseCreate(CaseBase):
@@ -103,7 +104,8 @@ class CaseResponse(CaseBase):
     """Schema for case response."""
 
     id: str
-    user_id: str
+    user_id: Optional[str]
+    session_id: Optional[str]
     created_at: datetime
     updated_at: datetime
 

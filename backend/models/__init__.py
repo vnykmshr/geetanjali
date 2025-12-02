@@ -2,6 +2,7 @@
 
 from models.base import Base
 from models.user import User
+from models.refresh_token import RefreshToken
 from models.case import Case
 from models.output import Output
 from models.message import Message, MessageRole
@@ -10,6 +11,7 @@ from models.verse import Verse, Commentary, Translation
 __all__ = [
     "Base",
     "User",
+    "RefreshToken",
     "Case",
     "Output",
     "Message",
