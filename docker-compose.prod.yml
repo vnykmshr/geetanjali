@@ -1,33 +1,18 @@
-version: '3.8'
-
 # Production Docker Compose Configuration
-# Usage: docker-compose -f docker-compose.prod.yml up -d
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# This file overrides development settings for production deployment.
+# Ensure you have set all required environment variables in .env
 
 services:
-  # Backend API
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: geetanjali-backend-prod
-    ports:
-      - "8000:8000"
     environment:
-      - APP_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - CHROMA_PERSIST_DIRECTORY=/app/chroma_data
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - LOG_LEVEL=WARNING
-      - API_KEY=${API_KEY}
-    volumes:
-      - chroma-data:/app/chroma_data
-    depends_on:
-      postgres:
-        condition: service_healthy
-      ollama:
-        condition: service_started
-    networks:
-      - geetanjali-network
+      APP_ENV: production
+      DEBUG: "false"
+      LOG_LEVEL: WARNING
+      USE_MOCK_LLM: "false"
+      COOKIE_SECURE: "true"
+    volumes: []  # Remove code volume mount in production
     restart: always
     deploy:
       resources:
@@ -35,62 +20,11 @@ services:
           cpus: '2'
           memory: 2G
 
-  # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
-    container_name: geetanjali-postgres-prod
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - geetanjali-network
     restart: always
 
-  # Ollama LLM Service
-  ollama:
-    image: ollama/ollama:latest
-    container_name: geetanjali-ollama-prod
-    volumes:
-      - ollama-data:/root/.ollama
-    networks:
-      - geetanjali-network
+  chromadb:
     restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: '4'
-          memory: 8G
 
-  # Frontend (production build)
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: geetanjali-frontend-prod
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - geetanjali-network
     restart: always
-
-volumes:
-  postgres-data:
-    driver: local
-  chroma-data:
-    driver: local
-  ollama-data:
-    driver: local
-
-networks:
-  geetanjali-network:
-    driver: bridge
