@@ -54,18 +54,22 @@ def test_get_case_not_found(client):
 
 
 def test_list_cases(client):
-    """Test listing cases for a user."""
-    # Create a couple of cases
+    """Test listing cases for a session user."""
+    import uuid
+    session_id = str(uuid.uuid4())
+    headers = {"X-Session-ID": session_id}
+
+    # Create a couple of cases with session
     for i in range(2):
         case_data = {
             "title": f"Test Case {i}",
             "description": f"Description {i}",
             "sensitivity": "low"
         }
-        client.post("/api/v1/cases", json=case_data)
+        client.post("/api/v1/cases", json=case_data, headers=headers)
 
-    # List all cases
-    response = client.get("/api/v1/cases")
+    # List cases for session
+    response = client.get("/api/v1/cases", headers=headers)
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
