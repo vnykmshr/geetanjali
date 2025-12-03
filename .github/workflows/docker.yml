@@ -1,0 +1,40 @@
+name: Docker Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/Dockerfile'
+      - 'backend/requirements*.txt'
+      - 'frontend/Dockerfile'
+      - 'frontend/package*.json'
+      - 'docker-compose*.yml'
+
+jobs:
+  build:
+    name: Build Images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          tags: geetanjali-backend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          tags: geetanjali-frontend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
