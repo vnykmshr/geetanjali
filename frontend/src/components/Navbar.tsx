@@ -63,6 +63,17 @@ export function Navbar({ showBack, backTo = '/', backLabel = 'Back' }: NavbarPro
 
           {/* Right side: Navigation links */}
           <div className="flex items-center space-x-1 sm:space-x-4">
+            {/* Primary nav: Consultations first, then Verses */}
+            <Link
+              to="/consultations"
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/consultations') || location.pathname.startsWith('/cases/')
+                  ? 'text-orange-600 bg-orange-50'
+                  : 'text-gray-700 hover:text-orange-600 hover:bg-gray-50'
+              }`}
+            >
+              Consultations
+            </Link>
             <Link
               to="/verses"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -71,31 +82,20 @@ export function Navbar({ showBack, backTo = '/', backLabel = 'Back' }: NavbarPro
                   : 'text-gray-700 hover:text-orange-600 hover:bg-gray-50'
               }`}
             >
-              Browse Verses
+              Verses
             </Link>
 
+            {/* Auth section */}
             {isAuthenticated ? (
-              <>
-                <Link
-                  to="/consultations"
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive('/consultations')
-                      ? 'text-orange-600 bg-orange-50'
-                      : 'text-gray-700 hover:text-orange-600 hover:bg-gray-50'
-                  }`}
+              <div className="hidden sm:flex items-center space-x-2 ml-2 pl-4 border-l border-gray-200">
+                <span className="text-sm text-gray-600">{user?.name}</span>
+                <button
+                  onClick={handleLogout}
+                  className="text-sm text-gray-500 hover:text-orange-600 transition-colors"
                 >
-                  My Consultations
-                </Link>
-                <div className="hidden sm:flex items-center space-x-2 ml-2 pl-4 border-l border-gray-200">
-                  <span className="text-sm text-gray-600">{user?.name}</span>
-                  <button
-                    onClick={handleLogout}
-                    className="text-sm text-gray-500 hover:text-orange-600 transition-colors"
-                  >
-                    Logout
-                  </button>
-                </div>
-              </>
+                  Logout
+                </button>
+              </div>
             ) : (
               <>
                 <Link

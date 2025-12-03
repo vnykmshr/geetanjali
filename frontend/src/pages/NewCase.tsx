@@ -14,14 +14,42 @@ export default function NewCase() {
   const [formData, setFormData] = useState({
     question: '',
     context: '',
-    title: '', // Optional - auto-generated if empty
     // Optional advanced fields with sensible defaults
-    role: '',
-    stakeholders: '',
-    constraints: '',
+    role: 'individual' as string,
     horizon: 'medium' as 'short' | 'medium' | 'long',
-    sensitivity: 'medium' as 'low' | 'medium' | 'high',
   });
+
+  // Stakeholder checkboxes state
+  const [selectedStakeholders, setSelectedStakeholders] = useState<Set<string>>(new Set(['self']));
+
+  const ROLE_OPTIONS = [
+    { value: 'individual', label: 'Individual' },
+    { value: 'parent', label: 'Parent' },
+    { value: 'manager', label: 'Manager / Leader' },
+    { value: 'employee', label: 'Employee' },
+    { value: 'student', label: 'Student' },
+    { value: 'entrepreneur', label: 'Entrepreneur' },
+  ];
+
+  const STAKEHOLDER_OPTIONS = [
+    { value: 'self', label: 'Self' },
+    { value: 'family', label: 'Family' },
+    { value: 'team', label: 'Team' },
+    { value: 'organization', label: 'Organization' },
+    { value: 'community', label: 'Community' },
+  ];
+
+  const toggleStakeholder = (value: string) => {
+    setSelectedStakeholders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(value)) {
+        newSet.delete(value);
+      } else {
+        newSet.add(value);
+      }
+      return newSet;
+    });
+  };
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -55,7 +83,8 @@ export default function NewCase() {
         description += '\n\n' + formData.context.trim();
       }
 
-      // Generate simple title if not provided (first sentence or 100 chars)
+      // Generate simple title from question (first sentence or 100 chars)
+      // LLM will generate a better title and update it after analysis
       const generateSimpleTitle = (text: string): string => {
         const firstSentence = text.split(/[.!?]/)[0].trim();
         if (firstSentence.length > 0 && firstSentence.length <= 100) {
@@ -65,18 +94,14 @@ export default function NewCase() {
       };
 
       // Create case with smart defaults
+      const roleLabel = ROLE_OPTIONS.find(r => r.value === formData.role)?.label || 'Individual';
       const caseData: Omit<Case, 'id' | 'created_at'> = {
-        title: formData.title.trim() || generateSimpleTitle(formData.question), // User title or auto-generate
+        title: generateSimpleTitle(formData.question), // Auto-generate, LLM will improve
         description: description,
-        role: formData.role.trim() || 'Individual', // Default to Individual
-        stakeholders: formData.stakeholders
-          ? formData.stakeholders.split(',').map(s => s.trim()).filter(Boolean)
-          : ['self'], // Default stakeholder
-        constraints: formData.constraints
-          ? formData.constraints.split(',').map(c => c.trim()).filter(Boolean)
-          : [], // No constraints by default
+        role: roleLabel,
+        stakeholders: Array.from(selectedStakeholders),
+        constraints: [], // Removed - users can mention in context
         horizon: formData.horizon,
-        sensitivity: formData.sensitivity,
       };
 
       const createdCase = await casesApi.create(caseData);
@@ -152,43 +177,17 @@ export default function NewCase() {
             {errors.question && <p className="mt-2 text-sm text-red-600">{errors.question}</p>}
           </div>
 
-          {/* Optional Context */}
+          {/* Optional Context - Compact inline */}
           <div>
-            <label htmlFor="context" className="block text-base font-medium text-gray-700 mb-2">
-              Additional context <span className="text-gray-400">(optional)</span>
-            </label>
             <textarea
               id="context"
               name="context"
               value={formData.context}
               onChange={handleChange}
-              rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              placeholder="Add any relevant background, constraints, or considerations..."
+              rows={2}
+              className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50"
+              placeholder="Any additional context? (optional) — background, constraints, considerations..."
             />
-            <p className="mt-1 text-sm text-gray-500">
-              Share any details that might help provide better guidance
-            </p>
-          </div>
-
-          {/* Optional Title */}
-          <div>
-            <label htmlFor="title" className="block text-base font-medium text-gray-700 mb-2">
-              Title for this consultation <span className="text-gray-400">(optional)</span>
-            </label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              maxLength={100}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              placeholder="e.g., Career vs Family Decision"
-            />
-            <p className="mt-1 text-sm text-gray-500">
-              A short title to identify this consultation. Auto-generated if left empty.
-            </p>
           </div>
 
           {/* Advanced Options Toggle */}
@@ -204,22 +203,24 @@ export default function NewCase() {
 
           {/* Advanced Options */}
           {showAdvanced && (
-            <div className="space-y-4 pb-4 border-b">
+            <div className="space-y-4 pb-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Role */}
                 <div>
                   <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                    Your role <span className="text-gray-400">(optional)</span>
+                    Your role
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="role"
                     name="role"
                     value={formData.role}
                     onChange={handleChange}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    placeholder="e.g., Manager, Parent, Student"
-                  />
+                  >
+                    {ROLE_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Time Horizon */}
@@ -234,43 +235,35 @@ export default function NewCase() {
                     onChange={handleChange}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   >
-                    <option value="short">Immediate (days-months)</option>
-                    <option value="medium">Near term (months-year)</option>
-                    <option value="long">Long term (years)</option>
+                    <option value="short">Short term</option>
+                    <option value="medium">Medium term</option>
+                    <option value="long">Long term</option>
                   </select>
                 </div>
               </div>
 
-              {/* Stakeholders */}
+              {/* Stakeholders - Checkboxes */}
               <div>
-                <label htmlFor="stakeholders" className="block text-sm font-medium text-gray-700 mb-1">
-                  Who is affected? <span className="text-gray-400">(optional)</span>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Who's affected?
                 </label>
-                <input
-                  type="text"
-                  id="stakeholders"
-                  name="stakeholders"
-                  value={formData.stakeholders}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="e.g., family, team, colleagues"
-                />
-              </div>
-
-              {/* Constraints */}
-              <div>
-                <label htmlFor="constraints" className="block text-sm font-medium text-gray-700 mb-1">
-                  Any constraints? <span className="text-gray-400">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  id="constraints"
-                  name="constraints"
-                  value={formData.constraints}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="e.g., budget, time, health"
-                />
+                <div className="flex flex-wrap gap-2">
+                  {STAKEHOLDER_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => toggleStakeholder(opt.value)}
+                      className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                        selectedStakeholders.has(opt.value)
+                          ? 'bg-red-100 border-red-300 text-red-700'
+                          : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {selectedStakeholders.has(opt.value) && <span className="mr-1">✓</span>}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}

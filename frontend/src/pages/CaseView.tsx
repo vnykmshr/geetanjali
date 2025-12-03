@@ -196,42 +196,22 @@ export default function CaseView() {
           </div>
         )}
 
-        {/* Signup Prompt for Anonymous Users */}
+        {/* Subtle signup reminder for anonymous users */}
         {showSignupPrompt && !isAuthenticated && (
-          <div className="mb-8 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-xl p-6 shadow-lg">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 text-3xl">
-                💡
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">
-                  Save This Consultation
-                </h3>
-                <p className="text-gray-700 mb-4">
-                  Create a free account to save this consultation and access it anytime. You'll also be able to view your consultation history and continue conversations later.
-                </p>
-                <div className="flex gap-3">
-                  <Link
-                    to="/signup"
-                    className="inline-block bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
-                  >
-                    Create Account
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="inline-block bg-white hover:bg-gray-50 text-gray-700 font-semibold px-6 py-2 rounded-lg border border-gray-300 transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <button
-                    onClick={() => setShowSignupPrompt(false)}
-                    className="text-gray-500 hover:text-gray-700 text-sm underline"
-                  >
-                    Maybe later
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div className="mb-6 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
+            <p className="text-sm text-gray-600">
+              <Link to="/signup" className="text-orange-600 hover:text-orange-700 font-medium">Sign up</Link>
+              {' '}to save this consultation permanently.
+            </p>
+            <button
+              onClick={() => setShowSignupPrompt(false)}
+              className="text-gray-400 hover:text-gray-600 ml-4"
+              aria-label="Dismiss"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         )}
 
