@@ -11,7 +11,7 @@ Local development environment setup for Geetanjali.
 
 ```bash
 # Clone and start
-git clone https://github.com/vnykmshr/geetanjali.git
+git clone https://github.com/geetanjaliapp/geetanjali.git
 cd geetanjali
 docker compose up -d
 

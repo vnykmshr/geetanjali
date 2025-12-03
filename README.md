@@ -40,7 +40,7 @@ The system uses retrieval-augmented generation (RAG) to ground responses in actu
 Requirements: Docker and Docker Compose
 
 ```bash
-git clone https://github.com/vnykmshr/geetanjali.git
+git clone https://github.com/geetanjaliapp/geetanjali.git
 cd geetanjali
 
 # Start all services

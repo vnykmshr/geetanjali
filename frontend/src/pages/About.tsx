@@ -156,7 +156,7 @@ export default function About() {
               Geetanjali is open source. Explore the code, suggest improvements, or contribute to the project.
             </p>
             <a
-              href="https://github.com/vnykmshr/geetanjali"
+              href="https://github.com/geetanjaliapp/geetanjali"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium"
@@ -315,7 +315,7 @@ export default function About() {
           <p>
             Verse translations sourced from public domain texts.
             See our{' '}
-            <a href="https://github.com/vnykmshr/geetanjali" className="text-orange-600 hover:text-orange-700">
+            <a href="https://github.com/geetanjaliapp/geetanjali" className="text-orange-600 hover:text-orange-700">
               GitHub repository
             </a>{' '}
             for full attribution.
