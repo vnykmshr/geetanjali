@@ -47,9 +47,9 @@ export default function ProvenancePanel({ sources, confidence }: ProvenancePanel
         {sources.length === 0 && (
           <p className="text-gray-500 text-sm">No verses referenced</p>
         )}
-        {sources.map((source, index) => (
+        {sources.map((source) => (
           <div
-            key={index}
+            key={source.canonical_id}
             className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 rounded-r"
           >
             <div className="font-mono text-sm font-semibold text-red-700">

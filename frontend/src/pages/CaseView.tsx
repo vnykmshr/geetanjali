@@ -74,8 +74,8 @@ export default function CaseView() {
           clearInterval(pollInterval);
           loadCaseData();
         }
-      } catch (err) {
-        console.error('Polling error:', err);
+      } catch {
+        // Silent fail - polling will retry
       }
     }, 3000); // Poll every 3 seconds
 
@@ -340,8 +340,8 @@ export default function CaseView() {
                             <div>
                               <h3 className="font-semibold text-gray-900 mb-3">Referenced Verses:</h3>
                               <div className="space-y-3">
-                                {output.result_json.sources.map((source, i) => (
-                                  <div key={i} className="text-sm">
+                                {output.result_json.sources.map((source) => (
+                                  <div key={source.canonical_id} className="text-sm">
                                     <span className="font-mono text-red-600 font-medium">{source.canonical_id}</span>
                                     <p className="text-gray-600 mt-1 italic">{source.paraphrase}</p>
                                     {source.school && <span className="text-gray-500 text-xs">({source.school})</span>}

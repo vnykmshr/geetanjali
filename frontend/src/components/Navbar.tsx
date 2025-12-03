@@ -23,8 +23,8 @@ export function Navbar({ showBack, backTo = '/', backLabel = 'Back' }: NavbarPro
     try {
       setIsDropdownOpen(false);
       await logout();
-    } catch (err) {
-      console.error('Logout failed:', err);
+    } catch {
+      // Silent fail - logout UI state already cleared
     }
   };
 

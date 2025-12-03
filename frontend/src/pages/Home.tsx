@@ -30,7 +30,7 @@ export default function Home() {
       .then((data) => {
         if (!cancelled) setRecentCases(data);
       })
-      .catch((err) => console.error('Failed to load recent cases:', err))
+      .catch(() => { /* Silent fail - cases section just won't show */ })
       .finally(() => {
         if (!cancelled) setCasesLoading(false);
       });
@@ -45,7 +45,7 @@ export default function Home() {
       .then((data) => {
         if (!cancelled) setDailyVerse(data);
       })
-      .catch((err) => console.error('Failed to load verse:', err))
+      .catch(() => { /* Silent fail - verse section just won't show */ })
       .finally(() => {
         if (!cancelled) setVerseLoading(false);
       });

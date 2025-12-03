@@ -109,9 +109,8 @@ export default function NewCase() {
       // Trigger async analysis (returns immediately)
       try {
         await casesApi.analyzeAsync(createdCase.id);
-      } catch (analyzeErr) {
-        // Log but don't fail - user can manually analyze later
-        console.warn('Auto-analyze failed:', analyzeErr);
+      } catch {
+        // Silent fail - user can manually analyze later
       }
 
       // Navigate to case view with waiting state

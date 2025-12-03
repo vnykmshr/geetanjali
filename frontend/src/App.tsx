@@ -7,6 +7,7 @@ import Verses from './pages/Verses';
 import VerseDetail from './pages/VerseDetail';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
@@ -21,6 +22,9 @@ function App() {
         <Route path="/consultations" element={<Consultations />} />
         <Route path="/verses" element={<Verses />} />
         <Route path="/verses/:canonicalId" element={<VerseDetail />} />
+
+        {/* 404 fallback */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
