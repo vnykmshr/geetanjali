@@ -2,7 +2,7 @@
 
 All notable changes to Geetanjali are documented here.
 
-## [0.1.0] - 2024-12-03
+## [0.1.0] - 2025-12-03
 
 ### Added
 - Core ethical decision support workflow
@@ -26,4 +26,4 @@ All notable changes to Geetanjali are documented here.
 
 ### Documentation
 - Setup guide for local development
-- Architecture Decision Records (ADR)
+- Architecture and data source documentation

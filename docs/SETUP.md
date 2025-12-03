@@ -1,245 +1,121 @@
-# Geetanjali - Local Development Setup
+# Development Setup
 
-Step-by-step guide to set up Geetanjali development environment.
+Local development environment setup for Geetanjali.
 
 ## Prerequisites
 
-- **Python 3.10+** - Backend runtime
-- **Node.js 18+** - Frontend runtime
-- **Ollama** - Local LLM inference
-- **Git** - Version control
+- Docker and Docker Compose (recommended)
+- Or: Python 3.10+, Node.js 18+, PostgreSQL, Redis
 
-## Initial Setup
-
-### 1. Clone Repository
+## Docker Setup (Recommended)
 
 ```bash
-git clone <repository-url>
+# Clone and start
+git clone https://github.com/vnykmshr/geetanjali.git
 cd geetanjali
+docker compose up -d
+
+# Verify services
+docker compose ps
 ```
 
-### 2. Environment Configuration
+Services start at:
+- Frontend: http://localhost
+- Backend: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
-```bash
-# Copy environment template
-cp .env.example .env
+First run automatically:
+- Creates database tables
+- Runs migrations
+- Ingests Geeta verse data (701 verses)
 
-# Edit .env with your local settings (optional for defaults)
-```
+## Local Setup (Without Docker)
 
-## Backend Setup
-
-### 1. Create Virtual Environment
+### Backend
 
 ```bash
 cd backend
-python3 -m venv venv
-```
-
-### 2. Activate Virtual Environment
-
-```bash
-# macOS/Linux
-source venv/bin/activate
-
-# Windows
-venv\Scripts\activate
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install --upgrade pip
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-```
 
-### 4. Initialize Database
+# Set environment
+export DATABASE_URL=postgresql://user:pass@localhost:5432/geetanjali
+export REDIS_URL=redis://localhost:6379/0
 
-```bash
-# Run database migrations
+# Run migrations
 alembic upgrade head
 
-# (Or run initialization script when available)
-python scripts/init_db.py
+# Start server
+uvicorn main:app --reload --port 8000
 ```
 
-### 5. Verify Installation
-
-```bash
-# Run tests
-pytest
-
-# Check code quality
-black --check .
-flake8 .
-mypy .
-```
-
-## Ollama Setup
-
-### 1. Install Ollama
-
-Visit https://ollama.ai and download for your platform, or:
-
-```bash
-# macOS
-brew install ollama
-
-# Linux
-curl -fsSL https://ollama.com/install.sh | sh
-```
-
-### 2. Start Ollama Service
-
-```bash
-ollama serve
-```
-
-### 3. Pull Llama 3.1 Model
-
-```bash
-ollama pull llama3.1:8b
-```
-
-### 4. Verify Ollama
-
-```bash
-# Test API
-curl http://localhost:11434/api/tags
-
-# Should return list of installed models
-```
-
-## Frontend Setup
-
-### 1. Install Dependencies
+### Frontend
 
 ```bash
 cd frontend
 npm install
-```
-
-### 2. Configure Environment
-
-```bash
-# Copy frontend environment file
-cp .env.example .env.local
-
-# Ensure VITE_API_URL points to backend (default: http://localhost:8000)
-```
-
-### 3. Start Development Server
-
-```bash
 npm run dev
 ```
 
-Frontend will be available at: http://localhost:5173
+### Dependencies
 
-## Running the Application
-
-### Terminal 1: Backend
+Start PostgreSQL and Redis locally, or use Docker:
 
 ```bash
-cd backend
-source venv/bin/activate
-uvicorn main:app --reload --port 8000
+docker compose up -d postgres redis chromadb
 ```
 
-Backend API: http://localhost:8000
-API Docs: http://localhost:8000/docs
+## Environment Variables
 
-### Terminal 2: Frontend
+Create `.env` in project root:
 
 ```bash
-cd frontend
-npm run dev
+# Database
+DATABASE_URL=postgresql://geetanjali:geetanjali@localhost:5432/geetanjali
+
+# Redis
+REDIS_URL=redis://localhost:6379/0
+
+# LLM (choose one)
+OLLAMA_BASE_URL=http://localhost:11434
+ANTHROPIC_API_KEY=your-key
+
+# Security (required for production)
+JWT_SECRET=change-in-production
+API_KEY=change-in-production
 ```
 
-Frontend: http://localhost:5173
-
-### Terminal 3: Ollama (if not running as service)
+## Common Commands
 
 ```bash
-ollama serve
+# Docker
+docker compose up -d          # Start all
+docker compose down           # Stop all
+docker compose logs -f        # View logs
+docker compose ps             # Status
+
+# Backend (from backend/)
+pytest                        # Run tests
+pytest --cov=.               # With coverage
+alembic upgrade head          # Run migrations
+alembic revision -m "desc"    # New migration
+
+# Frontend (from frontend/)
+npm run dev                   # Dev server
+npm run build                 # Production build
+npm test                      # Run tests
 ```
-
-## Verification Checklist
-
-- [ ] Python 3.10+ installed (`python3 --version`)
-- [ ] Virtual environment activated (prompt shows `(venv)`)
-- [ ] All Python dependencies installed (`pip list`)
-- [ ] Database initialized (check for `geetanjali.db`)
-- [ ] Ollama running (`curl http://localhost:11434/api/tags`)
-- [ ] Llama 3.1 model available (`ollama list`)
-- [ ] Backend tests passing (`pytest`)
-- [ ] Backend running at http://localhost:8000
-- [ ] Frontend dependencies installed
-- [ ] Frontend running at http://localhost:5173
 
 ## Troubleshooting
 
-### Virtual Environment Issues
+**Port conflicts**: Change ports in `docker-compose.yml` or stop conflicting services.
 
+**Database connection**: Ensure PostgreSQL is running and `DATABASE_URL` is correct.
+
+**Missing verses**: Run data ingestion:
 ```bash
-# Deactivate and recreate
-deactivate
-rm -rf venv
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+docker compose exec backend python -c "from services.ingestion import ingest_all; ingest_all()"
 ```
 
-### Ollama Connection Issues
-
-```bash
-# Check if Ollama is running
-ps aux | grep ollama
-
-# Check port
-lsof -i :11434
-
-# Restart Ollama
-pkill ollama
-ollama serve
-```
-
-### Database Issues
-
-```bash
-# Reset database (development only!)
-rm geetanjali.db
-alembic upgrade head
-```
-
-### Port Already in Use
-
-```bash
-# Find process using port 8000
-lsof -i :8000
-
-# Kill process
-kill -9 <PID>
-```
-
-## Next Steps
-
-- Read [Project Guidelines](../todos/project-guidelines.md)
-- Review [Architecture Decisions](ADR/)
-- Check [API Documentation](API.md)
-- See [Data Documentation](DATA.md)
-
-## Development Workflow
-
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Make changes with frequent commits
-3. Run pre-commit checks: `./scripts/pre-commit-check.sh`
-4. Run tests: `pytest`
-5. Commit with conventional format: `git commit -m "feat: description"`
-6. Push and create PR
-
-## Additional Tools (Optional)
-
-- **httpie** - API testing: `pip install httpie`
-- **pgAdmin** - PostgreSQL GUI (if using Postgres)
-- **Postman** - API testing and documentation
+**ChromaDB errors**: Check NumPy version compatibility (<2.0 required).
