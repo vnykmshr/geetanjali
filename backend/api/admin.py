@@ -2,7 +2,7 @@
 
 import logging
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -10,10 +10,26 @@ from db.connection import get_db
 from models import Verse
 from services.ingestion.pipeline import IngestionPipeline
 from data.featured_verses import get_featured_verse_ids
+from config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/admin")
+
+
+def verify_admin_api_key(x_api_key: str = Header(..., alias="X-API-Key")):
+    """
+    Verify admin API key for protected endpoints.
+
+    This is a simple guard until proper admin user roles are implemented.
+    Requires X-API-Key header matching the configured API_KEY.
+    """
+    if x_api_key != settings.API_KEY:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or missing API key"
+        )
+    return True
 
 
 class IngestionRequest(BaseModel):
@@ -74,7 +90,8 @@ def get_status(db: Session = Depends(get_db)):
 def trigger_ingestion(
     request: IngestionRequest,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_api_key)
 ):
     """
     Trigger data ingestion manually.
@@ -244,7 +261,10 @@ def sync_featured_verses(db: Session) -> dict:
 
 
 @router.post("/sync-featured", response_model=SyncFeaturedResponse)
-def trigger_sync_featured(db: Session = Depends(get_db)):
+def trigger_sync_featured(
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_api_key)
+):
     """
     Sync featured verses from curated list to database.
 

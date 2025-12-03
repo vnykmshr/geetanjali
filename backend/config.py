@@ -77,10 +77,13 @@ class Settings(BaseSettings):
     ANALYZE_RATE_LIMIT: str = "10/hour"  # Rate limit for analyze endpoint
 
     # Authentication / JWT
-    JWT_SECRET: str = "dev-secret-key-change-in-production-use-env-var"  # MUST be changed in production
+    JWT_SECRET: str = "dev-secret-key-change-in-production-use-env-var"  # MUST be set via env var in production
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days - keep users logged in
     REFRESH_TOKEN_EXPIRE_DAYS: int = 90  # 90 days - long-lived for convenience
+
+    # Cookie Security
+    COOKIE_SECURE: bool = False  # Set to True in production (requires HTTPS)
 
     # Frontend
     FRONTEND_URL: str = "http://localhost:5173"

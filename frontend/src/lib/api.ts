@@ -6,6 +6,11 @@ import { getSessionId } from './session';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 const API_V1_PREFIX = import.meta.env.VITE_API_V1_PREFIX || '/api/v1';
 
+// Warn in production if API URL is not configured
+if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
+  console.warn('VITE_API_URL not set - using localhost fallback. This should be configured in production.');
+}
+
 export const api = axios.create({
   baseURL: `${API_BASE_URL}${API_V1_PREFIX}`,
   headers: {
