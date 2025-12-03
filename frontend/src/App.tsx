@@ -7,7 +7,6 @@ import Verses from './pages/Verses';
 import VerseDetail from './pages/VerseDetail';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -19,18 +18,9 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/cases/new" element={<NewCase />} />
         <Route path="/cases/:id" element={<CaseView />} />
+        <Route path="/consultations" element={<Consultations />} />
         <Route path="/verses" element={<Verses />} />
         <Route path="/verses/:canonicalId" element={<VerseDetail />} />
-
-        {/* Protected routes - require authentication */}
-        <Route
-          path="/consultations"
-          element={
-            <ProtectedRoute>
-              <Consultations />
-            </ProtectedRoute>
-          }
-        />
       </Routes>
     </Router>
   );

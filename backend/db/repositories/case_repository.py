@@ -34,6 +34,27 @@ class CaseRepository(BaseRepository[Case]):
             .all()
         )
 
+    def get_by_session(self, session_id: str, skip: int = 0, limit: int = 100) -> List[Case]:
+        """
+        Get all cases for an anonymous session.
+
+        Args:
+            session_id: Session ID
+            skip: Number of records to skip
+            limit: Maximum number of records
+
+        Returns:
+            List of cases
+        """
+        return (
+            self.db.query(Case)
+            .filter(Case.session_id == session_id, Case.user_id.is_(None))
+            .order_by(Case.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
     def get_by_sensitivity(self, sensitivity: str, skip: int = 0, limit: int = 100) -> List[Case]:
         """
         Get cases by sensitivity level.

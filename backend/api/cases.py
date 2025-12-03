@@ -114,21 +114,32 @@ async def list_cases(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_user),
+    session_id: Optional[str] = Depends(get_session_id)
 ):
     """
-    List cases for the authenticated user.
+    List cases for the user (supports anonymous and authenticated users).
 
     Args:
         skip: Number of records to skip
         limit: Maximum number of records
         db: Database session
-        current_user: Authenticated user
+        current_user: Authenticated user (optional)
+        session_id: Session ID from X-Session-ID header (for anonymous users)
 
     Returns:
         List of cases
     """
     repo = CaseRepository(db)
-    cases = repo.get_by_user(current_user.id, skip=skip, limit=limit)
+
+    if current_user:
+        # Authenticated user: get their cases
+        cases = repo.get_by_user(current_user.id, skip=skip, limit=limit)
+    elif session_id:
+        # Anonymous user: get session-based cases
+        cases = repo.get_by_session(session_id, skip=skip, limit=limit)
+    else:
+        # No auth and no session - return empty
+        cases = []
 
     return cases
