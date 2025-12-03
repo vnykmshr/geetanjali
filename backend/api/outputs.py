@@ -288,7 +288,7 @@ async def analyze_case(
             logger.error(f"Database error saving output for case {case_id}: {db_error}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to save analysis result: {str(db_error)}"
+                detail="Unable to save your consultation. Please try again."
             )
 
     except HTTPException:
@@ -298,7 +298,7 @@ async def analyze_case(
         logger.error(f"Analysis failed for case {case_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Analysis failed: {str(e)}"
+            detail="Unable to complete your consultation right now. Please try again later."
         )
 
 

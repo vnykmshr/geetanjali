@@ -206,6 +206,19 @@ function isAlreadyFriendly(message: string): boolean {
     /^Forbidden$/i,
     /^Not Found$/i,
     /^Service Unavailable$/i,
+    // Technical LLM/backend errors
+    /LLM unavailable/i,
+    /Anthropic/i,
+    /Ollama/i,
+    /OpenAI/i,
+    /API key/i,
+    /rate limit/i,
+    /token limit/i,
+    /context length/i,
+    /JSON parse/i,
+    /database error/i,
+    /connection refused/i,
+    /pipeline failed/i,
   ];
 
   return !technicalPatterns.some(pattern => pattern.test(message.trim()));

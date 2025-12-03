@@ -298,40 +298,39 @@ class RAGPipeline:
 
         return {
             "executive_summary": (
-                f"Unable to generate full analysis for '{case_data.get('title', 'this case')}'. "
-                f"The system encountered an issue: {error_message}. "
-                "Please review this case manually or try again later."
+                "We couldn't complete your consultation right now. "
+                "Please try again in a few moments, or explore the relevant verses below for guidance."
             ),
             "options": [
                 {
-                    "title": "Option 1: Defer Decision",
-                    "description": "Postpone this decision until the system is available.",
-                    "pros": ["More time for consideration", "System may recover"],
-                    "cons": ["Delayed action", "Uncertainty continues"],
+                    "title": "Take Time to Reflect",
+                    "description": "Give yourself space to contemplate this situation before acting.",
+                    "pros": ["Clarity through reflection", "Avoid hasty decisions"],
+                    "cons": ["Delayed action", "Prolonged uncertainty"],
                     "sources": []
                 },
                 {
-                    "title": "Option 2: Manual Analysis",
-                    "description": "Conduct traditional analysis without AI assistance.",
-                    "pros": ["Human judgment", "No system dependency"],
-                    "cons": ["More time-consuming", "Less comprehensive"],
+                    "title": "Seek Trusted Counsel",
+                    "description": "Discuss your situation with someone you trust - a mentor, friend, or family member.",
+                    "pros": ["Fresh perspective", "Emotional support"],
+                    "cons": ["May take time to arrange", "Opinions may vary"],
                     "sources": []
                 },
                 {
-                    "title": "Option 3: Consult Expert",
-                    "description": "Seek guidance from a domain expert or scholar.",
-                    "pros": ["Expert insight", "Personalized advice"],
-                    "cons": ["May take time", "Requires expert availability"],
+                    "title": "Study the Verses Directly",
+                    "description": "Explore the Bhagavad Geeta verses related to your situation for timeless wisdom.",
+                    "pros": ["Direct access to wisdom", "Personal interpretation"],
+                    "cons": ["Requires contemplation", "May need guidance"],
                     "sources": []
                 }
             ],
             "recommended_action": {
                 "option": 3,
                 "steps": [
-                    "Document your ethical dilemma clearly",
-                    "Identify relevant stakeholders and constraints",
-                    "Seek expert or peer guidance",
-                    "Consider long-term impact of decisions"
+                    "Browse the verses suggested for your situation",
+                    "Read the translations and paraphrases carefully",
+                    "Reflect on how the teachings apply to your circumstances",
+                    "Return later to try your consultation again"
                 ],
                 "sources": []
             },
@@ -343,7 +342,7 @@ class RAGPipeline:
             "sources": [],
             "confidence": 0.1,
             "scholar_flag": True,
-            "error": error_message
+            "_internal_error": error_message  # Keep for logging, not displayed to user
         }
 
     def run(
