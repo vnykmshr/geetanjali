@@ -260,6 +260,14 @@ async def analyze_case(
             )
 
             db.add(output)
+
+            # Update case title if LLM provided one
+            if result.get("suggested_title"):
+                case.title = result["suggested_title"]
+
+            # Update case status to completed
+            case.status = CaseStatus.COMPLETED.value
+
             db.commit()
             db.refresh(output)
 
