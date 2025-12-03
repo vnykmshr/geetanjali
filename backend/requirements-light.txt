@@ -51,4 +51,4 @@ indic-transliteration==2.3.44
 requests==2.31.0
 
 # Email
-resend==2.5.0
+resend>=2.5.0
