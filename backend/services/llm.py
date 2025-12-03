@@ -194,8 +194,9 @@ class LLMService:
             "model": self.ollama_model,
             "prompt": prompt,
             "stream": False,
+            "format": "json",  # OPTIMIZATION: Force JSON output mode
             "options": {
-                "temperature": temperature,
+                "temperature": 0.3,  # OPTIMIZATION: Lower temp for deterministic JSON
             }
         }
 

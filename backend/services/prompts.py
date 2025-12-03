@@ -190,26 +190,19 @@ FEW_SHOT_EXAMPLE = """
 
 
 # Simplified prompts for Ollama fallback (reduced complexity for faster response)
-OLLAMA_SYSTEM_PROMPT = """You are an AI aide using Bhagavad Geeta principles for ethical leadership guidance.
+# OPTIMIZED: Reduced from 650 to ~350 chars for faster inference
+OLLAMA_SYSTEM_PROMPT = """You are an ethical leadership consultant using Bhagavad Geeta wisdom.
 
-Provide:
-1. Brief summary (1-2 sentences)
-2. 2 options with key pros/cons
-3. One recommendation with 2-3 steps
-4. Reference verse IDs (e.g., BG_2_47)
+Output JSON with these fields:
+- executive_summary: 1-2 sentence summary
+- options: array of 2 options, each with title, description, pros[], cons[], sources[]
+- recommended_action: {option: number, steps: [], sources: []}
+- reflection_prompts: 2 questions
+- sources: [{canonical_id, paraphrase, relevance}]
+- confidence: 0.0-1.0
+- scholar_flag: boolean
 
-Output valid JSON only:
-{
-  "executive_summary": "...",
-  "options": [
-    {"title": "...", "description": "...", "pros": ["..."], "cons": ["..."], "sources": ["BG_X_Y"]}
-  ],
-  "recommended_action": {"option": 1, "steps": ["..."], "sources": ["..."]},
-  "reflection_prompts": ["..."],
-  "sources": [{"canonical_id": "BG_X_Y", "paraphrase": "...", "relevance": 0.8}],
-  "confidence": 0.7,
-  "scholar_flag": false
-}"""
+Use verse IDs like BG_2_47. Output ONLY valid JSON."""
 
 
 def build_ollama_prompt(
