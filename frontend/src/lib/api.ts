@@ -1,26 +1,74 @@
 import axios from 'axios';
-import type { Case, Output, Verse, Translation, HealthResponse, ScholarReviewRequest } from '../types';
-import { tokenStorage } from '../api/auth';
+import type { Case, Output, Verse, Translation, HealthResponse, ScholarReviewRequest, Feedback, FeedbackCreate } from '../types';
+import { tokenStorage, authApi } from '../api/auth';
 import { getSessionId } from './session';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+// In production (Docker), use relative paths - nginx proxies /api/ to backend
+// In development, use localhost:8000 for direct backend access
+const API_BASE_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000');
 const API_V1_PREFIX = import.meta.env.VITE_API_V1_PREFIX || '/api/v1';
-
-// Warn in production if API URL is not configured
-if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
-  console.warn('VITE_API_URL not set - using localhost fallback. This should be configured in production.');
-}
 
 export const api = axios.create({
   baseURL: `${API_BASE_URL}${API_V1_PREFIX}`,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Enable cookies for CSRF
 });
 
-// Request interceptor to attach access token and session ID
+// Token refresh queue management to prevent race conditions
+let isRefreshing = false;
+let refreshQueue: Array<{
+  resolve: (token: string | null) => void;
+  reject: (error: Error) => void;
+}> = [];
+
+const processQueue = (error: Error | null, token: string | null = null) => {
+  refreshQueue.forEach((promise) => {
+    if (error) {
+      promise.reject(error);
+    } else {
+      promise.resolve(token);
+    }
+  });
+  refreshQueue = [];
+};
+
+/**
+ * Read CSRF token from cookie
+ */
+function getCsrfToken(): string | null {
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+// Request interceptor with proactive token refresh
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    // Skip token refresh for auth endpoints
+    const isAuthEndpoint = config.url?.includes('/auth/');
+
+    // Proactive token refresh: check if token needs refresh before request
+    if (!isAuthEndpoint && tokenStorage.getToken() && tokenStorage.needsRefresh()) {
+      if (!isRefreshing) {
+        isRefreshing = true;
+        try {
+          await authApi.refresh();
+          processQueue(null, tokenStorage.getToken());
+        } catch (error) {
+          processQueue(error as Error, null);
+          tokenStorage.clearToken();
+        } finally {
+          isRefreshing = false;
+        }
+      } else {
+        // Wait for ongoing refresh to complete
+        await new Promise<string | null>((resolve, reject) => {
+          refreshQueue.push({ resolve, reject });
+        });
+      }
+    }
+
     // Attach auth token only if available and non-empty
     const token = tokenStorage.getToken();
     if (token && token.trim().length > 0) {
@@ -30,6 +78,15 @@ api.interceptors.request.use(
     // Always attach session ID for anonymous user tracking
     const sessionId = getSessionId();
     config.headers['X-Session-ID'] = sessionId;
+
+    // Attach CSRF token for state-changing requests
+    const method = config.method?.toLowerCase();
+    if (method && ['post', 'put', 'patch', 'delete'].includes(method)) {
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      }
+    }
 
     return config;
   },
@@ -97,6 +154,11 @@ export const outputsApi = {
 
   scholarReview: async (id: string, reviewData: ScholarReviewRequest): Promise<Output> => {
     const response = await api.post(`/outputs/${id}/scholar-review`, reviewData);
+    return response.data;
+  },
+
+  submitFeedback: async (outputId: string, data: FeedbackCreate): Promise<Feedback> => {
+    const response = await api.post(`/outputs/${outputId}/feedback`, data);
     return response.data;
   },
 };

@@ -127,3 +127,17 @@ export interface Translation {
   source?: string;
   license?: string;
 }
+
+// Feedback Types
+export interface Feedback {
+  id: string;
+  output_id: string;
+  rating: boolean;
+  comment?: string;
+  created_at: string;
+}
+
+export interface FeedbackCreate {
+  rating: boolean;
+  comment?: string;
+}

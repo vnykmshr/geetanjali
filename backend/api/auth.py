@@ -16,6 +16,7 @@ from db.repositories.case_repository import CaseRepository
 from models.user import User
 from utils.auth import hash_password, verify_password, validate_password_strength, validate_email
 from utils.jwt import create_access_token, create_refresh_token, hash_token
+from utils.csrf import generate_csrf_token, set_csrf_cookie
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,11 @@ limiter = Limiter(key_func=get_remote_address)
 
 # Cookie settings for refresh token
 REFRESH_TOKEN_COOKIE_KEY = "refresh_token"
-REFRESH_TOKEN_COOKIE_MAX_AGE = 90 * 24 * 60 * 60  # 90 days in seconds
+
+
+def get_refresh_token_max_age() -> int:
+    """Calculate refresh token cookie max age from settings."""
+    return settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 
 
 @router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
@@ -108,11 +113,15 @@ async def signup(
     response.set_cookie(
         key=REFRESH_TOKEN_COOKIE_KEY,
         value=refresh_token,
-        max_age=REFRESH_TOKEN_COOKIE_MAX_AGE,
+        max_age=get_refresh_token_max_age(),
         httponly=True,
         secure=settings.COOKIE_SECURE,
         samesite="lax"
     )
+
+    # Set CSRF token cookie for double-submit protection
+    csrf_token = generate_csrf_token()
+    set_csrf_cookie(response, csrf_token)
 
     logger.info(f"User created successfully: {user.id}")
 
@@ -195,11 +204,15 @@ async def login(
     response.set_cookie(
         key=REFRESH_TOKEN_COOKIE_KEY,
         value=refresh_token,
-        max_age=REFRESH_TOKEN_COOKIE_MAX_AGE,
+        max_age=get_refresh_token_max_age(),
         httponly=True,
         secure=settings.COOKIE_SECURE,
         samesite="lax"
     )
+
+    # Set CSRF token cookie for double-submit protection
+    csrf_token = generate_csrf_token()
+    set_csrf_cookie(response, csrf_token)
 
     logger.info(f"User logged in successfully: {user.id}")
 
@@ -280,7 +293,7 @@ async def refresh(
     response.set_cookie(
         key=REFRESH_TOKEN_COOKIE_KEY,
         value=new_refresh_token,
-        max_age=REFRESH_TOKEN_COOKIE_MAX_AGE,
+        max_age=get_refresh_token_max_age(),
         httponly=True,
         secure=settings.COOKIE_SECURE,
         samesite="lax"

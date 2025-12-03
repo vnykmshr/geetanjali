@@ -45,6 +45,10 @@ python-dotenv==1.0.0
 tenacity==8.2.3  # Retry logic for robustness
 slowapi==0.1.9  # Rate limiting
 
+# Redis Cache & Task Queue
+redis==5.0.1
+rq==1.16.0  # Redis Queue for background tasks
+
 # Data Ingestion
 beautifulsoup4==4.12.3  # HTML parsing
 lxml==5.1.0  # XML/HTML parser
@@ -52,5 +56,5 @@ pyyaml==6.0.1  # YAML config loading
 indic-transliteration==2.3.44  # Sanskrit IAST transliteration
 requests==2.31.0  # HTTP client for fetching
 
-# NumPy compatibility
-numpy>=1.24.0
+# NumPy compatibility (pinned <2.0 for chromadb 0.5.0)
+numpy>=1.24.0,<2.0

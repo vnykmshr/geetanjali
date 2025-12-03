@@ -22,6 +22,10 @@ export default function CaseView() {
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const { isAuthenticated } = useAuth();
 
+  // Feedback state
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState<Record<string, boolean>>({});
+  const [feedbackLoading, setFeedbackLoading] = useState<string | null>(null);
+
   // Check if case is still processing
   const isProcessing = caseData?.status === 'pending' || caseData?.status === 'processing';
 
@@ -105,6 +109,21 @@ export default function CaseView() {
       }
       return newSet;
     });
+  };
+
+  const handleFeedback = async (outputId: string, rating: boolean) => {
+    if (feedbackSubmitted[outputId] || feedbackLoading === outputId) return;
+
+    setFeedbackLoading(outputId);
+    try {
+      await outputsApi.submitFeedback(outputId, { rating });
+      setFeedbackSubmitted(prev => ({ ...prev, [outputId]: true }));
+    } catch {
+      // Could be 409 if already submitted - treat as success
+      setFeedbackSubmitted(prev => ({ ...prev, [outputId]: true }));
+    } finally {
+      setFeedbackLoading(null);
+    }
   };
 
   const handleFollowUpSubmit = async (e: React.FormEvent) => {
@@ -366,6 +385,34 @@ export default function CaseView() {
                             />
                           </div>
                           <span className="font-medium">{(output.confidence * 100).toFixed(0)}%</span>
+                        </div>
+                      )}
+
+                      {/* Feedback UI */}
+                      {output && !feedbackSubmitted[output.id] && (
+                        <div className="mt-3 flex items-center gap-3 text-sm text-gray-600">
+                          <span>Was this helpful?</span>
+                          <button
+                            onClick={() => handleFeedback(output.id, true)}
+                            disabled={feedbackLoading === output.id}
+                            className="px-3 py-1 rounded-full border border-gray-300 hover:bg-green-50 hover:border-green-300 transition-colors disabled:opacity-50"
+                            aria-label="Thumbs up"
+                          >
+                            {feedbackLoading === output.id ? '...' : '👍'}
+                          </button>
+                          <button
+                            onClick={() => handleFeedback(output.id, false)}
+                            disabled={feedbackLoading === output.id}
+                            className="px-3 py-1 rounded-full border border-gray-300 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50"
+                            aria-label="Thumbs down"
+                          >
+                            {feedbackLoading === output.id ? '...' : '👎'}
+                          </button>
+                        </div>
+                      )}
+                      {output && feedbackSubmitted[output.id] && (
+                        <div className="mt-3 text-sm text-gray-500">
+                          Thank you for your feedback!
                         </div>
                       )}
                     </div>

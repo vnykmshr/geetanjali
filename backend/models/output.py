@@ -26,6 +26,7 @@ class Output(Base):
     case = relationship("Case", back_populates="outputs")
     reviewer = relationship("User", foreign_keys=[reviewed_by], back_populates="reviewed_outputs")
     message = relationship("Message", back_populates="output", uselist=False)  # One-to-one with assistant message
+    feedback = relationship("Feedback", back_populates="output", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Output(id={self.id}, case_id={self.case_id}, confidence={self.confidence})>"

@@ -17,6 +17,7 @@ from utils.exceptions import (
     general_exception_handler
 )
 from api import health, cases, verses, outputs, messages, auth, admin
+from api.middleware.csrf import CSRFMiddleware
 
 # Setup logging
 logger = setup_logging()
@@ -43,6 +44,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add CSRF protection middleware (after CORS)
+app.add_middleware(CSRFMiddleware)
 
 # Register exception handlers
 app.add_exception_handler(GeetanjaliException, geetanjali_exception_handler)

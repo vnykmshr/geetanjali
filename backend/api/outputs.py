@@ -17,10 +17,12 @@ from db.repositories.message_repository import MessageRepository
 from models.output import Output
 from models.case import Case, CaseStatus
 from models.user import User
-from api.schemas import OutputResponse, CaseResponse
-from api.middleware.auth import get_optional_user, require_role
+from api.schemas import OutputResponse, CaseResponse, FeedbackCreate, FeedbackResponse
+from api.middleware.auth import get_optional_user, require_role, get_session_id
 from api.dependencies import get_case_with_access
 from services.rag import get_rag_pipeline
+from services.tasks import enqueue_task, is_rq_available
+from models.feedback import Feedback
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -143,6 +145,9 @@ async def analyze_case_async(
     The analysis runs in the background and updates the case status.
     Poll GET /cases/{case_id} to check status (pending -> processing -> completed/failed).
 
+    Uses RQ (Redis Queue) when available for reliable background processing with
+    automatic retries. Falls back to FastAPI BackgroundTasks if Redis is unavailable.
+
     Returns:
         Case with status 'pending'
     """
@@ -158,11 +163,19 @@ async def analyze_case_async(
     db.commit()
     db.refresh(case)
 
-    # Build case data and queue background task
+    # Build case data
     case_data = _build_case_data(case)
-    background_tasks.add_task(run_analysis_background, case.id, case_data)
 
-    logger.info(f"Async analysis queued for case {case.id}")
+    # Try RQ first, fallback to BackgroundTasks
+    job_id = enqueue_task(run_analysis_background, case.id, case_data)
+
+    if job_id:
+        logger.info(f"Analysis queued via RQ (job: {job_id}) for case {case.id}")
+    else:
+        # Fallback to FastAPI BackgroundTasks
+        background_tasks.add_task(run_analysis_background, case.id, case_data)
+        logger.info(f"Analysis queued via BackgroundTasks for case {case.id}")
+
     return case
 
 
@@ -374,5 +387,83 @@ async def submit_scholar_review(
         logger.error(f"Database error updating scholar review for output {output_id}: {db_error}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update review status: {str(db_error)}"
+            detail="Failed to update review status"
         )
+
+
+@router.post("/outputs/{output_id}/feedback", response_model=FeedbackResponse, status_code=status.HTTP_201_CREATED)
+async def submit_feedback(
+    output_id: str,
+    feedback_data: FeedbackCreate,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
+    session_id: Optional[str] = Depends(get_session_id)
+):
+    """
+    Submit feedback (thumbs up/down + optional comment) for an output.
+
+    Can be submitted by authenticated users or anonymous sessions.
+    Only one feedback per user/session per output is allowed.
+
+    Args:
+        output_id: Output ID to rate
+        feedback_data: Rating and optional comment
+        db: Database session
+        current_user: Authenticated user (optional)
+        session_id: Session ID for anonymous users
+
+    Returns:
+        Created feedback
+
+    Raises:
+        HTTPException: 404 if output not found, 409 if already submitted
+    """
+    # Verify output exists
+    output = db.query(Output).filter(Output.id == output_id).first()
+    if not output:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Output {output_id} not found"
+        )
+
+    # Need either user or session
+    if not current_user and not session_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Authentication or session required to submit feedback"
+        )
+
+    # Check for existing feedback
+    existing_query = db.query(Feedback).filter(Feedback.output_id == output_id)
+    if current_user:
+        existing = existing_query.filter(Feedback.user_id == current_user.id).first()
+    else:
+        existing = existing_query.filter(
+            Feedback.session_id == session_id,
+            Feedback.user_id.is_(None)
+        ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Feedback already submitted for this output"
+        )
+
+    # Create feedback
+    feedback = Feedback(
+        output_id=output_id,
+        user_id=current_user.id if current_user else None,
+        session_id=session_id if not current_user else None,
+        rating=feedback_data.rating,
+        comment=feedback_data.comment,
+        created_at=datetime.utcnow()
+    )
+
+    db.add(feedback)
+    db.commit()
+    db.refresh(feedback)
+
+    rating_str = "thumbs_up" if feedback.rating else "thumbs_down"
+    logger.info(f"Feedback submitted for output {output_id}: {rating_str}")
+
+    return feedback

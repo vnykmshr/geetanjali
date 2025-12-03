@@ -11,6 +11,8 @@ from db import get_db
 from db.repositories.verse_repository import VerseRepository
 from api.schemas import VerseResponse, TranslationResponse
 from models.verse import Verse, Translation
+from services.cache import cache, verse_key, daily_verse_key, calculate_midnight_ttl
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -167,6 +169,13 @@ async def get_verse_of_the_day(db: Session = Depends(get_db)):
     Raises:
         HTTPException: If no verses found
     """
+    # Try cache first (cached until midnight UTC)
+    cache_key = daily_verse_key()
+    cached = cache.get(cache_key)
+    if cached:
+        logger.debug("Cache hit for daily verse")
+        return cached
+
     today = date.today()
     day_of_year = today.timetuple().tm_yday
 
@@ -200,6 +209,11 @@ async def get_verse_of_the_day(db: Session = Depends(get_db)):
             detail="Verse not found"
         )
 
+    # Cache until midnight UTC
+    verse_data = VerseResponse.model_validate(verse).model_dump()
+    ttl = calculate_midnight_ttl()
+    cache.set(cache_key, verse_data, ttl)
+
     logger.info(f"Verse of the day ({today}): {verse.canonical_id}")
     return verse
 
@@ -222,6 +236,13 @@ async def get_verse(
     Raises:
         HTTPException: If verse not found
     """
+    # Try cache first
+    cache_key = verse_key(canonical_id)
+    cached = cache.get(cache_key)
+    if cached:
+        logger.debug(f"Cache hit for verse {canonical_id}")
+        return cached
+
     repo = VerseRepository(db)
     verse = repo.get_by_canonical_id(canonical_id)
 
@@ -230,6 +251,10 @@ async def get_verse(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Verse {canonical_id} not found"
         )
+
+    # Cache the result
+    verse_data = VerseResponse.model_validate(verse).model_dump()
+    cache.set(cache_key, verse_data, settings.CACHE_TTL_VERSE)
 
     return verse
 

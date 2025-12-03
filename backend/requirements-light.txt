@@ -39,6 +39,10 @@ python-dotenv==1.0.0
 tenacity==8.2.3
 slowapi==0.1.9
 
+# Redis Cache & Task Queue
+redis==5.0.1
+rq==1.16.0
+
 # Data Ingestion
 beautifulsoup4==4.12.3
 lxml==5.1.0

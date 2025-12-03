@@ -2,7 +2,9 @@ import axios from 'axios';
 import type { AuthResponse, LoginRequest, SignupRequest, RefreshResponse, User } from '../types';
 import { getSessionId } from '../lib/session';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+// In production (Docker), use relative paths - nginx proxies /api/ to backend
+// In development, use localhost:8000 for direct backend access
+const API_BASE_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000');
 
 // Create a separate axios instance for auth endpoints
 const authClient = axios.create({
@@ -20,16 +22,57 @@ authClient.interceptors.request.use((config) => {
   return config;
 });
 
-// In-memory token storage (more secure than localStorage for XSS attacks)
+// In-memory token storage with expiry tracking (more secure than localStorage for XSS attacks)
 let accessToken: string | null = null;
+let tokenExpiresAt: number | null = null;
+
+/**
+ * Parse JWT to extract expiry timestamp
+ */
+function getTokenExpirySeconds(token: string): number {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const exp = payload.exp; // Unix timestamp in seconds
+    return exp - Math.floor(Date.now() / 1000);
+  } catch {
+    return 3600; // Default 1 hour if parsing fails
+  }
+}
 
 export const tokenStorage = {
   getToken: (): string | null => accessToken,
+
   setToken: (token: string | null): void => {
     accessToken = token;
+    if (token) {
+      const expiresInSeconds = getTokenExpirySeconds(token);
+      // Set expiry 30 seconds earlier for safety margin
+      tokenExpiresAt = Date.now() + (expiresInSeconds - 30) * 1000;
+    } else {
+      tokenExpiresAt = null;
+    }
   },
+
   clearToken: (): void => {
     accessToken = null;
+    tokenExpiresAt = null;
+  },
+
+  /**
+   * Check if token needs refresh (expires in < 5 minutes)
+   */
+  needsRefresh: (): boolean => {
+    if (!accessToken || !tokenExpiresAt) return false;
+    // Refresh if token expires in < 5 minutes
+    return Date.now() > tokenExpiresAt - (5 * 60 * 1000);
+  },
+
+  /**
+   * Check if token is already expired
+   */
+  isExpired: (): boolean => {
+    if (!accessToken || !tokenExpiresAt) return true;
+    return Date.now() > tokenExpiresAt;
   },
 };
 

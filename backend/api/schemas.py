@@ -258,6 +258,36 @@ class MessageResponse(BaseModel):
 
 
 # ============================================================================
+# Feedback Schemas
+# ============================================================================
+
+
+class FeedbackCreate(BaseModel):
+    """Schema for creating feedback on an output."""
+
+    rating: bool = Field(..., description="True for thumbs up, False for thumbs down")
+    comment: Optional[str] = Field(
+        None,
+        max_length=280,
+        description="Optional comment (max 280 characters)"
+    )
+
+
+class FeedbackResponse(BaseModel):
+    """Schema for feedback response."""
+
+    id: str
+    output_id: str
+    user_id: Optional[str] = None
+    rating: bool
+    comment: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ============================================================================
 # Health Check Schemas
 # ============================================================================
 

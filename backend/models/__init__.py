@@ -7,6 +7,7 @@ from models.case import Case
 from models.output import Output
 from models.message import Message, MessageRole
 from models.verse import Verse, Commentary, Translation
+from models.feedback import Feedback
 
 __all__ = [
     "Base",
@@ -19,4 +20,5 @@ __all__ = [
     "Verse",
     "Commentary",
     "Translation",
+    "Feedback",
 ]

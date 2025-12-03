@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
 import Home from './pages/Home';
 import NewCase from './pages/NewCase';
 import CaseView from './pages/CaseView';
@@ -10,6 +11,17 @@ import Signup from './pages/Signup';
 import NotFound from './pages/NotFound';
 
 function App() {
+  const { loading } = useAuth();
+
+  // Show minimal loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <Routes>
