@@ -1,15 +1,7 @@
 name: Docker Build
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'backend/Dockerfile'
-      - 'backend/requirements*.txt'
-      - 'frontend/Dockerfile'
-      - 'frontend/package*.json'
-      - 'docker-compose*.yml'
+  workflow_dispatch:  # Manual trigger only
 
 jobs:
   build:
