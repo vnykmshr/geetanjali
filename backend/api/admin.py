@@ -40,7 +40,6 @@ class IngestionRequest(BaseModel):
 
     source_type: Optional[str] = None  # sanskrit, translations, commentaries, or None for all
     force_refresh: bool = False
-    enrich: bool = False  # LLM enrichment is optional and slow
 
 
 class IngestionStatus(BaseModel):
@@ -101,10 +100,12 @@ def trigger_ingestion(
     """
     Trigger data ingestion manually.
 
+    This endpoint fetches and stores verse data from configured sources.
+    Use /api/v1/admin/enrich afterwards to add LLM-generated content.
+
     This endpoint allows you to:
     - Load initial data if database is empty
     - Refresh data from sources (with force_refresh=true)
-    - Enrich existing verses with LLM analysis (with enrich=true)
     - Load specific source types only
 
     Note: Ingestion runs in the background to avoid request timeouts.
@@ -136,8 +137,7 @@ def trigger_ingestion(
         background_tasks.add_task(
             run_ingestion_task,
             source_type=request.source_type,
-            force_refresh=request.force_refresh,
-            enrich=request.enrich
+            force_refresh=request.force_refresh
         )
 
         return IngestionStatus(
@@ -159,8 +159,7 @@ def trigger_ingestion(
 
 def run_ingestion_task(
     source_type: Optional[str] = None,
-    force_refresh: bool = False,
-    enrich: bool = False
+    force_refresh: bool = False
 ):
     """
     Background task to run data ingestion.
@@ -168,7 +167,6 @@ def run_ingestion_task(
     Args:
         source_type: Type of sources to ingest (None for all)
         force_refresh: Whether to force refresh from sources
-        enrich: Whether to run LLM enrichment
     """
     global _ingestion_running
 
@@ -180,7 +178,6 @@ def run_ingestion_task(
         logger.info("BACKGROUND INGESTION STARTED")
         logger.info(f"Source type: {source_type or 'all'}")
         logger.info(f"Force refresh: {force_refresh}")
-        logger.info(f"Enrichment: {enrich}")
         logger.info("=" * 80)
 
         pipeline = IngestionPipeline(db)
@@ -190,7 +187,7 @@ def run_ingestion_task(
         stats = pipeline.ingest_all_sources(
             source_types=source_types,
             force_refresh=force_refresh,
-            enrich=enrich,
+            enrich=False,
             dry_run=False
         )
 
@@ -300,3 +297,196 @@ def trigger_sync_featured(
     except Exception as e:
         logger.error(f"Failed to sync featured verses: {e}")
         raise HTTPException(status_code=500, detail="Failed to sync featured verses")
+
+
+class EnrichRequest(BaseModel):
+    """Request model for enriching verses with LLM-generated content."""
+
+    limit: int = 0  # 0 means all verses
+    force: bool = False  # Re-enrich even if already enriched
+
+
+class EnrichResponse(BaseModel):
+    """Response model for enrichment status."""
+
+    status: str
+    message: str
+    total_verses: int
+    enriched: int
+    skipped: int
+    errors: int
+
+
+@router.post("/enrich", response_model=EnrichResponse)
+def enrich_verses(
+    request: EnrichRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_admin_api_key)
+):
+    """
+    Enrich database verses with LLM-generated content.
+
+    Run this after /api/v1/admin/ingest to add AI-generated enhancements:
+    - consulting_principles: Leadership principles extracted from the verse
+    - paraphrase_en: Brief modern summary for UI display
+
+    Args:
+        request: Enrichment configuration
+            - limit: Max verses to process (0 = all)
+            - force: Re-enrich even if already done
+        background_tasks: FastAPI background tasks handler
+        db: Database session
+
+    Returns:
+        Enrichment status
+    """
+    global _ingestion_running
+
+    with _ingestion_lock:
+        if _ingestion_running:
+            raise HTTPException(
+                status_code=409,
+                detail="Ingestion/enrichment is already running. Please wait."
+            )
+        _ingestion_running = True
+
+    try:
+        # Count verses that need enrichment
+        query = db.query(Verse).filter(Verse.translation_en.isnot(None))
+        if not request.force:
+            query = query.filter(
+                (Verse.paraphrase_en.is_(None)) | (Verse.consulting_principles.is_(None))
+            )
+
+        if request.limit > 0:
+            query = query.limit(request.limit)
+
+        total_to_enrich = query.count()
+
+        # Queue enrichment in background
+        background_tasks.add_task(
+            run_enrich_task,
+            limit=request.limit,
+            force=request.force
+        )
+
+        return EnrichResponse(
+            status="queued",
+            message=f"Enrichment queued for ~{total_to_enrich} verses. Check /api/v1/admin/status for progress.",
+            total_verses=total_to_enrich,
+            enriched=0,
+            skipped=0,
+            errors=0
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        with _ingestion_lock:
+            _ingestion_running = False
+        logger.error(f"Failed to queue enrichment: {e}")
+        raise HTTPException(status_code=500, detail="Failed to queue enrichment")
+
+
+def run_enrich_task(limit: int = 0, force: bool = False):
+    """
+    Background task to enrich database verses with LLM-generated content.
+
+    Args:
+        limit: Max verses to enrich (0 = all)
+        force: Re-enrich even if already done
+    """
+    global _ingestion_running
+
+    from db.connection import SessionLocal
+    from services.ingestion.enricher import Enricher
+
+    db = SessionLocal()
+    enricher = Enricher()
+
+    enriched_count = 0
+    skipped_count = 0
+    error_count = 0
+
+    try:
+        logger.info("=" * 80)
+        logger.info("BACKGROUND ENRICHMENT OF EXISTING VERSES STARTED")
+        logger.info(f"Limit: {limit or 'all'}")
+        logger.info(f"Force re-enrich: {force}")
+        logger.info("=" * 80)
+
+        # Load verses with translations
+        query = db.query(Verse).filter(Verse.translation_en.isnot(None))
+        if not force:
+            query = query.filter(
+                (Verse.paraphrase_en.is_(None)) | (Verse.consulting_principles.is_(None))
+            )
+
+        if limit > 0:
+            query = query.limit(limit)
+
+        verses = query.all()
+        total = len(verses)
+        logger.info(f"Found {total} verses to enrich")
+
+        for i, verse in enumerate(verses):
+            try:
+                # Convert to dict for enricher
+                verse_dict = {
+                    "canonical_id": verse.canonical_id,
+                    "translation_en": verse.translation_en,
+                    "sanskrit_devanagari": verse.sanskrit_devanagari,
+                    "sanskrit_iast": verse.sanskrit_iast,
+                    "paraphrase_en": verse.paraphrase_en if not force else None,
+                    "consulting_principles": verse.consulting_principles if not force else None,
+                }
+
+                # Run enrichment
+                enriched = enricher.enrich_verse(
+                    verse_dict,
+                    extract_principles=True,
+                    generate_paraphrase=True,
+                    transliterate=True
+                )
+
+                # Update database
+                updated = False
+                if enriched.get("paraphrase_en") and enriched["paraphrase_en"] != verse.paraphrase_en:
+                    verse.paraphrase_en = enriched["paraphrase_en"]
+                    updated = True
+                if enriched.get("consulting_principles"):
+                    verse.consulting_principles = enriched["consulting_principles"]
+                    updated = True
+                if enriched.get("sanskrit_iast") and not verse.sanskrit_iast:
+                    verse.sanskrit_iast = enriched["sanskrit_iast"]
+                    updated = True
+
+                if updated:
+                    db.commit()
+                    enriched_count += 1
+                else:
+                    skipped_count += 1
+
+                if (i + 1) % 10 == 0:
+                    logger.info(f"Progress: {i + 1}/{total} verses processed")
+
+            except Exception as e:
+                logger.error(f"Failed to enrich {verse.canonical_id}: {e}")
+                error_count += 1
+                db.rollback()
+
+        logger.info("=" * 80)
+        logger.info("BACKGROUND ENRICHMENT COMPLETED")
+        logger.info(f"Enriched: {enriched_count}")
+        logger.info(f"Skipped: {skipped_count}")
+        logger.info(f"Errors: {error_count}")
+        logger.info("=" * 80)
+
+    except Exception as e:
+        logger.error(f"Background enrichment failed: {e}", exc_info=True)
+
+    finally:
+        db.close()
+        with _ingestion_lock:
+            _ingestion_running = False

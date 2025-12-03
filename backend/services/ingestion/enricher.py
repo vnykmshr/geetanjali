@@ -256,15 +256,16 @@ Provide a concise, leadership-focused summary:"""
         enriched = verse_data.copy()
 
         # Extract principles from translation
+        # Check both translation_text (parser output) and translation_en (DB field)
         if extract_principles and not enriched.get("consulting_principles"):
-            translation = enriched.get("translation_text", "")
+            translation = enriched.get("translation_text") or enriched.get("translation_en", "")
             if translation:
                 principles = self.extract_principles(translation)
                 enriched["consulting_principles"] = principles
 
         # Generate paraphrase
         if generate_paraphrase and not enriched.get("paraphrase_en"):
-            translation = enriched.get("translation_text", "")
+            translation = enriched.get("translation_text") or enriched.get("translation_en", "")
             if translation:
                 paraphrase = self.generate_paraphrase(translation)
                 enriched["paraphrase_en"] = paraphrase
