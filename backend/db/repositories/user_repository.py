@@ -57,4 +57,5 @@ class UserRepository(BaseRepository):
             "role": role,
             "email_verified": False,
         }
-        return self.create(user_data)
+        result: User = self.create(user_data)  # type: ignore[assignment]
+        return result

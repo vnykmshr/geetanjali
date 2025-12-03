@@ -242,10 +242,10 @@ class HTMLParser:
         soup = BeautifulSoup(index_html, 'lxml')
         chapter_links = soup.find_all('a', href=re.compile(r'bg\d+\.htm'))
 
-        urls = []
+        urls: list[str] = []
         for link in chapter_links:
             href = link.get('href')
-            if href:
+            if href and isinstance(href, str):
                 # Make absolute URL
                 if href.startswith('http'):
                     full_url = href

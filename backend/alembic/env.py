@@ -41,11 +41,13 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    configuration = config.get_section(config.config_ini_section)
+    configuration = config.get_section(config.config_ini_section)  # type: ignore[arg-type]
+    if configuration is None:
+        configuration = {}
     configuration["sqlalchemy.url"] = get_url()
 
     connectable = engine_from_config(
-        configuration,
+        configuration,  # type: ignore[arg-type]
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

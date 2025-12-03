@@ -1,9 +1,10 @@
 """Feedback model for user ratings on consultation outputs."""
 
-from sqlalchemy import Column, String, Boolean, Text, ForeignKey, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import String, Boolean, Text, ForeignKey, DateTime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from models.base import Base
 
@@ -18,23 +19,23 @@ class Feedback(Base):
 
     __tablename__ = "feedback"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    output_id = Column(
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    output_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("outputs.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
-    user_id = Column(
+    user_id: Mapped[Optional[str]] = mapped_column(
         String(36),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
         index=True
     )
-    session_id = Column(String(36), nullable=True, index=True)  # For anonymous feedback
-    rating = Column(Boolean, nullable=False)  # True = thumbs up, False = thumbs down
-    comment = Column(Text, nullable=True)  # Max 280 chars enforced in schema
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    session_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)  # For anonymous feedback
+    rating: Mapped[bool] = mapped_column(Boolean, nullable=False)  # True = thumbs up, False = thumbs down
+    comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Max 280 chars enforced in schema
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, index=True)
 
     # Relationships
     output = relationship("Output", back_populates="feedback")

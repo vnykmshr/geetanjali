@@ -32,7 +32,8 @@ class RefreshTokenRepository(BaseRepository):
             "expires_at": RefreshToken.default_expiry(),
             "revoked": False,
         }
-        return self.create(token_data)
+        result: RefreshToken = self.create(token_data)  # type: ignore[assignment]
+        return result
 
     def get_by_token(self, token: str) -> Optional[RefreshToken]:
         """

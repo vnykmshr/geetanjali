@@ -209,7 +209,7 @@ class OutputResultSchema(BaseModel):
     """Schema for complete output result."""
 
     executive_summary: str
-    options: List[OptionSchema] = Field(..., min_items=3, max_items=3)
+    options: List[OptionSchema] = Field(..., min_length=3, max_length=3)
     recommended_action: RecommendedActionSchema
     reflection_prompts: List[str]
     sources: List[SourceSchema]

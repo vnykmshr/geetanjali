@@ -83,7 +83,7 @@ class Fetcher:
             cache_file.write_text(content, encoding="utf-8")
             logger.info(f"Cached content from {url} ({len(content)} bytes)")
 
-            return content
+            return str(content)
 
         except requests.RequestException as e:
             logger.error(f"Failed to fetch {url}: {e}")

@@ -68,7 +68,8 @@ def backfill_paraphrase_metadata(dry_run: bool = False):
                     continue
 
                 if dry_run:
-                    logger.info(f"[DRY RUN] Would update {verse.canonical_id} with paraphrase: {verse.paraphrase_en[:50]}...")
+                    paraphrase_preview = verse.paraphrase_en[:50] if verse.paraphrase_en else ""
+                    logger.info(f"[DRY RUN] Would update {verse.canonical_id} with paraphrase: {paraphrase_preview}...")
                     updated += 1
                     continue
 
@@ -109,7 +110,7 @@ def backfill_paraphrase_metadata(dry_run: bool = False):
                     canonical_id=verse.canonical_id,
                     text=combined_text,
                     metadata=metadata,
-                    embedding=embedding
+                    embedding=embedding  # type: ignore[arg-type]
                 )
 
                 logger.info(f"Updated {verse.canonical_id}")

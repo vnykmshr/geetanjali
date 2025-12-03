@@ -114,7 +114,7 @@ def enqueue_task(
             **kwargs
         )
         logger.info(f"Enqueued task {func.__name__} with job ID: {job.id}")
-        return job.id
+        return str(job.id) if job.id else None
 
     except Exception as e:
         logger.error(f"Failed to enqueue task {func.__name__}: {e}")
@@ -143,6 +143,7 @@ def get_job_status(job_id: str) -> Optional[str]:
     try:
         from rq.job import Job
         job = Job.fetch(job_id, connection=queue.connection)
-        return job.get_status()
+        status = job.get_status()
+        return str(status) if status else None
     except Exception:
         return None

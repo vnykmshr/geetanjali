@@ -5,7 +5,7 @@ Pipeline orchestrator for coordinating the data ingestion flow.
 import logging
 import yaml
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union, Protocol
 from sqlalchemy.orm import Session
 
 from services.ingestion.fetcher import Fetcher
@@ -16,6 +16,12 @@ from services.ingestion.enricher import Enricher
 from services.ingestion.persister import Persister
 
 logger = logging.getLogger(__name__)
+
+
+class Parser(Protocol):
+    """Protocol for parser interface."""
+    def parse(self, raw_data: str, source_config: Dict) -> List[Dict]:
+        ...
 
 
 class IngestionPipeline:
@@ -46,7 +52,7 @@ class IngestionPipeline:
 
         # Initialize services
         self.fetcher = Fetcher()
-        self.parsers = {
+        self.parsers: Dict[str, Parser] = {
             "html": HTMLParser(),
             "json": JSONParser(),
         }
@@ -71,7 +77,7 @@ class IngestionPipeline:
             with open(self.config_path, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f)
             logger.info(f"Loaded configuration from {self.config_path}")
-            return config
+            return dict(config) if config else {}
         except Exception as e:
             logger.error(f"Failed to load config: {e}")
             return {}
@@ -202,7 +208,7 @@ class IngestionPipeline:
             return []
 
         try:
-            parsed = parser.parse(raw_data, source_config)
+            parsed = list(parser.parse(raw_data, source_config))
 
             # If HTML parser returned empty list, check if this is an index page
             # with chapter links that need to be fetched separately
@@ -228,7 +234,7 @@ class IngestionPipeline:
                                 continue
 
                             # Parse chapter page
-                            chapter_verses = parser.parse(chapter_data, chapter_config)
+                            chapter_verses = list(parser.parse(chapter_data, chapter_config))
                             if chapter_verses:
                                 logger.info(f"Parsed {len(chapter_verses)} verses from chapter")
                                 all_verses.extend(chapter_verses)

@@ -1,16 +1,16 @@
 """Database connection and session management."""
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
-from typing import Generator
+from typing import Any, Generator
 
 from config import settings
 
 # Create engine with connection pooling
 is_sqlite = "sqlite" in settings.DATABASE_URL
 
-engine_kwargs = {
+engine_kwargs: dict[str, Any] = {
     "echo": settings.DEBUG,
 }
 
@@ -76,7 +76,7 @@ def check_db_connection(timeout: int = 2) -> bool:
             signal.alarm(timeout)
 
             db = SessionLocal()
-            db.execute("SELECT 1")
+            db.execute(text("SELECT 1"))
             db.close()
 
             signal.alarm(0)  # Cancel alarm
@@ -84,7 +84,7 @@ def check_db_connection(timeout: int = 2) -> bool:
         except AttributeError:
             # SIGALRM not available (Windows), do basic check without timeout
             db = SessionLocal()
-            db.execute("SELECT 1")
+            db.execute(text("SELECT 1"))
             db.close()
             return True
     except TimeoutError:

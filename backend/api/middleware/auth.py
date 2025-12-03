@@ -42,8 +42,8 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_id: str = payload.get("user_id")
-    if not user_id:
+    user_id = payload.get("user_id")
+    if not user_id or not isinstance(user_id, str):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
@@ -61,7 +61,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return user
+    return user  # type: ignore[no-any-return]
 
 
 async def get_optional_user(
@@ -92,6 +92,8 @@ async def get_optional_user(
             return None
 
         user_repo = UserRepository(db)
+        if not isinstance(user_id, str):
+            return None
         return user_repo.get(user_id)
     except (KeyError, ValueError, TypeError):
         # Handle malformed token payload
@@ -163,7 +165,7 @@ def user_can_access_resource(
     """
     # Authenticated user access
     if current_user and resource_user_id:
-        return current_user.id == resource_user_id
+        return bool(current_user.id == resource_user_id)
 
     # Anonymous session access
     if not current_user and not resource_user_id:

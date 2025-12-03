@@ -172,7 +172,7 @@ class CacheService:
         try:
             keys = client.keys(pattern)
             if keys:
-                return client.delete(*keys)
+                return int(client.delete(*keys))
         except Exception as e:
             logger.warning(f"Cache invalidate pattern error for {pattern}: {e}")
 

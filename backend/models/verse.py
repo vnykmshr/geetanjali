@@ -1,8 +1,9 @@
 """Verse, Commentary, and Translation models."""
 
-from sqlalchemy import Column, String, Text, Integer, ForeignKey, JSON, CheckConstraint, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy import String, Text, Integer, ForeignKey, JSON, CheckConstraint, Boolean
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 import uuid
+from typing import Optional, Any
 
 from models.base import Base, TimestampMixin
 
@@ -12,18 +13,18 @@ class Verse(Base, TimestampMixin):
 
     __tablename__ = "verses"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    canonical_id = Column(String(20), unique=True, nullable=False, index=True)
-    chapter = Column(Integer, CheckConstraint("chapter >= 1 AND chapter <= 18"), nullable=False, index=True)
-    verse = Column(Integer, CheckConstraint("verse >= 1"), nullable=False)
-    sanskrit_iast = Column(Text)
-    sanskrit_devanagari = Column(Text)
-    translation_en = Column(Text)  # Primary English translation (from source)
-    paraphrase_en = Column(Text)  # LLM-generated leadership summary
-    consulting_principles = Column(JSON)  # Array of principle tags
-    is_featured = Column(Boolean, default=False, index=True)  # Showcase-worthy verse
-    source = Column(String(255))
-    license = Column(String(100))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    canonical_id: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
+    chapter: Mapped[int] = mapped_column(Integer, CheckConstraint("chapter >= 1 AND chapter <= 18"), nullable=False, index=True)
+    verse: Mapped[int] = mapped_column(Integer, CheckConstraint("verse >= 1"), nullable=False)
+    sanskrit_iast: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    sanskrit_devanagari: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    translation_en: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Primary English translation (from source)
+    paraphrase_en: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # LLM-generated leadership summary
+    consulting_principles: Mapped[Optional[Any]] = mapped_column(JSON, nullable=True)  # Array of principle tags
+    is_featured: Mapped[bool] = mapped_column(Boolean, default=False, index=True)  # Showcase-worthy verse
+    source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    license: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     # Relationships
     commentaries = relationship("Commentary", back_populates="verse", cascade="all, delete-orphan")
@@ -43,15 +44,15 @@ class Commentary(Base, TimestampMixin):
 
     __tablename__ = "commentaries"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    verse_id = Column(String(36), ForeignKey("verses.id", ondelete="CASCADE"), index=True)
-    text = Column(Text, nullable=False)
-    author = Column(String(255), index=True)
-    school = Column(String(100), index=True)  # e.g., 'Advaita Vedanta'
-    translator = Column(String(255))
-    source = Column(String(255))
-    license = Column(String(100))
-    language = Column(String(10), default="en")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    verse_id: Mapped[str] = mapped_column(String(36), ForeignKey("verses.id", ondelete="CASCADE"), index=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    author: Mapped[Optional[str]] = mapped_column(String(255), index=True, nullable=True)
+    school: Mapped[Optional[str]] = mapped_column(String(100), index=True, nullable=True)  # e.g., 'Advaita Vedanta'
+    translator: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    license: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    language: Mapped[str] = mapped_column(String(10), default="en")
 
     # Relationships
     verse = relationship("Verse", back_populates="commentaries")
@@ -65,15 +66,15 @@ class Translation(Base, TimestampMixin):
 
     __tablename__ = "translations"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    verse_id = Column(String(36), ForeignKey("verses.id", ondelete="CASCADE"), index=True)
-    text = Column(Text, nullable=False)
-    language = Column(String(10), default="en", index=True)
-    translator = Column(String(255), index=True)
-    school = Column(String(100))
-    source = Column(String(255))
-    license = Column(String(100))
-    year = Column(Integer)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    verse_id: Mapped[str] = mapped_column(String(36), ForeignKey("verses.id", ondelete="CASCADE"), index=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    language: Mapped[str] = mapped_column(String(10), default="en", index=True)
+    translator: Mapped[Optional[str]] = mapped_column(String(255), index=True, nullable=True)
+    school: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    license: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # Relationships
     verse = relationship("Verse", back_populates="translations")

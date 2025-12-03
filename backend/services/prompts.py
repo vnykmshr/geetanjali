@@ -341,5 +341,5 @@ def post_process_ollama_response(raw_response: str, retrieved_verses: List[Dict[
     data.setdefault("confidence", 0.6)  # Lower confidence for fallback
     data.setdefault("scholar_flag", True)  # Flag fallback responses for review
 
-    return data
+    return dict(data)
 

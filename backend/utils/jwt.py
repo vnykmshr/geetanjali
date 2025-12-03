@@ -28,7 +28,7 @@ def create_access_token(user_id: str, role: str) -> str:
         "iat": datetime.utcnow(),
         "type": "access"
     }
-    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    return str(jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM))
 
 
 def create_refresh_token() -> str:

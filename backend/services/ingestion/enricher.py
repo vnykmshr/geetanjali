@@ -47,7 +47,7 @@ class Enricher:
             with open(taxonomy_file, "r", encoding="utf-8") as f:
                 principles = json.load(f)
             logger.info(f"Loaded {len(principles)} principles from taxonomy")
-            return principles
+            return dict(principles)
         except Exception as e:
             logger.error(f"Failed to load principle taxonomy: {e}")
             return {}
@@ -196,7 +196,7 @@ Provide a concise, leadership-focused summary:"""
                 paraphrase = " ".join(words[:max_words]) + "..."
 
             logger.debug(f"Generated paraphrase: {len(words)} words")
-            return paraphrase
+            return str(paraphrase)
 
         except Exception as e:
             logger.error(f"Failed to generate paraphrase: {e}")
@@ -225,7 +225,7 @@ Provide a concise, leadership-focused summary:"""
             )
 
             logger.debug(f"Transliterated {len(devanagari)} chars to IAST")
-            return iast
+            return str(iast)
 
         except ImportError:
             logger.error("indic-transliteration library not available")

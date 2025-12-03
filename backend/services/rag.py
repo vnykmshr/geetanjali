@@ -33,7 +33,7 @@ class RAGPipeline:
     def retrieve_verses(
         self,
         query: str,
-        top_k: int = None
+        top_k: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """
         Retrieve relevant verses using vector similarity.
@@ -161,9 +161,9 @@ class RAGPipeline:
         self,
         prompt: str,
         temperature: float = 0.7,
-        fallback_prompt: str = None,
-        fallback_system: str = None,
-        retrieved_verses: List[Dict[str, Any]] = None
+        fallback_prompt: Optional[str] = None,
+        fallback_system: Optional[str] = None,
+        retrieved_verses: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """
         Generate consulting brief using LLM.
@@ -215,7 +215,7 @@ class RAGPipeline:
                 logger.info("Post-processing Ollama response")
                 result = post_process_ollama_response(response_text, retrieved_verses)
 
-            return result
+            return result  # type: ignore[no-any-return]
 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse LLM JSON response: {e}")
@@ -348,7 +348,7 @@ class RAGPipeline:
     def run(
         self,
         case_data: Dict[str, Any],
-        top_k: int = None
+        top_k: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Run complete RAG pipeline with graceful degradation.

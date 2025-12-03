@@ -234,7 +234,7 @@ class Validator:
 
         return True
 
-    def get_verse_by_canonical_id(self, canonical_id: str) -> Verse:
+    def get_verse_by_canonical_id(self, canonical_id: str) -> Verse | None:
         """
         Retrieve existing verse by canonical ID.
 
@@ -244,7 +244,7 @@ class Validator:
         Returns:
             Verse object or None
         """
-        return self.db.query(Verse).filter_by(canonical_id=canonical_id).first()
+        return self.db.query(Verse).filter_by(canonical_id=canonical_id).first()  # type: ignore[return-value]
 
     def get_statistics(self) -> Dict:
         """

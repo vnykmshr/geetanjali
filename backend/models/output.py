@@ -1,8 +1,10 @@
 """Output model for consulting briefs."""
 
-from sqlalchemy import Column, String, Text, ForeignKey, JSON, Float, Boolean, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import String, Text, ForeignKey, JSON, Float, Boolean, DateTime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 import uuid
+from datetime import datetime
+from typing import Optional, Any
 
 from models.base import Base
 
@@ -12,15 +14,15 @@ class Output(Base):
 
     __tablename__ = "outputs"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    case_id = Column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), index=True)
-    result_json = Column(JSON, nullable=False)  # Complete output structure
-    executive_summary = Column(Text)
-    confidence = Column(Float)  # 0.0 to 1.0
-    scholar_flag = Column(Boolean, default=False, index=True)
-    reviewed_by = Column(String(36), ForeignKey("users.id"))
-    reviewed_at = Column(DateTime)
-    created_at = Column(DateTime, nullable=False, index=True)  # Index for chronological queries
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), index=True)
+    result_json: Mapped[Any] = mapped_column(JSON, nullable=False)  # Complete output structure
+    executive_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.0 to 1.0
+    scholar_flag: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    reviewed_by: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)  # Index for chronological queries
 
     # Relationships
     case = relationship("Case", back_populates="outputs")

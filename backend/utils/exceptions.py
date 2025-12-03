@@ -38,7 +38,7 @@ class LLMError(GeetanjaliException):
         super().__init__(message, status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
-async def geetanjali_exception_handler(request: Request, exc: GeetanjaliException):
+async def geetanjali_exception_handler(request: Request, exc: GeetanjaliException) -> JSONResponse:
     """Handle Geetanjali custom exceptions."""
     logger.error(f"GeetanjaliException: {exc.message}")
 
@@ -52,7 +52,7 @@ async def geetanjali_exception_handler(request: Request, exc: GeetanjaliExceptio
     )
 
 
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     """Handle request validation errors."""
     logger.warning(f"Validation error: {exc.errors()}")
 
@@ -66,7 +66,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
-async def general_exception_handler(request: Request, exc: Exception):
+async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle unexpected exceptions."""
     logger.error(f"Unexpected error: {exc}", exc_info=True)
 

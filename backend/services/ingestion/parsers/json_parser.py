@@ -4,7 +4,7 @@ JSON Parser for extracting Bhagavad Geeta verses from structured JSON sources.
 
 import json
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +113,7 @@ class JSONParser:
         logger.info(f"Parsed {len(all_verses)} verses from chapters format")
         return all_verses
 
-    def _parse_single_verse(self, verse_data: Dict, source_config: Dict) -> Dict:
+    def _parse_single_verse(self, verse_data: Dict, source_config: Dict) -> Optional[Dict]:
         """
         Parse a single verse dictionary and standardize fields.
 
@@ -180,7 +180,7 @@ class JSONParser:
 
         return verse
 
-    def _extract_number(self, data: Dict, field_names: List[str]) -> int:
+    def _extract_number(self, data: Dict, field_names: List[str]) -> Optional[int]:
         """
         Extract numeric value from dict trying multiple field names.
 

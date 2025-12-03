@@ -31,11 +31,11 @@ class EmbeddingService:
         if isinstance(text, str):
             # Single text
             embedding = self.model.encode(text, convert_to_numpy=True)
-            return embedding.tolist()
+            return list(embedding.tolist())
         else:
             # Batch of texts
             embeddings = self.model.encode(text, convert_to_numpy=True)
-            return embeddings.tolist()
+            return list(embeddings.tolist())
 
     def encode_verse(self, verse_dict: dict) -> List[float]:
         """
@@ -61,7 +61,13 @@ class EmbeddingService:
         # Join with space
         combined_text = " ".join(text_parts)
 
-        return self.encode(combined_text)
+        result = self.encode(combined_text)
+        # encode returns Union type, but for string input it's List[float]
+        # Cast to ensure type checker knows it's a flat list
+        if isinstance(result, list) and len(result) > 0 and isinstance(result[0], list):
+            # This shouldn't happen for string input, but handle it
+            return result[0]
+        return result  # type: ignore[return-value]
 
 
 # Global embedding service instance

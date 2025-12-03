@@ -48,7 +48,8 @@ class MessageRepository(BaseRepository):
             "content": content,
             "created_at": datetime.utcnow(),
         }
-        return self.create(message_data)
+        result: Message = self.create(message_data)  # type: ignore[assignment]
+        return result
 
     def create_assistant_message(
         self, case_id: str, content: str, output_id: str
@@ -71,7 +72,8 @@ class MessageRepository(BaseRepository):
             "output_id": output_id,
             "created_at": datetime.utcnow(),
         }
-        return self.create(message_data)
+        result: Message = self.create(message_data)  # type: ignore[assignment]
+        return result
 
     def get_last_user_message(self, case_id: str) -> Optional[Message]:
         """

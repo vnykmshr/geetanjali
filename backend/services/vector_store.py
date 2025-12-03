@@ -212,7 +212,7 @@ class VectorStore:
         Returns:
             Count of verses
         """
-        return self.collection.count()
+        return int(self.collection.count())
 
     def reset(self):
         """

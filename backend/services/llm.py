@@ -79,7 +79,7 @@ class LLMService:
             True if healthy, False otherwise
         """
         if self.use_mock:
-            return self.mock_service.check_health()
+            return bool(self.mock_service.check_health())
 
         if self.primary_provider == LLMProvider.ANTHROPIC:
             return self.anthropic_client is not None
@@ -165,7 +165,7 @@ class LLMService:
             timeout=settings.OLLAMA_TIMEOUT
         )
         response.raise_for_status()
-        return response.json()
+        return dict(response.json())
 
     def _generate_ollama(
         self,
@@ -251,10 +251,10 @@ class LLMService:
         """
         # Use mock if enabled
         if self.use_mock:
-            return self.mock_service.generate(
+            return dict(self.mock_service.generate(
                 prompt, system_prompt, temperature, max_tokens,
                 fallback_prompt, fallback_system
-            )
+            ))
 
         # Try primary provider
         try:
@@ -289,6 +289,8 @@ class LLMService:
                     raise Exception(f"All LLM providers failed. Primary: {e}, Fallback: {fallback_error}")
             else:
                 raise
+
+        raise Exception("No LLM provider succeeded")
 
     def generate_json(
         self,
@@ -328,7 +330,7 @@ class LLMService:
             fallback_system=fb_system
         )
 
-        return result["response"]
+        return str(result["response"])
 
 
 # Global LLM service instance

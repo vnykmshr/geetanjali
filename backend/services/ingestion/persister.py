@@ -4,7 +4,7 @@ Persister service for saving verses to PostgreSQL and ChromaDB.
 
 import logging
 import uuid
-from typing import Dict, List
+from typing import Dict, List, Any
 from sqlalchemy.orm import Session
 
 from models.verse import Verse, Translation
@@ -166,11 +166,11 @@ class Persister:
 
         combined_text = " ".join(text_parts)
 
-        # Generate embedding
+        # Generate embedding (encode returns single embedding for a string)
         embedding = self.embedding_service.encode(combined_text)
 
         # Prepare metadata (ChromaDB only accepts str, int, float, bool - not None or list)
-        metadata = {}
+        metadata: Dict[str, Any] = {}
 
         # Only add chapter/verse if they have valid values
         if verse.chapter is not None:
@@ -185,7 +185,7 @@ class Persister:
         # Add consulting principles as comma-separated string if present
         consulting_principles = verse_data.get("consulting_principles")
         if consulting_principles and isinstance(consulting_principles, list):
-            metadata["principles"] = ",".join(consulting_principles)
+            metadata["principles"] = ",".join(str(p) for p in consulting_principles)
         elif consulting_principles:
             metadata["principles"] = str(consulting_principles)
 
@@ -201,7 +201,7 @@ class Persister:
                 canonical_id=verse.canonical_id,
                 text=combined_text,
                 metadata=metadata,
-                embedding=embedding
+                embedding=embedding  # type: ignore[arg-type]
             )
 
             logger.debug(f"Persisted embedding for {verse.canonical_id}")

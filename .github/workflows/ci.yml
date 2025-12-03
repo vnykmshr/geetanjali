@@ -49,7 +49,7 @@ jobs:
 
       - name: Run type checking
         run: mypy . --ignore-missing-imports
-        continue-on-error: true  # TODO: Fix type errors and re-enable strict checking
+        continue-on-error: false
 
       - name: Run tests
         env:

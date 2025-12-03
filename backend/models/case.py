@@ -1,9 +1,10 @@
 """Case model for ethical dilemmas."""
 
-from sqlalchemy import Column, String, Text, ForeignKey, JSON, Enum
-from sqlalchemy.orm import relationship
+from sqlalchemy import String, Text, ForeignKey, JSON
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 import uuid
 import enum
+from typing import Optional, Any
 
 from models.base import Base, TimestampMixin
 
@@ -22,20 +23,20 @@ class Case(Base, TimestampMixin):
 
     __tablename__ = "cases"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    session_id = Column(String(255), index=True)  # For anonymous users
-    title = Column(String(500), nullable=False)
-    description = Column(Text, nullable=False)
-    role = Column(String(100))
-    stakeholders = Column(JSON)  # Array of strings
-    constraints = Column(JSON)  # Array of strings
-    horizon = Column(String(50))  # 'short', 'medium', 'long'
-    sensitivity = Column(String(50), default="low")  # 'low', 'medium', 'high'
-    attachments = Column(JSON)  # Optional URLs or text blobs
-    locale = Column(String(10), default="en")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True)
+    session_id: Mapped[Optional[str]] = mapped_column(String(255), index=True, nullable=True)  # For anonymous users
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    role: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    stakeholders: Mapped[Optional[Any]] = mapped_column(JSON, nullable=True)  # Array of strings
+    constraints: Mapped[Optional[Any]] = mapped_column(JSON, nullable=True)  # Array of strings
+    horizon: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # 'short', 'medium', 'long'
+    sensitivity: Mapped[str] = mapped_column(String(50), default="low")  # 'low', 'medium', 'high'
+    attachments: Mapped[Optional[Any]] = mapped_column(JSON, nullable=True)  # Optional URLs or text blobs
+    locale: Mapped[str] = mapped_column(String(10), default="en")
     # Async processing status
-    status = Column(String(20), default=CaseStatus.DRAFT.value, index=True)
+    status: Mapped[str] = mapped_column(String(20), default=CaseStatus.DRAFT.value, index=True)
 
     # Relationships
     user = relationship("User", back_populates="cases")

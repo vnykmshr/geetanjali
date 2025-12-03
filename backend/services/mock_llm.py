@@ -292,4 +292,4 @@ class MockLLMService:
             temperature=temperature
         )
 
-        return result["response"]
+        return str(result["response"])
