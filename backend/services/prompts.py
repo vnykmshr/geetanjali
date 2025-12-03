@@ -23,6 +23,7 @@ Tone: professional, balanced, and practical.
 
 Output ONLY valid JSON matching this structure:
 {
+  "suggested_title": "Short, descriptive title for this consultation (5-8 words)",
   "executive_summary": "...",
   "options": [
     {
@@ -96,10 +97,20 @@ def build_user_prompt(
         metadata = verse.get('metadata', {})
         canonical_id = metadata.get('canonical_id', 'Unknown')
         paraphrase = metadata.get('paraphrase', 'N/A')
+        translation = metadata.get('translation_en', '')
         principles = metadata.get('principles', '')
+        translations = metadata.get('translations', [])
 
         prompt_parts.append(f"**Verse {i}: {canonical_id}**\n")
         prompt_parts.append(f"Paraphrase: {paraphrase}\n")
+        if translation:
+            prompt_parts.append(f"Translation: {translation}\n")
+        if translations:
+            for t in translations[:2]:  # Include up to 2 additional translations
+                translator = t.get('translator', 'Unknown')
+                text = t.get('text', '')
+                if text:
+                    prompt_parts.append(f"  - {translator}: {text}\n")
         if principles:
             prompt_parts.append(f"Principles: {principles}\n")
         prompt_parts.append("\n")
@@ -126,6 +137,7 @@ FEW_SHOT_EXAMPLE = """
 
 # Example Output:
 {
+  "suggested_title": "Balancing Layoffs with Compassionate Leadership",
   "executive_summary": "This case involves a classic trade-off between short-term financial relief and long-term organizational health. The Geeta teaches duty-focused action (BG 2.47) and compassionate equilibrium (BG 12.15), suggesting a balanced approach that minimizes harm while meeting obligations.",
   "options": [
     {
@@ -194,6 +206,7 @@ FEW_SHOT_EXAMPLE = """
 OLLAMA_SYSTEM_PROMPT = """You are an ethical leadership consultant using Bhagavad Geeta wisdom.
 
 Output JSON with these fields:
+- suggested_title: Short title for this consultation (5-8 words)
 - executive_summary: 1-2 sentence summary
 - options: array of 2 options, each with title, description, pros[], cons[], sources[]
 - recommended_action: {option: number, steps: [], sources: []}
@@ -233,7 +246,10 @@ def build_ollama_prompt(
         metadata = verse.get('metadata', {})
         canonical_id = metadata.get('canonical_id', 'Unknown')
         paraphrase = metadata.get('paraphrase', 'N/A')
+        translation = metadata.get('translation_en', '')
         prompt_parts.append(f"{i}. {canonical_id}: {paraphrase}\n")
+        if translation:
+            prompt_parts.append(f"   Translation: {translation}\n")
 
     # Simplified task
     prompt_parts.append("\n# Task\nProvide brief JSON consulting brief using Geeta principles.\n")

@@ -14,6 +14,7 @@ export default function NewCase() {
   const [formData, setFormData] = useState({
     question: '',
     context: '',
+    title: '', // Optional - auto-generated if empty
     // Optional advanced fields with sensible defaults
     role: '',
     stakeholders: '',
@@ -54,9 +55,18 @@ export default function NewCase() {
         description += '\n\n' + formData.context.trim();
       }
 
+      // Generate simple title if not provided (first sentence or 100 chars)
+      const generateSimpleTitle = (text: string): string => {
+        const firstSentence = text.split(/[.!?]/)[0].trim();
+        if (firstSentence.length > 0 && firstSentence.length <= 100) {
+          return firstSentence;
+        }
+        return text.slice(0, 100).trim();
+      };
+
       // Create case with smart defaults
       const caseData: Omit<Case, 'id' | 'created_at'> = {
-        title: formData.question.trim().slice(0, 100), // Use first 100 chars as title
+        title: formData.title.trim() || generateSimpleTitle(formData.question), // User title or auto-generate
         description: description,
         role: formData.role.trim() || 'Individual', // Default to Individual
         stakeholders: formData.stakeholders
@@ -71,14 +81,15 @@ export default function NewCase() {
 
       const createdCase = await casesApi.create(caseData);
 
-      // Automatically trigger analysis
+      // Trigger async analysis (returns immediately)
       try {
-        await casesApi.analyze(createdCase.id);
+        await casesApi.analyzeAsync(createdCase.id);
       } catch (analyzeErr) {
         // Log but don't fail - user can manually analyze later
         console.warn('Auto-analyze failed:', analyzeErr);
       }
 
+      // Navigate to case view with waiting state
       navigate(`/cases/${createdCase.id}`);
     } catch (err) {
       setError(errorMessages.caseCreate(err));
@@ -157,6 +168,26 @@ export default function NewCase() {
             />
             <p className="mt-1 text-sm text-gray-500">
               Share any details that might help provide better guidance
+            </p>
+          </div>
+
+          {/* Optional Title */}
+          <div>
+            <label htmlFor="title" className="block text-base font-medium text-gray-700 mb-2">
+              Title for this consultation <span className="text-gray-400">(optional)</span>
+            </label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              maxLength={100}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              placeholder="e.g., Career vs Family Decision"
+            />
+            <p className="mt-1 text-sm text-gray-500">
+              A short title to identify this consultation. Auto-generated if left empty.
             </p>
           </div>
 

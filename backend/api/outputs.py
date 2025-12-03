@@ -3,18 +3,19 @@
 import logging
 from typing import List, Optional
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import uuid
 
-from db import get_db
+from db import get_db, SessionLocal
 from db.repositories.case_repository import CaseRepository
 from db.repositories.message_repository import MessageRepository
 from models.output import Output
+from models.case import Case, CaseStatus
 from models.user import User
-from api.schemas import OutputResponse
+from api.schemas import OutputResponse, CaseResponse
 from api.middleware.auth import get_current_user, get_optional_user, require_role, get_session_id, user_can_access_resource
 from services.rag import get_rag_pipeline
 from config import settings
@@ -27,6 +28,152 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1")
 
 
+def run_analysis_background(case_id: str, case_data: dict):
+    """
+    Background task to run RAG analysis.
+    Uses a new database session since background tasks run outside request context.
+    """
+    db = SessionLocal()
+    try:
+        logger.info(f"[Background] Starting analysis for case {case_id}")
+
+        # Update status to processing
+        case = db.query(Case).filter(Case.id == case_id).first()
+        if not case:
+            logger.error(f"[Background] Case {case_id} not found")
+            return
+
+        case.status = CaseStatus.PROCESSING.value
+        db.commit()
+
+        # Run RAG pipeline
+        rag_pipeline = get_rag_pipeline()
+        result = rag_pipeline.run(case_data)
+
+        # Create output record
+        output = Output(
+            id=str(uuid.uuid4()),
+            case_id=case_id,
+            result_json=result,
+            executive_summary=result.get("executive_summary", ""),
+            confidence=result.get("confidence", 0.0),
+            scholar_flag=result.get("scholar_flag", False),
+            created_at=datetime.utcnow()
+        )
+        db.add(output)
+
+        # Update case title if LLM provided one
+        if result.get("suggested_title"):
+            case.title = result["suggested_title"]
+
+        # Update case status to completed
+        case.status = CaseStatus.COMPLETED.value
+        db.commit()
+        db.refresh(output)
+
+        # Create assistant message linked to this output
+        message_repo = MessageRepository(db)
+        message_repo.create_assistant_message(
+            case_id=case_id,
+            content=result.get("executive_summary", ""),
+            output_id=output.id
+        )
+
+        logger.info(f"[Background] Analysis complete. Output ID: {output.id}, Confidence: {output.confidence}")
+
+    except Exception as e:
+        logger.error(f"[Background] Analysis failed for case {case_id}: {e}")
+        # Update case status to failed
+        try:
+            case = db.query(Case).filter(Case.id == case_id).first()
+            if case:
+                case.status = CaseStatus.FAILED.value
+                db.commit()
+        except Exception:
+            pass
+    finally:
+        db.close()
+
+
+@router.post("/cases/{case_id}/analyze/async", response_model=CaseResponse, status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit(settings.ANALYZE_RATE_LIMIT)
+async def analyze_case_async(
+    request: Request,
+    case_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
+    session_id: Optional[str] = Depends(get_session_id)
+):
+    """
+    Start async analysis of a case using the RAG pipeline.
+
+    This endpoint returns immediately with status 202 Accepted.
+    The analysis runs in the background and updates the case status.
+    Poll GET /cases/{case_id} to check status (pending -> processing -> completed/failed).
+
+    Args:
+        case_id: Case ID to analyze
+        background_tasks: FastAPI background tasks
+        db: Database session
+        current_user: Authenticated user (optional)
+        session_id: Session ID from X-Session-ID header (for anonymous users)
+
+    Returns:
+        Case with status 'pending'
+    """
+    logger.info(f"Starting async analysis for case: {case_id}")
+
+    # Get case and verify ownership
+    case_repo = CaseRepository(db)
+    case = case_repo.get(case_id)
+
+    if not case:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Case {case_id} not found"
+        )
+
+    # Check access
+    if not user_can_access_resource(
+        resource_user_id=case.user_id,
+        resource_session_id=case.session_id,
+        current_user=current_user,
+        session_id=session_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this case"
+        )
+
+    # Check if already processing
+    if case.status in [CaseStatus.PENDING.value, CaseStatus.PROCESSING.value]:
+        logger.info(f"Case {case_id} already in progress (status: {case.status})")
+        return case
+
+    # Update status to pending
+    case.status = CaseStatus.PENDING.value
+    db.commit()
+    db.refresh(case)
+
+    # Prepare case data for RAG pipeline
+    case_data = {
+        "title": case.title,
+        "description": case.description,
+        "role": case.role,
+        "stakeholders": case.stakeholders,
+        "constraints": case.constraints,
+        "horizon": case.horizon,
+        "sensitivity": case.sensitivity,
+    }
+
+    # Add background task
+    background_tasks.add_task(run_analysis_background, case_id, case_data)
+
+    logger.info(f"Async analysis queued for case {case_id}")
+    return case
+
+
 @router.post("/cases/{case_id}/analyze", response_model=OutputResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit(settings.ANALYZE_RATE_LIMIT)
 async def analyze_case(
@@ -37,7 +184,10 @@ async def analyze_case(
     session_id: Optional[str] = Depends(get_session_id)
 ):
     """
-    Analyze a case using the RAG pipeline (supports anonymous users).
+    Analyze a case using the RAG pipeline (synchronous, supports anonymous users).
+
+    This endpoint waits for the analysis to complete before returning.
+    For async processing, use POST /cases/{case_id}/analyze/async instead.
 
     This endpoint:
     1. Retrieves the case from database

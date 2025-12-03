@@ -69,3 +69,39 @@ class VerseRepository(BaseRepository[Verse]):
         """
         # For now, return all verses as we only have seed data
         return self.get_all()
+
+    def get_with_translations(self, canonical_id: str) -> Optional[Verse]:
+        """
+        Get verse with translations eagerly loaded.
+
+        Args:
+            canonical_id: Canonical verse ID
+
+        Returns:
+            Verse with translations or None if not found
+        """
+        from sqlalchemy.orm import joinedload
+        return (
+            self.db.query(Verse)
+            .options(joinedload(Verse.translations))
+            .filter(Verse.canonical_id == canonical_id)
+            .first()
+        )
+
+    def get_many_with_translations(self, canonical_ids: List[str]) -> List[Verse]:
+        """
+        Get multiple verses with translations eagerly loaded.
+
+        Args:
+            canonical_ids: List of canonical verse IDs
+
+        Returns:
+            List of verses with translations
+        """
+        from sqlalchemy.orm import joinedload
+        return (
+            self.db.query(Verse)
+            .options(joinedload(Verse.translations))
+            .filter(Verse.canonical_id.in_(canonical_ids))
+            .all()
+        )

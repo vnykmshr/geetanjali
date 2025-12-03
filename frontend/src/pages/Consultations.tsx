@@ -1,14 +1,34 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { casesApi } from '../lib/api';
-import type { Case } from '../types';
+import type { Case, CaseStatus } from '../types';
 import { Navbar } from '../components/Navbar';
 import { errorMessages } from '../lib/errorMessages';
+import { useAuth } from '../contexts/AuthContext';
+
+// Status badge component
+function StatusBadge({ status }: { status?: CaseStatus }) {
+  if (!status || status === 'completed') {
+    return <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">Completed</span>;
+  }
+  if (status === 'processing' || status === 'pending') {
+    return (
+      <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700 flex items-center gap-1">
+        <span className="animate-pulse">●</span> Processing
+      </span>
+    );
+  }
+  if (status === 'failed') {
+    return <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">Failed</span>;
+  }
+  return <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Draft</span>;
+}
 
 export default function Consultations() {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     casesApi.list(0, 100)
@@ -51,9 +71,26 @@ export default function Consultations() {
           </div>
         )}
 
+        {/* Anonymous user notice */}
+        {!isAuthenticated && cases.length > 0 && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+            <span className="text-amber-600 text-lg">💡</span>
+            <div>
+              <p className="text-amber-800 text-sm">
+                These consultations are stored in your browser session.
+                <Link to="/signup" className="ml-1 text-amber-700 hover:text-amber-900 underline font-medium">
+                  Create an account
+                </Link>
+                {' '}to save them permanently and access from any device.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Consultations List */}
         {cases.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
+            <div className="text-5xl mb-4">🪷</div>
             <p className="text-gray-600 mb-6">You haven't asked any questions yet.</p>
             <Link
               to="/cases/new"
@@ -63,39 +100,51 @@ export default function Consultations() {
             </Link>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="space-y-4">
-              {cases.map((case_) => (
-                <Link
-                  key={case_.id}
-                  to={`/cases/${case_.id}`}
-                  className="block p-6 border border-gray-200 rounded-xl hover:border-red-300 hover:bg-red-50 transition-all hover:shadow-md"
-                >
+          <div className="space-y-4">
+            {cases.map((case_) => (
+              <Link
+                key={case_.id}
+                to={`/cases/${case_.id}`}
+                className="block bg-white rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 hover:border-red-200 overflow-hidden"
+              >
+                <div className="p-6">
                   <div className="flex justify-between items-start mb-3">
-                    <h2 className="text-xl font-semibold text-gray-900 flex-1">{case_.title}</h2>
-                    <div className="text-sm text-gray-400 ml-4">
-                      {new Date(case_.created_at || '').toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h2 className="text-lg font-semibold text-gray-900 line-clamp-1">{case_.title}</h2>
+                        <StatusBadge status={case_.status} />
+                      </div>
+                      <p className="text-sm text-gray-400">
+                        {new Date(case_.created_at || '').toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </p>
                     </div>
                   </div>
-                  <p className="text-gray-600 mb-4 line-clamp-2">{case_.description}</p>
-                  <div className="flex gap-4 text-sm text-gray-500">
-                    <span>Role: {case_.role}</span>
-                    <span>•</span>
-                    <span>Horizon: {case_.horizon}</span>
-                    {case_.stakeholders && case_.stakeholders.length > 0 && (
-                      <>
-                        <span>•</span>
-                        <span>{case_.stakeholders.length} stakeholder{case_.stakeholders.length !== 1 ? 's' : ''}</span>
-                      </>
+                  <p className="text-gray-600 text-sm line-clamp-2 mb-3">{case_.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {case_.role && case_.role !== 'Individual' && (
+                      <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                        👤 {case_.role}
+                      </span>
+                    )}
+                    {case_.stakeholders && case_.stakeholders.length > 0 && case_.stakeholders[0] !== 'self' && (
+                      <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                        👥 {case_.stakeholders.join(', ')}
+                      </span>
+                    )}
+                    {case_.horizon && (
+                      <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                        ⏱️ {case_.horizon} term
+                      </span>
                     )}
                   </div>
-                </Link>
-              ))}
-            </div>
+                </div>
+              </Link>
+            ))}
           </div>
         )}
         </div>

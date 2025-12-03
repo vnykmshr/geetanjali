@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { casesApi, outputsApi } from '../lib/api';
 import { messagesApi } from '../api/messages';
-import type { Case, Message, Output } from '../types';
+import type { Case, Message, Output, CaseStatus } from '../types';
 import OptionTable from '../components/OptionTable';
 import { useAuth } from '../contexts/AuthContext';
 import { Navbar } from '../components/Navbar';
 import { errorMessages } from '../lib/errorMessages';
+import { ConsultationWaiting } from '../components/ConsultationWaiting';
 
 export default function CaseView() {
   const { id } = useParams<{ id: string }>();
@@ -21,15 +22,19 @@ export default function CaseView() {
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
+  // Check if case is still processing
+  const isProcessing = caseData?.status === 'pending' || caseData?.status === 'processing';
+
+  const loadCaseData = useCallback(async () => {
     if (!id) return;
 
-    const loadCase = async () => {
-      try {
-        // Load case data
-        const data = await casesApi.get(id);
-        setCaseData(data);
+    try {
+      // Load case data
+      const data = await casesApi.get(id);
+      setCaseData(data);
 
+      // Only load messages/outputs if not processing
+      if (data.status === 'completed' || data.status === 'failed' || !data.status) {
         // Load messages (conversation thread)
         const messagesData = await messagesApi.list(id);
         setMessages(messagesData);
@@ -42,15 +47,53 @@ export default function CaseView() {
         if (!isAuthenticated && outputsData.length > 0) {
           setShowSignupPrompt(true);
         }
-      } catch (err) {
-        setError(errorMessages.caseLoad(err));
-      } finally {
-        setLoading(false);
       }
-    };
-
-    loadCase();
+    } catch (err) {
+      setError(errorMessages.caseLoad(err));
+    } finally {
+      setLoading(false);
+    }
   }, [id, isAuthenticated]);
+
+  // Initial load
+  useEffect(() => {
+    loadCaseData();
+  }, [loadCaseData]);
+
+  // Polling for processing status
+  useEffect(() => {
+    if (!isProcessing || !id) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const data = await casesApi.get(id);
+        setCaseData(data);
+
+        // If completed or failed, stop polling and load full data
+        if (data.status === 'completed' || data.status === 'failed') {
+          clearInterval(pollInterval);
+          loadCaseData();
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [isProcessing, id, loadCaseData]);
+
+  const handleRetry = async () => {
+    if (!id) return;
+    try {
+      await casesApi.analyzeAsync(id);
+      // Refresh case data to get new status
+      const data = await casesApi.get(id);
+      setCaseData(data);
+      setError(null);
+    } catch (err) {
+      setError(errorMessages.caseAnalyze(err));
+    }
+  };
 
   const toggleExpanded = (outputId: string) => {
     setExpandedOutputs(prev => {
@@ -192,7 +235,22 @@ export default function CaseView() {
           </div>
         )}
 
-        {/* Conversation Thread */}
+        {/* Show waiting component when processing */}
+        {isProcessing && (
+          <div className="max-w-4xl mx-auto mb-8">
+            <ConsultationWaiting status={caseData.status as CaseStatus} onRetry={handleRetry} />
+          </div>
+        )}
+
+        {/* Show failed state with retry option */}
+        {caseData.status === 'failed' && !isProcessing && (
+          <div className="max-w-4xl mx-auto mb-8">
+            <ConsultationWaiting status={caseData.status as CaseStatus} onRetry={handleRetry} />
+          </div>
+        )}
+
+        {/* Conversation Thread - only show when completed */}
+        {(caseData.status === 'completed' || !caseData.status) && (
         <div className="max-w-4xl mx-auto">
           <div className="space-y-6">
             {messages.map((message, idx) => {
@@ -362,6 +420,7 @@ export default function CaseView() {
             </div>
           </div>
         </div>
+        )}
         </div>
       </div>
     </div>

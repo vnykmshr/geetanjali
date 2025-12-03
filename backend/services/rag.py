@@ -2,7 +2,7 @@
 
 import logging
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from config import settings
 from services.vector_store import get_vector_store
@@ -14,6 +14,8 @@ from services.prompts import (
     build_ollama_prompt,
     post_process_ollama_response
 )
+from db import SessionLocal
+from db.repositories.verse_repository import VerseRepository
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +68,71 @@ class RAGPipeline:
         logger.debug(f"Retrieved verses: {[v['canonical_id'] for v in verses]}")
 
         return verses
+
+    def enrich_verses_with_translations(
+        self,
+        verses: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Enrich retrieved verses with translations from the database.
+
+        Args:
+            verses: List of retrieved verses from vector store
+
+        Returns:
+            Verses enriched with translation data
+        """
+        if not verses:
+            return verses
+
+        # Get canonical IDs
+        canonical_ids = [v.get('canonical_id') or v.get('metadata', {}).get('canonical_id') for v in verses]
+        canonical_ids = [cid for cid in canonical_ids if cid]
+
+        if not canonical_ids:
+            return verses
+
+        # Fetch verses with translations from database
+        db = SessionLocal()
+        try:
+            verse_repo = VerseRepository(db)
+            db_verses = verse_repo.get_many_with_translations(canonical_ids)
+
+            # Create lookup by canonical_id
+            verse_lookup = {v.canonical_id: v for v in db_verses}
+
+            # Enrich each retrieved verse
+            for verse in verses:
+                cid = verse.get('canonical_id') or verse.get('metadata', {}).get('canonical_id')
+                if cid and cid in verse_lookup:
+                    db_verse = verse_lookup[cid]
+
+                    # Add translations to metadata
+                    if 'metadata' not in verse:
+                        verse['metadata'] = {}
+
+                    # Get primary translation from verse table
+                    verse['metadata']['translation_en'] = db_verse.translation_en
+
+                    # Get additional translations from translations table
+                    if db_verse.translations:
+                        verse['metadata']['translations'] = [
+                            {
+                                'text': t.text,
+                                'translator': t.translator,
+                                'school': t.school
+                            }
+                            for t in db_verse.translations[:3]  # Limit to 3 translations
+                        ]
+
+            logger.debug(f"Enriched {len(verses)} verses with translations")
+            return verses
+
+        except Exception as e:
+            logger.warning(f"Failed to enrich verses with translations: {e}")
+            return verses
+        finally:
+            db.close()
 
     def construct_context(
         self,
@@ -310,6 +377,9 @@ class RAGPipeline:
 
             if not retrieved_verses:
                 logger.warning("No verses retrieved - continuing with empty context")
+            else:
+                # Enrich verses with translations from database
+                retrieved_verses = self.enrich_verses_with_translations(retrieved_verses)
 
         except Exception as e:
             logger.error(f"Verse retrieval failed: {e} - continuing without verses")

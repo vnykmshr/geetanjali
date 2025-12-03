@@ -106,6 +106,7 @@ class CaseResponse(CaseBase):
     id: str
     user_id: Optional[str]
     session_id: Optional[str]
+    status: str = Field("draft", description="Processing status: draft/pending/processing/completed/failed")
     created_at: datetime
     updated_at: datetime
 

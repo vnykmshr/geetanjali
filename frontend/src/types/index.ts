@@ -1,5 +1,7 @@
 // API Response Types based on project-description.md
 
+export type CaseStatus = 'draft' | 'pending' | 'processing' | 'completed' | 'failed';
+
 export interface Case {
   id: string;
   user_id?: string;
@@ -10,6 +12,7 @@ export interface Case {
   constraints: string[];
   horizon: 'short' | 'medium' | 'long';
   sensitivity?: 'low' | 'medium' | 'high';
+  status?: CaseStatus;
   created_at?: string;
 }
 
