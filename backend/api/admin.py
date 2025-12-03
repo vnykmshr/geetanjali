@@ -2,6 +2,7 @@
 
 import logging
 import secrets
+import threading
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header
 from sqlalchemy.orm import Session
@@ -51,7 +52,9 @@ class IngestionStatus(BaseModel):
     ingestion_running: bool = False
 
 
-# Global flag to prevent concurrent ingestion runs
+# Thread-safe ingestion state management
+# Uses a lock to prevent race conditions when checking/setting ingestion status
+_ingestion_lock = threading.Lock()
 _ingestion_running = False
 
 
@@ -117,11 +120,14 @@ def trigger_ingestion(
     """
     global _ingestion_running
 
-    if _ingestion_running:
-        raise HTTPException(
-            status_code=409,
-            detail="Ingestion is already running. Please wait for it to complete."
-        )
+    # Atomically check and set the flag to prevent race conditions
+    with _ingestion_lock:
+        if _ingestion_running:
+            raise HTTPException(
+                status_code=409,
+                detail="Ingestion is already running. Please wait for it to complete."
+            )
+        _ingestion_running = True
 
     try:
         verse_count = db.query(Verse).count()
@@ -134,8 +140,6 @@ def trigger_ingestion(
             enrich=request.enrich
         )
 
-        _ingestion_running = True
-
         return IngestionStatus(
             status="queued",
             message="Ingestion queued and running in background. Check /api/v1/admin/status for progress.",
@@ -143,7 +147,12 @@ def trigger_ingestion(
             ingestion_running=True
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
+        # Reset flag on error since ingestion didn't start
+        with _ingestion_lock:
+            _ingestion_running = False
         logger.error(f"Failed to queue ingestion: {e}")
         raise HTTPException(status_code=500, detail="Failed to queue ingestion")
 
@@ -202,7 +211,8 @@ def run_ingestion_task(
 
     finally:
         db.close()
-        _ingestion_running = False
+        with _ingestion_lock:
+            _ingestion_running = False
 
 
 class SyncFeaturedResponse(BaseModel):
