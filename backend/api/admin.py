@@ -1,6 +1,7 @@
 """Admin endpoints for data management."""
 
 import logging
+import secrets
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header
 from sqlalchemy.orm import Session
@@ -23,8 +24,9 @@ def verify_admin_api_key(x_api_key: str = Header(..., alias="X-API-Key")):
 
     This is a simple guard until proper admin user roles are implemented.
     Requires X-API-Key header matching the configured API_KEY.
+    Uses constant-time comparison to prevent timing attacks.
     """
-    if x_api_key != settings.API_KEY:
+    if not secrets.compare_digest(x_api_key, settings.API_KEY):
         raise HTTPException(
             status_code=401,
             detail="Invalid or missing API key"

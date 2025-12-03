@@ -2,6 +2,7 @@
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from typing import Generator
 
 from config import settings
@@ -88,5 +89,6 @@ def check_db_connection(timeout: int = 2) -> bool:
             return True
     except TimeoutError:
         return False
-    except Exception:
+    except (OperationalError, SQLAlchemyError):
+        # Database connection or query errors
         return False

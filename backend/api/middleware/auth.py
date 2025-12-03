@@ -93,7 +93,8 @@ async def get_optional_user(
 
         user_repo = UserRepository(db)
         return user_repo.get(user_id)
-    except Exception:
+    except (KeyError, ValueError, TypeError):
+        # Handle malformed token payload
         return None
 
 

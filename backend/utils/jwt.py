@@ -90,5 +90,6 @@ def decode_access_token(token: str) -> Optional[dict]:
 
     except JWTError:
         return None
-    except Exception:
+    except (KeyError, ValueError, TypeError):
+        # Handle malformed payload or type mismatches
         return None

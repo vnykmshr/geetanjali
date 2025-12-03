@@ -5,6 +5,7 @@ from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import uuid
@@ -89,8 +90,8 @@ def run_analysis_background(case_id: str, case_data: dict):
             if case:
                 case.status = CaseStatus.FAILED.value
                 db.commit()
-        except Exception:
-            pass
+        except (OperationalError, SQLAlchemyError) as db_err:
+            logger.warning(f"[Background] Failed to update case status: {db_err}")
     finally:
         db.close()
 
