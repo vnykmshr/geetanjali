@@ -3,8 +3,9 @@
 import logging
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from api.schemas import SignupRequest, LoginRequest, AuthResponse, RefreshResponse, UserResponse
 from api.middleware.auth import get_current_user, get_session_id
@@ -21,13 +22,18 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
 
+# Rate limiter for auth endpoints (stricter limits to prevent brute force)
+limiter = Limiter(key_func=get_remote_address)
+
 # Cookie settings for refresh token
 REFRESH_TOKEN_COOKIE_KEY = "refresh_token"
 REFRESH_TOKEN_COOKIE_MAX_AGE = 90 * 24 * 60 * 60  # 90 days in seconds
 
 
 @router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
 async def signup(
+    request: Request,
     signup_data: SignupRequest,
     response: Response,
     db: Session = Depends(get_db),
@@ -125,7 +131,9 @@ async def signup(
 
 
 @router.post("/login", response_model=AuthResponse)
+@limiter.limit("10/minute")
 async def login(
+    request: Request,
     login_data: LoginRequest,
     response: Response,
     db: Session = Depends(get_db),
@@ -210,6 +218,7 @@ async def login(
 
 
 @router.post("/refresh", response_model=RefreshResponse)
+@limiter.limit("30/minute")
 async def refresh(
     request: Request,
     response: Response,
