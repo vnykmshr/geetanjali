@@ -30,6 +30,7 @@ class LLMProvider(str, Enum):
 
     ANTHROPIC = "anthropic"
     OLLAMA = "ollama"
+    MOCK = "mock"
 
 
 class LLMService:
@@ -54,7 +55,9 @@ class LLMService:
             return
 
         self.primary_provider = LLMProvider(settings.LLM_PROVIDER.lower())
+        self.fallback_provider = LLMProvider(settings.LLM_FALLBACK_PROVIDER.lower())
         self.fallback_enabled = settings.LLM_FALLBACK_ENABLED
+        self.mock_service = MockLLMService()  # Always available for fallback
 
         # Initialize Anthropic client if available
         self.anthropic_client = None
@@ -73,7 +76,7 @@ class LLMService:
 
         logger.info(
             f"LLM Service initialized - Primary: {self.primary_provider.value}, "
-            f"Fallback: {'enabled' if self.fallback_enabled else 'disabled'}"
+            f"Fallback: {self.fallback_provider.value if self.fallback_enabled else 'disabled'}"
         )
 
     def check_health(self) -> bool:
@@ -285,29 +288,32 @@ class LLMService:
 
             # Try fallback if enabled
             if self.fallback_enabled:
-                logger.info("Attempting fallback provider...")
+                logger.info(f"Attempting fallback provider: {self.fallback_provider.value}")
                 try:
                     # Use simplified prompts for fallback if provided
                     fb_prompt = fallback_prompt or prompt
                     fb_system = fallback_system or system_prompt
 
-                    if self.primary_provider == LLMProvider.ANTHROPIC:
-                        # Fallback to Ollama with simplified prompt
-                        return self._generate_ollama(
-                            fb_prompt,
-                            fb_system,
-                            temperature,
-                            max_tokens,
-                            simplified=True,
+                    if self.fallback_provider == LLMProvider.MOCK:
+                        return dict(
+                            self.mock_service.generate(
+                                fb_prompt, fb_system, temperature, max_tokens,
+                                fallback_prompt, fallback_system,
+                            )
                         )
-                    elif self.primary_provider == LLMProvider.OLLAMA:
-                        # Fallback to Anthropic if available
+                    elif self.fallback_provider == LLMProvider.OLLAMA:
+                        return self._generate_ollama(
+                            fb_prompt, fb_system, temperature, max_tokens, simplified=True,
+                        )
+                    elif self.fallback_provider == LLMProvider.ANTHROPIC:
                         if self.anthropic_client:
                             return self._generate_anthropic(
                                 fb_prompt, fb_system, temperature, max_tokens
                             )
                         else:
-                            raise Exception("No fallback provider available")
+                            raise Exception("Anthropic fallback not available (no API key)")
+                    else:
+                        raise Exception(f"Unknown fallback provider: {self.fallback_provider}")
                 except Exception as fallback_error:
                     logger.error(f"Fallback provider also failed: {fallback_error}")
                     raise Exception(

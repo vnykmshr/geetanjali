@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     # LLM Configuration
     # Primary LLM Provider: anthropic, ollama, or mock
     LLM_PROVIDER: str = "anthropic"  # Primary provider
+    LLM_FALLBACK_PROVIDER: str = "mock"  # Fallback provider: anthropic, ollama, or mock
     LLM_FALLBACK_ENABLED: bool = True  # Enable fallback to secondary provider
     USE_MOCK_LLM: bool = False  # Use mock LLM for testing (overrides provider setting)
 

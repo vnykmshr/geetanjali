@@ -135,7 +135,32 @@ fi
 
 echo "=== Initialization Complete ==="
 echo ""
-echo "Starting FastAPI server..."
 
-# Start the FastAPI application
-exec uvicorn main:app --host 0.0.0.0 --port 8000
+# Pre-warm Ollama model in background (only if Ollama is the LLM provider)
+if [ "${LLM_PROVIDER:-}" = "ollama" ] && [ "${USE_MOCK_LLM:-false}" != "true" ]; then
+    OLLAMA_URL="${OLLAMA_BASE_URL:-http://ollama:11434}"
+    OLLAMA_MODEL="${OLLAMA_MODEL:-qwen2.5:3b}"
+
+    echo "Pre-warming Ollama model ($OLLAMA_MODEL) in background..."
+    (
+        # Wait a moment for the main process to start
+        sleep 5
+
+        # Send a simple prompt to load the model into memory
+        curl -sf -X POST "$OLLAMA_URL/api/generate" \
+            -H "Content-Type: application/json" \
+            -d "{\"model\": \"$OLLAMA_MODEL\", \"prompt\": \"Hello\", \"stream\": false}" \
+            --max-time 600 > /dev/null 2>&1 && \
+            echo "✓ Ollama model pre-warmed successfully" || \
+            echo "⚠️  Ollama pre-warm failed (model will load on first request)"
+    ) &
+fi
+
+# If arguments are passed (e.g., "python worker.py"), run those instead
+if [ $# -gt 0 ]; then
+    echo "Starting: $@"
+    exec "$@"
+else
+    echo "Starting FastAPI server..."
+    exec uvicorn main:app --host 0.0.0.0 --port 8000
+fi

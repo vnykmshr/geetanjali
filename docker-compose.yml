@@ -7,12 +7,16 @@ services:
       - "11434:11434"
     volumes:
       - ollama_models:/root/.ollama
+    environment:
+      # Keep model loaded for 24 hours (default is 5 minutes)
+      # Use "1h" for 1 hour, "24h" for 1 day, or "-1" for forever
+      OLLAMA_KEEP_ALIVE: "24h"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      test: ["CMD", "ollama", "list"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
     networks:
       - geetanjali-network
     restart: unless-stopped
@@ -96,6 +100,8 @@ services:
       DEBUG: ${DEBUG:-}
       LOG_LEVEL: ${LOG_LEVEL:-}
       USE_MOCK_LLM: ${USE_MOCK_LLM:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-}
+      LLM_FALLBACK_PROVIDER: ${LLM_FALLBACK_PROVIDER:-}
     ports:
       - "8000:8000"
     volumes:
@@ -134,6 +140,8 @@ services:
       APP_ENV: ${APP_ENV:-}
       LOG_LEVEL: ${LOG_LEVEL:-}
       USE_MOCK_LLM: ${USE_MOCK_LLM:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-}
+      LLM_FALLBACK_PROVIDER: ${LLM_FALLBACK_PROVIDER:-}
     volumes:
       - ./backend:/app
     depends_on:
