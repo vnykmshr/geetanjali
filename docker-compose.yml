@@ -62,42 +62,22 @@ services:
       dockerfile: Dockerfile
     container_name: geetanjali-backend
     environment:
-      # Database
+      # Docker-specific overrides (hostnames differ from local dev)
       DATABASE_URL: postgresql://${POSTGRES_USER:-geetanjali}:${POSTGRES_PASSWORD:-geetanjali_dev_pass}@postgres:5432/${POSTGRES_DB:-geetanjali}
-
-      # ChromaDB
       CHROMA_HOST: chromadb
       CHROMA_PORT: 8000
+      REDIS_URL: redis://redis:6379/0
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
 
-      # LLM Configuration
-      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}  # anthropic or ollama
-      LLM_FALLBACK_ENABLED: ${LLM_FALLBACK_ENABLED:-true}
-      USE_MOCK_LLM: ${USE_MOCK_LLM:-true}  # MOCK MODE ENABLED for testing
-
-      # Anthropic (Claude)
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}  # Set in .env file
-      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-3-5-haiku-20241022}
-      ANTHROPIC_MAX_TOKENS: ${ANTHROPIC_MAX_TOKENS:-2048}
-      ANTHROPIC_TIMEOUT: ${ANTHROPIC_TIMEOUT:-30}
-
-      # Ollama (running on host - fallback)
-      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-true}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
-      OLLAMA_TIMEOUT: ${OLLAMA_TIMEOUT:-120}
-      OLLAMA_MAX_TOKENS: ${OLLAMA_MAX_TOKENS:-512}
-
-      # Redis Cache
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-
-      # Email (Resend)
+      # Secrets from .env (no defaults - required for production)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
-      CONTACT_EMAIL: ${CONTACT_EMAIL:-contact@geetanjali.app}
 
-      # API Settings
-      APP_ENV: ${APP_ENV:-development}
-      DEBUG: ${DEBUG:-true}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Optional .env overrides (config.py has defaults)
+      APP_ENV: ${APP_ENV:-}
+      DEBUG: ${DEBUG:-}
+      LOG_LEVEL: ${LOG_LEVEL:-}
+      USE_MOCK_LLM: ${USE_MOCK_LLM:-}
     ports:
       - "8000:8000"
     volumes:
@@ -122,29 +102,20 @@ services:
     container_name: geetanjali-worker
     command: python worker.py
     environment:
-      # Database
+      # Docker-specific overrides (hostnames differ from local dev)
       DATABASE_URL: postgresql://${POSTGRES_USER:-geetanjali}:${POSTGRES_PASSWORD:-geetanjali_dev_pass}@postgres:5432/${POSTGRES_DB:-geetanjali}
-
-      # ChromaDB
       CHROMA_HOST: chromadb
       CHROMA_PORT: 8000
-
-      # Redis
       REDIS_URL: redis://redis:6379/0
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
 
-      # LLM Configuration (same as backend)
-      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
-      LLM_FALLBACK_ENABLED: ${LLM_FALLBACK_ENABLED:-true}
-      USE_MOCK_LLM: ${USE_MOCK_LLM:-true}
+      # Secrets from .env (no defaults - required for production)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-3-5-haiku-20241022}
-      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-true}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
 
-      # App Settings
-      APP_ENV: ${APP_ENV:-development}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Optional .env overrides (config.py has defaults)
+      APP_ENV: ${APP_ENV:-}
+      LOG_LEVEL: ${LOG_LEVEL:-}
+      USE_MOCK_LLM: ${USE_MOCK_LLM:-}
     volumes:
       - ./backend:/app
     depends_on:

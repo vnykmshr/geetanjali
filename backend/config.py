@@ -43,19 +43,19 @@ class Settings(BaseSettings):
 
     # Anthropic (Claude)
     ANTHROPIC_API_KEY: Optional[str] = None  # Required for Anthropic
-    ANTHROPIC_MODEL: str = "claude-3-5-haiku-20241022"  # Fast, affordable model
+    ANTHROPIC_MODEL: str = "claude-haiku-4-5-20251001"  # Haiku 4.5 - fast, cost-effective
     ANTHROPIC_MAX_TOKENS: int = 2048
     ANTHROPIC_TIMEOUT: int = 30
 
     # Ollama (Local fallback)
     OLLAMA_ENABLED: bool = True  # Set to False to disable Ollama dependency
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "llama3.2:3b"
-    OLLAMA_TIMEOUT: int = 120  # Increased timeout for fallback
+    OLLAMA_MODEL: str = "qwen2.5:3b"
+    OLLAMA_TIMEOUT: int = 300  # 5 minutes for local inference
     OLLAMA_MAX_RETRIES: int = 2
     OLLAMA_RETRY_MIN_WAIT: int = 1
     OLLAMA_RETRY_MAX_WAIT: int = 10
-    OLLAMA_MAX_TOKENS: int = 512  # Limit tokens for faster response
+    OLLAMA_MAX_TOKENS: int = 1024  # Balanced token limit
 
     # Embeddings
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
@@ -116,6 +116,34 @@ class Settings(BaseSettings):
     RESEND_API_KEY: Optional[str] = None  # Required for email sending
     CONTACT_EMAIL_TO: str = "viks@vnykmshr.com"  # Recipient for contact form (registered in Resend)
     CONTACT_EMAIL_FROM: str = "Geetanjali <onboarding@resend.dev>"  # Use resend.dev for testing until domain verified
+
+    @field_validator(
+        'APP_ENV', 'LOG_LEVEL', 'LLM_PROVIDER', 'ANTHROPIC_MODEL', 'OLLAMA_MODEL',
+        'OLLAMA_BASE_URL', 'ANTHROPIC_API_KEY', 'RESEND_API_KEY',
+        mode='before'
+    )
+    @classmethod
+    def empty_string_to_none(cls, v: Optional[str]) -> Optional[str]:
+        """Convert empty strings to None so defaults apply.
+
+        Docker Compose passes empty strings for ${VAR:-} when unset.
+        This ensures config.py defaults are used instead.
+        """
+        if v == '':
+            return None
+        return v
+
+    @field_validator('DEBUG', 'USE_MOCK_LLM', mode='before')
+    @classmethod
+    def empty_string_to_false(cls, v) -> bool:
+        """Convert empty strings to False for boolean fields."""
+        if v == '' or v is None:
+            return False
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            return v.lower() in ('true', '1', 'yes')
+        return bool(v)
 
     @field_validator('CORS_ORIGINS', mode='before')
     @classmethod
