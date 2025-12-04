@@ -114,8 +114,8 @@ class Settings(BaseSettings):
 
     # Email (Resend)
     RESEND_API_KEY: Optional[str] = None  # Required for email sending
-    CONTACT_EMAIL_TO: str = "contact@geetanjaliapp.com"  # Recipient for contact form
-    CONTACT_EMAIL_FROM: str = "Geetanjali <noreply@geetanjaliapp.com>"  # Sender address
+    CONTACT_EMAIL_TO: str = "viks@vnykmshr.com"  # Recipient for contact form (registered in Resend)
+    CONTACT_EMAIL_FROM: str = "Geetanjali <onboarding@resend.dev>"  # Use resend.dev for testing until domain verified
 
     @field_validator('CORS_ORIGINS', mode='before')
     @classmethod

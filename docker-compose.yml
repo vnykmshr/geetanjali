@@ -90,6 +90,10 @@ services:
       # Redis Cache
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
 
+      # Email (Resend)
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-contact@geetanjali.app}
+
       # API Settings
       APP_ENV: ${APP_ENV:-development}
       DEBUG: ${DEBUG:-true}
