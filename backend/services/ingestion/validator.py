@@ -37,6 +37,89 @@ class Validator:
         self.db = db
         logger.info("Validator initialized")
 
+    def _validate_required_fields(self, data: Dict) -> List[str]:
+        """Validate required fields are present."""
+        errors = []
+        if not data.get("canonical_id"):
+            errors.append("Missing required field: canonical_id")
+        if not data.get("chapter"):
+            errors.append("Missing required field: chapter")
+        if not data.get("verse"):
+            errors.append("Missing required field: verse")
+        return errors
+
+    def _validate_canonical_id_format(self, canonical_id: Optional[str]) -> List[str]:
+        """Validate canonical ID format (BG_chapter_verse)."""
+        if canonical_id and not re.match(r"^BG_\d{1,2}_\d{1,3}$", canonical_id):
+            return [
+                f"Invalid canonical_id format: {canonical_id} (expected: BG_chapter_verse)"
+            ]
+        return []
+
+    def _validate_chapter(self, chapter: Optional[int]) -> List[str]:
+        """Validate chapter number is between 1-18."""
+        if chapter is None:
+            return []
+        try:
+            chapter_num = int(chapter)
+            if not (1 <= chapter_num <= 18):
+                return [f"Chapter must be between 1 and 18, got: {chapter_num}"]
+        except (ValueError, TypeError):
+            return [f"Chapter must be an integer, got: {chapter}"]
+        return []
+
+    def _validate_verse_number(self, verse: Optional[int]) -> List[str]:
+        """Validate verse number is positive."""
+        if verse is None:
+            return []
+        try:
+            verse_num = int(verse)
+            if verse_num < 1:
+                return [f"Verse number must be positive, got: {verse_num}"]
+        except (ValueError, TypeError):
+            return [f"Verse number must be an integer, got: {verse}"]
+        return []
+
+    def _validate_content(self, data: Dict) -> List[str]:
+        """Validate that verse has required content fields."""
+        is_translation_data = data.get("_is_translation_data", False)
+
+        if is_translation_data:
+            has_content = data.get("translation_en") or data.get("translations")
+            if not has_content:
+                return [
+                    "Translation data must have translation_en or translations array"
+                ]
+        else:
+            has_content = any(
+                [
+                    data.get("sanskrit_devanagari"),
+                    data.get("sanskrit_iast"),
+                    data.get("translation_text"),
+                    data.get("paraphrase_en"),
+                ]
+            )
+            if not has_content:
+                return [
+                    "Verse must have at least one text field (sanskrit/translation/paraphrase)"
+                ]
+        return []
+
+    def _check_license(self, data: Dict) -> None:
+        """Log warning if license is not in allowed list."""
+        license_val = data.get("license")
+        if license_val and license_val not in self.ALLOWED_LICENSES:
+            logger.warning(
+                f"License '{license_val}' not in allowed list: {self.ALLOWED_LICENSES}"
+            )
+
+    def _check_duplicate(self, canonical_id: Optional[str]) -> None:
+        """Log debug message if verse already exists."""
+        if canonical_id:
+            existing = self.db.query(Verse).filter_by(canonical_id=canonical_id).first()
+            if existing:
+                logger.debug(f"Verse {canonical_id} already exists in database")
+
     def validate_verse(self, data: Dict) -> Tuple[bool, List[str]]:
         """
         Validate verse data structure and uniqueness.
@@ -47,91 +130,21 @@ class Validator:
         Returns:
             Tuple of (is_valid, error_messages)
         """
-        errors = []
-
-        # Required fields
-        if not data.get("canonical_id"):
-            errors.append("Missing required field: canonical_id")
-
-        if not data.get("chapter"):
-            errors.append("Missing required field: chapter")
-
-        if not data.get("verse"):
-            errors.append("Missing required field: verse")
-
-        # Canonical ID format validation
+        errors: List[str] = []
         canonical_id = data.get("canonical_id")
-        if canonical_id:
-            if not re.match(r"^BG_\d{1,2}_\d{1,3}$", canonical_id):
-                errors.append(
-                    f"Invalid canonical_id format: {canonical_id} (expected: BG_chapter_verse)"
-                )
 
-        # Chapter range validation (1-18)
-        chapter = data.get("chapter")
-        if chapter is not None:
-            try:
-                chapter_num = int(chapter)
-                if not (1 <= chapter_num <= 18):
-                    errors.append(
-                        f"Chapter must be between 1 and 18, got: {chapter_num}"
-                    )
-            except (ValueError, TypeError):
-                errors.append(f"Chapter must be an integer, got: {chapter}")
+        # Collect all validation errors
+        errors.extend(self._validate_required_fields(data))
+        errors.extend(self._validate_canonical_id_format(canonical_id))
+        errors.extend(self._validate_chapter(data.get("chapter")))
+        errors.extend(self._validate_verse_number(data.get("verse")))
+        errors.extend(self._validate_content(data))
 
-        # Verse number validation (positive integer)
-        verse = data.get("verse")
-        if verse is not None:
-            try:
-                verse_num = int(verse)
-                if verse_num < 1:
-                    errors.append(f"Verse number must be positive, got: {verse_num}")
-            except (ValueError, TypeError):
-                errors.append(f"Verse number must be an integer, got: {verse}")
-
-        # Duplicate check
-        if canonical_id:
-            existing = self.db.query(Verse).filter_by(canonical_id=canonical_id).first()
-            if existing:
-                logger.debug(f"Verse {canonical_id} already exists in database")
-                # Not an error - will be handled as update
-
-        # Content validation - at least one text field should be present
-        # For translation-only data, translation_en is the content
-        is_translation_data = data.get("_is_translation_data", False)
-
-        if is_translation_data:
-            # Translation data must have translation_en or translations array
-            has_content = data.get("translation_en") or data.get("translations")
-            if not has_content:
-                errors.append(
-                    "Translation data must have translation_en or translations array"
-                )
-        else:
-            # Regular verse data needs sanskrit or paraphrase
-            has_content = any(
-                [
-                    data.get("sanskrit_devanagari"),
-                    data.get("sanskrit_iast"),
-                    data.get("translation_text"),
-                    data.get("paraphrase_en"),
-                ]
-            )
-            if not has_content:
-                errors.append(
-                    "Verse must have at least one text field (sanskrit/translation/paraphrase)"
-                )
-
-        # License validation
-        license = data.get("license")
-        if license and license not in self.ALLOWED_LICENSES:
-            logger.warning(
-                f"License '{license}' not in allowed list: {self.ALLOWED_LICENSES}"
-            )
-            # Not an error, just a warning
+        # Non-error checks (logging only)
+        self._check_duplicate(canonical_id)
+        self._check_license(data)
 
         is_valid = len(errors) == 0
-
         if not is_valid:
             logger.warning(f"Validation failed for {canonical_id}: {errors}")
 
