@@ -1,6 +1,5 @@
 """Tests for case endpoints."""
 
-import pytest
 from fastapi import status
 
 

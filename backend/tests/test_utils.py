@@ -1,6 +1,5 @@
 """Tests for utility functions."""
 
-import pytest
 from utils.auth import (
     hash_password,
     verify_password,
