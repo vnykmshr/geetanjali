@@ -19,6 +19,7 @@ class Feedback(Base):
 
     __tablename__ = "feedback"
 
+    # Identity
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
@@ -36,13 +37,13 @@ class Feedback(Base):
     )
     session_id: Mapped[Optional[str]] = mapped_column(
         String(36), nullable=True, index=True
-    )  # For anonymous feedback
-    rating: Mapped[bool] = mapped_column(
-        Boolean, nullable=False
-    )  # True = thumbs up, False = thumbs down
-    comment: Mapped[Optional[str]] = mapped_column(
-        Text, nullable=True
-    )  # Max 280 chars enforced in schema
+    )
+
+    # Content
+    rating: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow, index=True
     )
@@ -53,6 +54,4 @@ class Feedback(Base):
 
     def __repr__(self) -> str:
         rating_str = "thumbs_up" if self.rating else "thumbs_down"
-        return (
-            f"<Feedback(id={self.id}, output_id={self.output_id}, rating={rating_str})>"
-        )
+        return f"<Feedback(id={self.id}, output_id={self.output_id}, rating={rating_str})>"

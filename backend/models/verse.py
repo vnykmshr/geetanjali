@@ -1,4 +1,4 @@
-"""Verse, Commentary, and Translation models."""
+"""Verse, Commentary, and Translation models for Bhagavad Geeta scripture."""
 
 from sqlalchemy import String, Text, Integer, ForeignKey, JSON, CheckConstraint, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,6 +13,7 @@ class Verse(Base, TimestampMixin):
 
     __tablename__ = "verses"
 
+    # Identity
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
@@ -28,20 +29,18 @@ class Verse(Base, TimestampMixin):
     verse: Mapped[int] = mapped_column(
         Integer, CheckConstraint("verse >= 1"), nullable=False
     )
+
+    # Sanskrit text
     sanskrit_iast: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     sanskrit_devanagari: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    translation_en: Mapped[Optional[str]] = mapped_column(
-        Text, nullable=True
-    )  # Primary English translation (from source)
-    paraphrase_en: Mapped[Optional[str]] = mapped_column(
-        Text, nullable=True
-    )  # LLM-generated leadership summary
-    consulting_principles: Mapped[Optional[Any]] = mapped_column(
-        JSON, nullable=True
-    )  # Array of principle tags
-    is_featured: Mapped[bool] = mapped_column(
-        Boolean, default=False, index=True
-    )  # Showcase-worthy verse
+
+    # English content
+    translation_en: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    paraphrase_en: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Metadata
+    consulting_principles: Mapped[Optional[Any]] = mapped_column(JSON, nullable=True)
+    is_featured: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     license: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
@@ -63,27 +62,28 @@ class Verse(Base, TimestampMixin):
 
 
 class Commentary(Base, TimestampMixin):
-    """Commentary model for verse interpretations."""
+    """Commentary model for verse interpretations by scholars."""
 
     __tablename__ = "commentaries"
 
+    # Identity
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     verse_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("verses.id", ondelete="CASCADE"), index=True
     )
+
+    # Content
     text: Mapped[str] = mapped_column(Text, nullable=False)
-    author: Mapped[Optional[str]] = mapped_column(
-        String(255), index=True, nullable=True
-    )
-    school: Mapped[Optional[str]] = mapped_column(
-        String(100), index=True, nullable=True
-    )  # e.g., 'Advaita Vedanta'
+    language: Mapped[str] = mapped_column(String(10), default="en")
+
+    # Attribution
+    author: Mapped[Optional[str]] = mapped_column(String(255), index=True, nullable=True)
+    school: Mapped[Optional[str]] = mapped_column(String(100), index=True, nullable=True)
     translator: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     license: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    language: Mapped[str] = mapped_column(String(10), default="en")
 
     # Relationships
     verse = relationship("Verse", back_populates="commentaries")
@@ -97,17 +97,20 @@ class Translation(Base, TimestampMixin):
 
     __tablename__ = "translations"
 
+    # Identity
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     verse_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("verses.id", ondelete="CASCADE"), index=True
     )
+
+    # Content
     text: Mapped[str] = mapped_column(Text, nullable=False)
     language: Mapped[str] = mapped_column(String(10), default="en", index=True)
-    translator: Mapped[Optional[str]] = mapped_column(
-        String(255), index=True, nullable=True
-    )
+
+    # Attribution
+    translator: Mapped[Optional[str]] = mapped_column(String(255), index=True, nullable=True)
     school: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     license: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)

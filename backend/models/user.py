@@ -1,4 +1,4 @@
-"""User model."""
+"""User model for authentication and authorization."""
 
 from sqlalchemy import String, Boolean, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -14,6 +14,7 @@ class User(Base, TimestampMixin):
 
     __tablename__ = "users"
 
+    # Identity
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
@@ -21,11 +22,15 @@ class User(Base, TimestampMixin):
         String(255), unique=True, nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    password_hash: Mapped[Optional[str]] = mapped_column(
-        String(255), nullable=True
-    )  # Nullable for backward compatibility
-    email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Authentication
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    email_verified: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
     last_login: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Authorization
     role: Mapped[str] = mapped_column(String(100), default="user")
     org_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     api_key: Mapped[Optional[str]] = mapped_column(
@@ -43,4 +48,4 @@ class User(Base, TimestampMixin):
     feedback = relationship("Feedback", back_populates="user")
 
     def __repr__(self) -> str:
-        return f"<User(id={self.id}, email={self.email}, name={self.name}, role={self.role})>"
+        return f"<User(id={self.id}, email={self.email}, role={self.role})>"

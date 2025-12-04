@@ -1,6 +1,6 @@
 """Contact message model for About page feedback/queries."""
 
-from sqlalchemy import String, Text, DateTime, Enum as SQLEnum
+from sqlalchemy import String, Text, DateTime, Enum as SQLEnum, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 import uuid
 from datetime import datetime
@@ -30,21 +30,29 @@ class ContactMessage(Base):
 
     __tablename__ = "contact_messages"
 
+    # Identity
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
+
+    # Sender
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    # Content
     message_type: Mapped[ContactType] = mapped_column(
         SQLEnum(ContactType), nullable=False, default=ContactType.FEEDBACK
     )
     subject: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     message: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # Status
+    email_sent: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow, index=True
     )
-    # Track if email was sent successfully
-    email_sent: Mapped[bool] = mapped_column(default=False)
 
     def __repr__(self) -> str:
         return f"<ContactMessage(id={self.id}, type={self.message_type}, email={self.email})>"

@@ -13,6 +13,7 @@ class RefreshToken(Base):
 
     __tablename__ = "refresh_tokens"
 
+    # Identity
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
@@ -22,6 +23,8 @@ class RefreshToken(Base):
         nullable=False,
         index=True,
     )
+
+    # Token data
     token_hash: Mapped[str] = mapped_column(
         String(255), nullable=False, unique=True, index=True
     )
@@ -29,6 +32,8 @@ class RefreshToken(Base):
     revoked: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False, index=True
     )
+
+    # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
     )

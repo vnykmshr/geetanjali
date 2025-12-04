@@ -24,12 +24,11 @@ class Message(Base):
     Each message represents either:
     - A user's question/follow-up (role=USER)
     - An assistant's response (role=ASSISTANT, linked to an Output)
-
-    Messages are ordered chronologically to form a conversation thread within a Case.
     """
 
     __tablename__ = "messages"
 
+    # Identity
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
@@ -39,15 +38,17 @@ class Message(Base):
         nullable=False,
         index=True,
     )
+
+    # Content
     role: Mapped[MessageRole] = mapped_column(
         Enum(MessageRole), nullable=False, index=True
     )
-    content: Mapped[str] = mapped_column(
-        Text, nullable=False
-    )  # User's question or assistant's summary
+    content: Mapped[str] = mapped_column(Text, nullable=False)
     output_id: Mapped[Optional[str]] = mapped_column(
         String(36), ForeignKey("outputs.id", ondelete="SET NULL"), nullable=True
-    )  # Only for assistant messages
+    )
+
+    # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow, index=True
     )

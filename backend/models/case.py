@@ -1,6 +1,6 @@
-"""Case model for ethical dilemmas."""
+"""Case model for ethical dilemma consultations."""
 
-from sqlalchemy import String, Text, ForeignKey, JSON
+from sqlalchemy import String, Text, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import uuid
 import enum
@@ -12,11 +12,11 @@ from models.base import Base, TimestampMixin
 class CaseStatus(str, enum.Enum):
     """Status of case consultation processing."""
 
-    DRAFT = "draft"  # Case created, not yet submitted for analysis
-    PENDING = "pending"  # Submitted, waiting to be processed
-    PROCESSING = "processing"  # Currently being analyzed by LLM
-    COMPLETED = "completed"  # Analysis complete, results available
-    FAILED = "failed"  # Analysis failed, can retry
+    DRAFT = "draft"
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
 
 
 class Case(Base, TimestampMixin):
@@ -24,6 +24,7 @@ class Case(Base, TimestampMixin):
 
     __tablename__ = "cases"
 
+    # Identity
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
@@ -35,41 +36,30 @@ class Case(Base, TimestampMixin):
     )
     session_id: Mapped[Optional[str]] = mapped_column(
         String(255), index=True, nullable=True
-    )  # For anonymous users
+    )
+
+    # Content
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     role: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    stakeholders: Mapped[Optional[Any]] = mapped_column(
-        JSON, nullable=True
-    )  # Array of strings
-    constraints: Mapped[Optional[Any]] = mapped_column(
-        JSON, nullable=True
-    )  # Array of strings
-    horizon: Mapped[Optional[str]] = mapped_column(
-        String(50), nullable=True
-    )  # 'short', 'medium', 'long'
-    sensitivity: Mapped[str] = mapped_column(
-        String(50), default="low"
-    )  # 'low', 'medium', 'high'
-    attachments: Mapped[Optional[Any]] = mapped_column(
-        JSON, nullable=True
-    )  # Optional URLs or text blobs
+    stakeholders: Mapped[Optional[Any]] = mapped_column(JSON, nullable=True)
+    constraints: Mapped[Optional[Any]] = mapped_column(JSON, nullable=True)
+    horizon: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    sensitivity: Mapped[str] = mapped_column(String(50), default="low")
+    attachments: Mapped[Optional[Any]] = mapped_column(JSON, nullable=True)
     locale: Mapped[str] = mapped_column(String(10), default="en")
-    # Async processing status
+
+    # Status
     status: Mapped[str] = mapped_column(
         String(20), default=CaseStatus.DRAFT.value, index=True
     )
-    # Public sharing
-    is_public: Mapped[bool] = mapped_column(
-        default=False, index=True
-    )  # When True, case is accessible via public link
+
+    # Sharing
+    is_public: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     public_slug: Mapped[Optional[str]] = mapped_column(
         String(12), unique=True, nullable=True, index=True
-    )  # Short slug for public URL (e.g., "abc123xyz")
-    # Soft delete
-    is_deleted: Mapped[bool] = mapped_column(
-        default=False, index=True
-    )  # Soft delete flag - hidden from user but retained in DB
+    )
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
     # Relationships
     user = relationship("User", back_populates="cases")
@@ -84,6 +74,4 @@ class Case(Base, TimestampMixin):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<Case(id={self.id}, title={self.title}, sensitivity={self.sensitivity})>"
-        )
+        return f"<Case(id={self.id}, title={self.title}, status={self.status})>"
