@@ -222,12 +222,12 @@ export default function Verses() {
             </div>
           </form>
 
-          {/* Filter Pills - Wrapping */}
-          <div className="flex flex-wrap gap-2">
+          {/* Filter Pills - Full Width */}
+          <div className="flex gap-2 items-center">
             {/* Featured (default) */}
             <button
               onClick={() => handleFilterSelect('featured')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 showFeatured
                   ? 'bg-red-600 text-white shadow-md'
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
@@ -238,7 +238,7 @@ export default function Verses() {
             {/* All verses */}
             <button
               onClick={() => handleFilterSelect('all')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 showAll
                   ? 'bg-red-600 text-white shadow-md'
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
@@ -247,13 +247,13 @@ export default function Verses() {
               All
             </button>
             {/* Divider */}
-            <div className="w-px h-10 bg-gray-300 mx-1" />
-            {/* Chapter pills */}
+            <div className="w-px h-10 bg-gray-300 flex-shrink-0" />
+            {/* Chapter pills - evenly distributed */}
             {Array.from({ length: 18 }, (_, i) => i + 1).map((chapter) => (
               <button
                 key={chapter}
                 onClick={() => handleFilterSelect(chapter)}
-                className={`w-12 h-10 rounded-lg font-medium transition-colors ${
+                className={`flex-1 min-w-0 h-10 rounded-lg font-medium transition-colors ${
                   selectedChapter === chapter
                     ? 'bg-red-600 text-white shadow-md'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
