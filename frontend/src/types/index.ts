@@ -15,6 +15,7 @@ export interface Case {
   status?: CaseStatus;
   is_public?: boolean;
   public_slug?: string | null;
+  is_deleted?: boolean;
   created_at?: string;
 }
 

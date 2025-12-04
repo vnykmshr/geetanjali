@@ -66,6 +66,10 @@ class Case(Base, TimestampMixin):
     public_slug: Mapped[Optional[str]] = mapped_column(
         String(12), unique=True, nullable=True, index=True
     )  # Short slug for public URL (e.g., "abc123xyz")
+    # Soft delete
+    is_deleted: Mapped[bool] = mapped_column(
+        default=False, index=True
+    )  # Soft delete flag - hidden from user but retained in DB
 
     # Relationships
     user = relationship("User", back_populates="cases")

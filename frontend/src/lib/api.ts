@@ -162,6 +162,17 @@ export const casesApi = {
     const response = await api.get(`/cases/public/${slug}/outputs`);
     return response.data;
   },
+
+  // Soft delete a case
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/cases/${id}`);
+  },
+
+  // Retry analysis for a failed case
+  retry: async (id: string): Promise<Case> => {
+    const response = await api.post(`/cases/${id}/retry`);
+    return response.data;
+  },
 };
 
 // Outputs API

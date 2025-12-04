@@ -136,6 +136,88 @@ async def list_cases(
     return cases
 
 
+@router.delete("/{case_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_case(
+    case_id: str,
+    db: Session = Depends(get_db),
+    case: Case = Depends(get_case_with_access),
+):
+    """
+    Soft delete a case.
+
+    The case is not physically removed - it's marked as deleted and hidden from
+    listings. This allows potential recovery and maintains data integrity.
+
+    Also makes the case private to prevent continued public access.
+
+    Args:
+        case_id: Case ID
+        db: Database session
+        case: Case object (validated by dependency)
+
+    Returns:
+        204 No Content on success
+
+    Raises:
+        HTTPException: If case not found or user doesn't have access
+    """
+    repo = CaseRepository(db)
+    deleted_case = repo.soft_delete(case_id)
+
+    if not deleted_case:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Case not found",
+        )
+
+    # Invalidate public cache if it was public
+    if case.public_slug:
+        cache.delete(public_case_key(case.public_slug))
+        cache.delete(public_case_messages_key(case.public_slug))
+        cache.delete(public_case_outputs_key(case.public_slug))
+
+    logger.info(f"Case {case_id} soft deleted")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{case_id}/retry", response_model=CaseResponse)
+async def retry_case_analysis(
+    case_id: str,
+    db: Session = Depends(get_db),
+    case: Case = Depends(get_case_with_access),
+):
+    """
+    Retry analysis for a failed case.
+
+    Resets the case status to 'draft' so it can be re-submitted for analysis.
+    Only cases with 'failed' status can be retried.
+
+    Args:
+        case_id: Case ID
+        db: Database session
+        case: Case object (validated by dependency)
+
+    Returns:
+        Updated case with status 'draft'
+
+    Raises:
+        HTTPException: If case not found, access denied, or not in failed state
+    """
+    from models.case import CaseStatus
+
+    if case.status != CaseStatus.FAILED.value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Only failed cases can be retried. Current status: {case.status}",
+        )
+
+    repo = CaseRepository(db)
+    updated_case = repo.update(case_id, {"status": CaseStatus.DRAFT.value})
+
+    logger.info(f"Case {case_id} reset to draft for retry")
+    return updated_case
+
+
 @router.post("/{case_id}/share", response_model=CaseResponse)
 async def toggle_case_sharing(
     case_id: str,

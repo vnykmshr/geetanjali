@@ -120,6 +120,7 @@ class CaseResponse(CaseBase):
     public_slug: Optional[str] = Field(
         None, description="Short slug for public URL when is_public=True"
     )
+    is_deleted: bool = Field(False, description="Whether case is soft deleted")
     created_at: datetime
     updated_at: datetime
 

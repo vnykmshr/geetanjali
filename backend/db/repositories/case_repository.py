@@ -15,7 +15,7 @@ class CaseRepository(BaseRepository[Case]):
 
     def get_by_user(self, user_id: str, skip: int = 0, limit: int = 100) -> List[Case]:
         """
-        Get all cases for a user.
+        Get all non-deleted cases for a user.
 
         Args:
             user_id: User ID
@@ -23,11 +23,11 @@ class CaseRepository(BaseRepository[Case]):
             limit: Maximum number of records
 
         Returns:
-            List of cases
+            List of cases (excluding soft-deleted)
         """
         return (
             self.db.query(Case)
-            .filter(Case.user_id == user_id)
+            .filter(Case.user_id == user_id, Case.is_deleted == False)  # noqa: E712
             .order_by(Case.created_at.desc())
             .offset(skip)
             .limit(limit)
@@ -38,7 +38,7 @@ class CaseRepository(BaseRepository[Case]):
         self, session_id: str, skip: int = 0, limit: int = 100
     ) -> List[Case]:
         """
-        Get all cases for an anonymous session.
+        Get all non-deleted cases for an anonymous session.
 
         Args:
             session_id: Session ID
@@ -46,11 +46,15 @@ class CaseRepository(BaseRepository[Case]):
             limit: Maximum number of records
 
         Returns:
-            List of cases
+            List of cases (excluding soft-deleted)
         """
         return (
             self.db.query(Case)
-            .filter(Case.session_id == session_id, Case.user_id.is_(None))
+            .filter(
+                Case.session_id == session_id,
+                Case.user_id.is_(None),
+                Case.is_deleted == False,  # noqa: E712
+            )
             .order_by(Case.created_at.desc())
             .offset(skip)
             .limit(limit)
@@ -138,3 +142,53 @@ class CaseRepository(BaseRepository[Case]):
             .limit(limit)
             .all()
         )
+
+    def soft_delete(self, case_id: str) -> Optional[Case]:
+        """
+        Soft delete a case by setting is_deleted=True.
+
+        Also makes the case private (is_public=False) to prevent
+        continued access via public slug.
+
+        Args:
+            case_id: Case ID to soft delete
+
+        Returns:
+            Updated case if found, None otherwise
+        """
+        case = self.get(case_id)
+        if case:
+            case.is_deleted = True
+            case.is_public = False  # Make private on delete
+            self.db.commit()
+            self.db.refresh(case)
+        return case
+
+    def mark_stale_processing_as_failed(self, timeout_minutes: int = 10) -> int:
+        """
+        Mark cases stuck in 'processing' status as 'failed'.
+
+        Cases that have been in 'processing' status longer than timeout
+        are considered stuck and should be marked as failed so users can retry.
+
+        Args:
+            timeout_minutes: Minutes after which processing is considered stale
+
+        Returns:
+            Number of cases marked as failed
+        """
+        from datetime import datetime, timedelta
+        from models.case import CaseStatus
+
+        cutoff = datetime.utcnow() - timedelta(minutes=timeout_minutes)
+
+        count = (
+            self.db.query(Case)
+            .filter(
+                Case.status == CaseStatus.PROCESSING.value,
+                Case.updated_at < cutoff,
+            )
+            .update({"status": CaseStatus.FAILED.value})
+        )
+        self.db.commit()
+        return count

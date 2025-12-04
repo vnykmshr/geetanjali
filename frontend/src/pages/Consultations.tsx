@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { casesApi } from '../lib/api';
 import type { Case, CaseStatus } from '../types';
 import { Navbar } from '../components/Navbar';
@@ -28,7 +28,44 @@ export default function Consultations() {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const handleRetry = async (e: React.MouseEvent, caseId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActionLoading(caseId);
+    setError(null);
+    try {
+      const updatedCase = await casesApi.retry(caseId);
+      setCases(prev => prev.map(c => c.id === caseId ? updatedCase : c));
+      // Navigate to the case view to trigger analysis
+      navigate(`/cases/${caseId}`);
+    } catch (err) {
+      setError(errorMessages.general(err));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, caseId: string, title: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`Delete "${title}"? This action cannot be undone.`)) {
+      return;
+    }
+    setActionLoading(caseId);
+    setError(null);
+    try {
+      await casesApi.delete(caseId);
+      setCases(prev => prev.filter(c => c.id !== caseId));
+    } catch (err) {
+      setError(errorMessages.general(err));
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   useEffect(() => {
     casesApi.list(0, 100)
@@ -102,12 +139,11 @@ export default function Consultations() {
         ) : (
           <div className="space-y-4">
             {cases.map((case_) => (
-              <Link
+              <div
                 key={case_.id}
-                to={`/cases/${case_.id}`}
-                className="block bg-white rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 hover:border-red-200 overflow-hidden"
+                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 hover:border-red-200 overflow-hidden"
               >
-                <div className="p-6">
+                <Link to={`/cases/${case_.id}`} className="block p-6">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
@@ -122,6 +158,29 @@ export default function Consultations() {
                           year: 'numeric'
                         })}
                       </p>
+                    </div>
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 ml-4">
+                      {case_.status === 'failed' && (
+                        <button
+                          onClick={(e) => handleRetry(e, case_.id)}
+                          disabled={actionLoading === case_.id}
+                          className="px-3 py-1 text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-full transition-colors disabled:opacity-50"
+                          title="Retry analysis"
+                        >
+                          {actionLoading === case_.id ? 'Retrying...' : 'Retry'}
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => handleDelete(e, case_.id, case_.title)}
+                        disabled={actionLoading === case_.id}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
+                        title="Delete consultation"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                   <p className="text-gray-600 text-sm line-clamp-2 mb-3">{case_.description}</p>
@@ -142,8 +201,8 @@ export default function Consultations() {
                       </span>
                     )}
                   </div>
-                </div>
-              </Link>
+                </Link>
+              </div>
             ))}
           </div>
         )}

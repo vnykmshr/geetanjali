@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { casesApi, outputsApi } from '../lib/api';
 import { messagesApi } from '../api/messages';
 import type { Case, Message, Output, CaseStatus } from '../types';
@@ -10,11 +10,13 @@ import { ConsultationWaiting } from '../components/ConsultationWaiting';
 
 export default function CaseView() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [outputs, setOutputs] = useState<Output[]>([]);
   const [loading, setLoading] = useState(true);
   const [submittingFollowUp, setSubmittingFollowUp] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [followUp, setFollowUp] = useState('');
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
@@ -98,14 +100,33 @@ export default function CaseView() {
   }, [isProcessing, id, loadCaseData]);
 
   const handleRetry = async () => {
-    if (!id) return;
+    if (!id || !caseData) return;
     try {
+      // If the case failed, reset it first via retry endpoint
+      if (caseData.status === 'failed') {
+        await casesApi.retry(id);
+      }
       await casesApi.analyzeAsync(id);
       const data = await casesApi.get(id);
       setCaseData(data);
       setError(null);
     } catch (err) {
       setError(errorMessages.caseAnalyze(err));
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id || !caseData) return;
+    if (!confirm(`Delete "${caseData.title}"? This action cannot be undone.`)) {
+      return;
+    }
+    setDeleteLoading(true);
+    try {
+      await casesApi.delete(id);
+      navigate('/consultations');
+    } catch (err) {
+      setError(errorMessages.general(err));
+      setDeleteLoading(false);
     }
   };
 
@@ -294,6 +315,17 @@ ${messages.map(msg => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
             Save
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleteLoading}
+            className="text-xs px-3 py-1.5 bg-white rounded-lg shadow-sm text-gray-400 hover:text-red-600 hover:bg-red-50 border border-gray-200 flex items-center gap-1.5 disabled:opacity-50"
+            title="Delete consultation"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            {deleteLoading ? '...' : 'Delete'}
           </button>
           <div className="relative">
             <button
