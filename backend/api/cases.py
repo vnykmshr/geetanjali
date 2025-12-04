@@ -6,8 +6,10 @@ import string
 import uuid
 from typing import Any, Callable, List, Optional, TypeVar
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from db import get_db
 from db.repositories.case_repository import CaseRepository
@@ -103,10 +105,13 @@ def cached_public_response(
 
 
 router = APIRouter(prefix="/api/v1/cases")
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("", response_model=CaseResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("20/minute")
 async def create_case(
+    request: Request,
     case_data: CaseCreate,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
@@ -350,7 +355,9 @@ async def toggle_case_sharing(
 
 
 @router.get("/public/{slug}", response_model=CaseResponse)
+@limiter.limit("60/minute")
 async def get_public_case(
+    request: Request,
     slug: str,
     response: Response,
     db: Session = Depends(get_db),
@@ -369,7 +376,9 @@ async def get_public_case(
 
 
 @router.get("/public/{slug}/messages", response_model=List[MessageResponse])
+@limiter.limit("60/minute")
 async def get_public_case_messages(
+    request: Request,
     slug: str,
     response: Response,
     db: Session = Depends(get_db),
@@ -392,7 +401,9 @@ async def get_public_case_messages(
 
 
 @router.get("/public/{slug}/outputs", response_model=List[OutputResponse])
+@limiter.limit("60/minute")
 async def get_public_case_outputs(
+    request: Request,
     slug: str,
     response: Response,
     db: Session = Depends(get_db),

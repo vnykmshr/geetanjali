@@ -2,6 +2,8 @@
 
 from typing import Optional, List
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, cast
+from sqlalchemy.dialects.postgresql import JSONB
 
 from models.verse import Verse
 from db.repositories.base import BaseRepository
@@ -52,18 +54,22 @@ class VerseRepository(BaseRepository[Verse]):
         Returns:
             List of verses matching any of the principles
         """
-        # Note: JSON querying differs between SQLite and PostgreSQL
-        # This is a simple implementation for SQLite
-        verses = self.db.query(Verse).all()
-        matching = []
+        if not principles:
+            return []
 
-        for verse in verses:
-            if verse.consulting_principles:
-                verse_principles = verse.consulting_principles
-                if any(p in verse_principles for p in principles):
-                    matching.append(verse)
+        # Use PostgreSQL JSONB contains operator for efficient querying
+        # Each principle check: consulting_principles @> '["principle"]'::jsonb
+        conditions = [
+            cast(Verse.consulting_principles, JSONB).contains([p])
+            for p in principles
+        ]
 
-        return matching
+        return (
+            self.db.query(Verse)
+            .filter(Verse.consulting_principles.isnot(None))
+            .filter(or_(*conditions))
+            .all()
+        )
 
     def get_seed_verses(self) -> List[Verse]:
         """

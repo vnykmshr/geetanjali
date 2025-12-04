@@ -3,9 +3,11 @@
 import logging
 from typing import List, Optional
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from db import get_db
 from db.repositories.verse_repository import VerseRepository
@@ -17,10 +19,13 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/verses")
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/count")
+@limiter.limit("60/minute")
 async def get_verses_count(
+    request: Request,
     chapter: Optional[int] = Query(None, ge=1, le=18, description="Filter by chapter"),
     featured: Optional[bool] = Query(None, description="Filter by featured status"),
     db: Session = Depends(get_db),
@@ -49,7 +54,9 @@ async def get_verses_count(
 
 
 @router.get("", response_model=List[VerseResponse])
+@limiter.limit("60/minute")
 async def search_verses(
+    request: Request,
     q: Optional[str] = Query(None, description="Search by canonical ID or principle"),
     chapter: Optional[int] = Query(None, ge=1, le=18, description="Filter by chapter"),
     featured: Optional[bool] = Query(None, description="Filter by featured status"),
@@ -106,7 +113,9 @@ async def search_verses(
 
 
 @router.get("/random", response_model=VerseResponse)
+@limiter.limit("30/minute")
 async def get_random_verse(
+    request: Request,
     featured_only: bool = Query(
         True, description="If true, only return from curated showcase-worthy verses"
     ),
@@ -152,7 +161,8 @@ async def get_random_verse(
 
 
 @router.get("/daily", response_model=VerseResponse)
-async def get_verse_of_the_day(db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+async def get_verse_of_the_day(request: Request, db: Session = Depends(get_db)):
     """
     Get deterministic verse of the day based on current date.
 
@@ -221,7 +231,8 @@ async def get_verse_of_the_day(db: Session = Depends(get_db)):
 
 
 @router.get("/{canonical_id}", response_model=VerseResponse)
-async def get_verse(canonical_id: str, db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+async def get_verse(request: Request, canonical_id: str, db: Session = Depends(get_db)):
     """
     Get a verse by canonical ID.
 
@@ -259,7 +270,8 @@ async def get_verse(canonical_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{canonical_id}/translations", response_model=List[TranslationResponse])
-async def get_verse_translations(canonical_id: str, db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+async def get_verse_translations(request: Request, canonical_id: str, db: Session = Depends(get_db)):
     """
     Get all translations for a verse by canonical ID.
 
