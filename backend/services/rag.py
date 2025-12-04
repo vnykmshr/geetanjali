@@ -118,17 +118,19 @@ class RAGPipeline:
                     verse["metadata"]["translation_en"] = db_verse.translation_en
 
                     # Get additional translations from translations table
+                    # Skip Swami Gambirananda since that's already in translation_en
                     if db_verse.translations:
-                        verse["metadata"]["translations"] = [
+                        other_translations = [
                             {
                                 "text": t.text,
                                 "translator": t.translator,
                                 "school": t.school,
                             }
-                            for t in db_verse.translations[
-                                :3
-                            ]  # Limit to 3 translations
-                        ]
+                            for t in db_verse.translations
+                            if t.translator != "Swami Gambirananda"
+                        ][:3]  # Limit to 3 translations after filtering
+                        if other_translations:
+                            verse["metadata"]["translations"] = other_translations
 
             logger.debug(f"Enriched {len(verses)} verses with translations")
             return verses
