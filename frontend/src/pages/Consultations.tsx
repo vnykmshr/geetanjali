@@ -5,6 +5,7 @@ import type { Case, CaseStatus } from '../types';
 import { Navbar } from '../components/Navbar';
 import { errorMessages } from '../lib/errorMessages';
 import { useAuth } from '../contexts/AuthContext';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 // Status badge component
 function StatusBadge({ status }: { status?: CaseStatus }) {
@@ -29,6 +30,7 @@ export default function Consultations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -49,21 +51,31 @@ export default function Consultations() {
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, caseId: string, title: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, caseId: string, title: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm(`Delete "${title}"? This action cannot be undone.`)) {
-      return;
-    }
-    setActionLoading(caseId);
+    setDeleteTarget({ id: caseId, title });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setActionLoading(deleteTarget.id);
     setError(null);
     try {
-      await casesApi.delete(caseId);
-      setCases(prev => prev.filter(c => c.id !== caseId));
+      await casesApi.delete(deleteTarget.id);
+      setCases(prev => prev.filter(c => c.id !== deleteTarget.id));
+      setDeleteTarget(null);
     } catch (err) {
       setError(errorMessages.general(err));
+      setDeleteTarget(null);
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    if (!actionLoading) {
+      setDeleteTarget(null);
     }
   };
 
@@ -172,7 +184,7 @@ export default function Consultations() {
                         </button>
                       )}
                       <button
-                        onClick={(e) => handleDelete(e, case_.id, case_.title)}
+                        onClick={(e) => handleDeleteClick(e, case_.id, case_.title)}
                         disabled={actionLoading === case_.id}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
                         title="Delete consultation"
@@ -208,6 +220,19 @@ export default function Consultations() {
         )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="Delete Consultation"
+        message={`Are you sure you want to delete "${deleteTarget?.title}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Keep"
+        variant="danger"
+        loading={!!actionLoading}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </div>
   );
 }
