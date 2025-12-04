@@ -8,7 +8,6 @@ from typing import Dict, List, Any
 from sqlalchemy.orm import Session
 
 from models.verse import Verse, Translation
-from services.embeddings import get_embedding_service
 from services.vector_store import get_vector_store
 from services.cache import cache, verse_key
 
@@ -30,7 +29,6 @@ class Persister:
             db: SQLAlchemy database session
         """
         self.db = db
-        self.embedding_service = get_embedding_service()
         self.vector_store = get_vector_store()
 
         logger.info("Persister initialized")
@@ -161,7 +159,7 @@ class Persister:
 
     def _persist_embedding(self, verse: Verse, verse_data: Dict):
         """
-        Generate and persist embedding to vector store.
+        Persist verse to vector store. ChromaDB handles embedding generation.
 
         Args:
             verse: Verse model instance
@@ -181,9 +179,6 @@ class Persister:
             return
 
         combined_text = " ".join(text_parts)
-
-        # Generate embedding (encode returns single embedding for a string)
-        embedding = self.embedding_service.encode(combined_text)
 
         # Prepare metadata (ChromaDB only accepts str, int, float, bool - not None or list)
         metadata: Dict[str, Any] = {}
@@ -206,25 +201,25 @@ class Persister:
             metadata["principles"] = str(consulting_principles)
 
         # Add to vector store (will overwrite if exists)
+        # ChromaDB's built-in embedding function handles embedding generation
         try:
             # Delete existing if present
             existing = self.vector_store.get_by_id(verse.canonical_id)
             if existing:
                 self.vector_store.delete_verse(verse.canonical_id)
 
-            # Add new
+            # Add new - no embedding param, ChromaDB generates it from text
             self.vector_store.add_verse(
                 canonical_id=verse.canonical_id,
                 text=combined_text,
                 metadata=metadata,
-                embedding=embedding,  # type: ignore[arg-type]
             )
 
-            logger.debug(f"Persisted embedding for {verse.canonical_id}")
+            logger.debug(f"Persisted verse {verse.canonical_id} to vector store")
 
         except Exception as e:
-            logger.error(f"Failed to persist embedding for {verse.canonical_id}: {e}")
-            # Don't fail the whole operation if embedding fails
+            logger.error(f"Failed to persist to vector store for {verse.canonical_id}: {e}")
+            # Don't fail the whole operation if vector store fails
 
     def persist_translation(self, verse_id: str, translation_data: Dict) -> Translation:
         """

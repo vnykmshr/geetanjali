@@ -58,10 +58,10 @@ logger.info(f"Starting {settings.APP_NAME} in {settings.APP_ENV} mode")
 @app.on_event("startup")
 async def startup_event():
     """Run on application startup."""
-    logger.info("Preloading embedding model at startup...")
-    from services.embeddings import get_embedding_service
+    logger.info("Initializing vector store (loads embedding model)...")
+    from services.vector_store import get_vector_store
 
-    get_embedding_service()  # Preload the model
+    get_vector_store()  # Initialize vector store and embedding function
     logger.info("Application startup complete")
 
 

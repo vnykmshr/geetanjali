@@ -21,7 +21,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from db.connection import SessionLocal
 from models.verse import Verse
 from services.vector_store import get_vector_store
-from services.embeddings import get_embedding_service
 from services.cache import cache, verse_key
 
 logging.basicConfig(level=logging.INFO)
@@ -37,7 +36,6 @@ def backfill_paraphrase_metadata(dry_run: bool = False):
     """
     db = SessionLocal()
     vector_store = get_vector_store()
-    embedding_service = get_embedding_service()
 
     try:
         # Get all verses with paraphrase_en
@@ -102,7 +100,7 @@ def backfill_paraphrase_metadata(dry_run: bool = False):
                     else:
                         metadata["principles"] = str(verse.consulting_principles)
 
-                # Build embedding text (same logic as persister)
+                # Build text for embedding (same logic as persister)
                 text_parts = []
                 if verse.sanskrit_iast:
                     text_parts.append(verse.sanskrit_iast)
@@ -118,16 +116,13 @@ def backfill_paraphrase_metadata(dry_run: bool = False):
                     skipped += 1
                     continue
 
-                # Generate embedding
-                embedding = embedding_service.encode(combined_text)
-
                 # Delete and re-add (ChromaDB doesn't support metadata-only update easily)
+                # ChromaDB's built-in embedding function handles embedding generation
                 vector_store.delete_verse(verse.canonical_id)
                 vector_store.add_verse(
                     canonical_id=verse.canonical_id,
                     text=combined_text,
                     metadata=metadata,
-                    embedding=embedding,  # type: ignore[arg-type]
                 )
 
                 # Invalidate Redis cache for this verse

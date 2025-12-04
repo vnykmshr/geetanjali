@@ -1,9 +1,10 @@
-"""Vector store service using ChromaDB."""
+"""Vector store service using ChromaDB with built-in embeddings."""
 
 import logging
 from typing import List, Dict, Any, Optional
 import chromadb
 from chromadb.config import Settings as ChromaSettings
+from chromadb.utils import embedding_functions
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -13,7 +14,6 @@ from tenacity import (
 )
 
 from config import settings
-from services.embeddings import get_embedding_service
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,13 @@ class VectorStore:
     """Service for storing and retrieving verse embeddings."""
 
     def __init__(self):
-        """Initialize ChromaDB client and collection."""
+        """Initialize ChromaDB client and collection with built-in embeddings."""
+        # Create embedding function - ChromaDB will handle embeddings internally
+        # Using the same model as before: all-MiniLM-L6-v2
+        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name=settings.EMBEDDING_MODEL
+        )
+
         # Use HTTP client if CHROMA_HOST is set (for Docker/remote), otherwise local
         if settings.CHROMA_HOST:
             logger.info(
@@ -42,16 +48,14 @@ class VectorStore:
                 )
             )
 
-        # Get or create collection
+        # Get or create collection with embedding function
         self.collection = self.client.get_or_create_collection(
             name=settings.CHROMA_COLLECTION_NAME,
             metadata={"description": "Bhagavad Geeta verses for RAG retrieval"},
+            embedding_function=self.embedding_function,
         )
 
-        logger.info(f"ChromaDB collection '{settings.CHROMA_COLLECTION_NAME}' ready")
-
-        # Get embedding service
-        self.embedding_service = get_embedding_service()
+        logger.info(f"ChromaDB collection '{settings.CHROMA_COLLECTION_NAME}' ready with built-in embeddings")
 
     def add_verse(
         self,
@@ -67,19 +71,24 @@ class VectorStore:
             canonical_id: Canonical verse ID
             text: Verse text (Sanskrit + paraphrase)
             metadata: Additional metadata
-            embedding: Pre-computed embedding (optional)
+            embedding: Pre-computed embedding (optional, for migration compatibility)
         """
-        # Generate embedding if not provided
-        if embedding is None:
-            embedding = self.embedding_service.encode(text)
-
-        # Add to collection
-        self.collection.add(
-            ids=[canonical_id],
-            embeddings=[embedding],
-            documents=[text],
-            metadatas=[metadata],
-        )
+        # Add to collection - ChromaDB will generate embedding from text
+        # if embedding is provided (legacy), use it; otherwise let ChromaDB embed
+        if embedding is not None:
+            self.collection.add(
+                ids=[canonical_id],
+                embeddings=[embedding],
+                documents=[text],
+                metadatas=[metadata],
+            )
+        else:
+            # Let ChromaDB's embedding function handle it
+            self.collection.add(
+                ids=[canonical_id],
+                documents=[text],
+                metadatas=[metadata],
+            )
 
         logger.debug(f"Added verse {canonical_id} to vector store")
 
@@ -106,22 +115,26 @@ class VectorStore:
             canonical_ids: List of canonical verse IDs
             texts: List of verse texts
             metadatas: List of metadata dicts
-            embeddings: Pre-computed embeddings (optional)
+            embeddings: Pre-computed embeddings (optional, for migration compatibility)
 
         Raises:
             ChromaError: If batch add fails after retries
         """
-        # Generate embeddings if not provided
-        if embeddings is None:
-            embeddings = self.embedding_service.encode(texts)
-
-        # Add to collection
-        self.collection.add(
-            ids=canonical_ids,
-            embeddings=embeddings,
-            documents=texts,
-            metadatas=metadatas,
-        )
+        # Add to collection - ChromaDB will generate embeddings from texts
+        if embeddings is not None:
+            self.collection.add(
+                ids=canonical_ids,
+                embeddings=embeddings,
+                documents=texts,
+                metadatas=metadatas,
+            )
+        else:
+            # Let ChromaDB's embedding function handle it
+            self.collection.add(
+                ids=canonical_ids,
+                documents=texts,
+                metadatas=metadatas,
+            )
 
         logger.info(f"Added {len(canonical_ids)} verses to vector store")
 
@@ -151,12 +164,9 @@ class VectorStore:
         Raises:
             ChromaError: If search fails after retries
         """
-        # Generate query embedding
-        query_embedding = self.embedding_service.encode(query)
-
-        # Search
+        # Search using query text - ChromaDB's embedding function handles embedding
         results = self.collection.query(
-            query_embeddings=[query_embedding], n_results=top_k, where=where
+            query_texts=[query], n_results=top_k, where=where
         )
 
         logger.debug(
