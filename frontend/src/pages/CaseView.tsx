@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Navbar } from '../components/Navbar';
 import { errorMessages } from '../lib/errorMessages';
 import { ConsultationWaiting } from '../components/ConsultationWaiting';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 export default function CaseView() {
   const { id } = useParams<{ id: string }>();
@@ -31,17 +32,44 @@ export default function CaseView() {
   // Feedback state
   const [feedbackGiven, setFeedbackGiven] = useState<Record<string, 'up' | 'down' | null>>({});
   const [feedbackLoading, setFeedbackLoading] = useState<string | null>(null);
+  const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
+  const [feedbackText, setFeedbackText] = useState<Record<string, string>>({});
 
   // Share state
   const [shareLoading, setShareLoading] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
+  // Delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Close share dropdown on escape key
+  useEffect(() => {
+    if (!showShareDropdown) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowShareDropdown(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showShareDropdown]);
+
   // Path selection for options
   const [selectedOption, setSelectedOption] = useState(0);
 
-  // Check if case is still processing
+  // Status-based flags for action visibility
   const isProcessing = caseData?.status === 'pending' || caseData?.status === 'processing';
+  const isFailed = caseData?.status === 'failed';
+  const isCompleted = caseData?.status === 'completed' || !caseData?.status; // treat no status as completed (legacy)
+
+  // Action visibility based on status
+  const canSave = isCompleted && outputs.length > 0;
+  const canShare = isCompleted && outputs.length > 0;
+  const canDelete = true; // Always allow delete
+  const canFollowUp = isCompleted;
 
   const loadCaseData = useCallback(async () => {
     if (!id) return;
@@ -115,11 +143,12 @@ export default function CaseView() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
     if (!id || !caseData) return;
-    if (!confirm(`Delete "${caseData.title}"? This action cannot be undone.`)) {
-      return;
-    }
     setDeleteLoading(true);
     try {
       await casesApi.delete(id);
@@ -127,6 +156,13 @@ export default function CaseView() {
     } catch (err) {
       setError(errorMessages.general(err));
       setDeleteLoading(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    if (!deleteLoading) {
+      setShowDeleteModal(false);
     }
   };
 
@@ -142,22 +178,55 @@ export default function CaseView() {
   const handleFeedback = async (outputId: string, type: 'up' | 'down') => {
     if (feedbackLoading === outputId) return;
 
-    // Toggle if same feedback
     const current = feedbackGiven[outputId];
-    const newValue = current === type ? null : type;
 
+    // If clicking thumbs down and not already down, expand for text input
+    if (type === 'down' && current !== 'down') {
+      setExpandedFeedback(outputId);
+      return; // Don't submit yet - wait for text input
+    }
+
+    // If clicking same feedback, toggle off
+    if (current === type) {
+      setFeedbackGiven(prev => ({ ...prev, [outputId]: null }));
+      setExpandedFeedback(null);
+      return;
+    }
+
+    // Submit thumbs up immediately
     setFeedbackLoading(outputId);
     try {
-      if (newValue !== null) {
-        await outputsApi.submitFeedback(outputId, { rating: newValue === 'up' });
-      }
-      setFeedbackGiven(prev => ({ ...prev, [outputId]: newValue }));
+      await outputsApi.submitFeedback(outputId, { rating: true });
+      setFeedbackGiven(prev => ({ ...prev, [outputId]: 'up' }));
+      setExpandedFeedback(null);
     } catch {
       // Could be 409 if already submitted - treat as success
-      setFeedbackGiven(prev => ({ ...prev, [outputId]: newValue }));
+      setFeedbackGiven(prev => ({ ...prev, [outputId]: 'up' }));
     } finally {
       setFeedbackLoading(null);
     }
+  };
+
+  const handleSubmitNegativeFeedback = async (outputId: string) => {
+    if (feedbackLoading === outputId) return;
+
+    setFeedbackLoading(outputId);
+    try {
+      const comment = feedbackText[outputId]?.trim() || undefined;
+      await outputsApi.submitFeedback(outputId, { rating: false, comment });
+      setFeedbackGiven(prev => ({ ...prev, [outputId]: 'down' }));
+      setExpandedFeedback(null);
+    } catch {
+      // Could be 409 if already submitted - treat as success
+      setFeedbackGiven(prev => ({ ...prev, [outputId]: 'down' }));
+    } finally {
+      setFeedbackLoading(null);
+    }
+  };
+
+  const handleCancelFeedback = (outputId: string) => {
+    setExpandedFeedback(null);
+    setFeedbackText(prev => ({ ...prev, [outputId]: '' }));
   };
 
   const handleFollowUpSubmit = async (e: React.FormEvent) => {
@@ -228,9 +297,13 @@ ${messages.map(msg => {
       const newIsPublic = !caseData.is_public;
       const updated = await casesApi.toggleShare(id, newIsPublic);
       setCaseData(updated);
-      // Show success feedback
+
       if (newIsPublic) {
+        // Keep dropdown open so user can copy the link
         setCopySuccess(false); // Reset copy state for new link
+      } else {
+        // Close dropdown when making private
+        setShowShareDropdown(false);
       }
     } catch {
       setError(`Failed to ${caseData.is_public ? 'make private' : 'share'}`);
@@ -247,7 +320,8 @@ ${messages.map(msg => {
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
-  // Group messages into exchanges
+  // Group messages into exchanges (user question + assistant response)
+  // Handles duplicate assistant messages from retries by taking the latest one per user message
   const getOutput = (outputId?: string) => outputs.find(o => o.id === outputId);
 
   type Exchange = {
@@ -257,15 +331,33 @@ ${messages.map(msg => {
   };
 
   const exchanges: Exchange[] = [];
-  for (let i = 0; i < messages.length; i += 2) {
-    if (messages[i] && messages[i + 1]) {
+  const userMessages = messages.filter(m => m.role === 'user');
+  const assistantMessages = messages.filter(m => m.role === 'assistant');
+
+  userMessages.forEach((userMsg, idx) => {
+    // Find assistant messages that come after this user message but before the next user message
+    const nextUserMsg = userMessages[idx + 1];
+    const relevantAssistants = assistantMessages.filter(a => {
+      const afterUser = new Date(a.created_at) > new Date(userMsg.created_at);
+      const beforeNextUser = !nextUserMsg || new Date(a.created_at) < new Date(nextUserMsg.created_at);
+      return afterUser && beforeNextUser;
+    });
+
+    // Take the latest assistant message (handles retries)
+    const latestAssistant = relevantAssistants.length > 0
+      ? relevantAssistants.reduce((latest, curr) =>
+          new Date(curr.created_at) > new Date(latest.created_at) ? curr : latest
+        )
+      : null;
+
+    if (latestAssistant) {
       exchanges.push({
-        user: messages[i],
-        assistant: messages[i + 1],
-        output: getOutput(messages[i + 1].output_id),
+        user: userMsg,
+        assistant: latestAssistant,
+        output: getOutput(latestAssistant.output_id),
       });
     }
-  }
+  });
 
   // Get first output for paths/steps/reflections
   const firstOutput = outputs.length > 0 ? outputs[outputs.length - 1] : null;
@@ -307,102 +399,112 @@ ${messages.map(msg => {
           ← Back
         </Link>
         <div className="flex gap-2">
-          <button
-            onClick={handleSave}
-            className="text-xs px-3 py-1.5 bg-white rounded-lg shadow-sm text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center gap-1.5"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Save
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={deleteLoading}
-            className="text-xs px-3 py-1.5 bg-white rounded-lg shadow-sm text-gray-400 hover:text-red-600 hover:bg-red-50 border border-gray-200 flex items-center gap-1.5 disabled:opacity-50"
-            title="Delete consultation"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            {deleteLoading ? '...' : 'Delete'}
-          </button>
-          <div className="relative">
+          {/* Save - only for completed cases with content */}
+          {canSave && (
             <button
-              onClick={() => setShowShareDropdown(!showShareDropdown)}
-              className={`text-xs px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 ${
-                caseData.is_public
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-amber-600 text-white hover:bg-amber-700'
-              }`}
+              onClick={handleSave}
+              className="text-xs px-3 py-1.5 bg-white rounded-lg shadow-sm text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center gap-1.5"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              {caseData.is_public ? 'Shared' : 'Share'}
-              <svg className={`w-3 h-3 transition-transform ${showShareDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              Save
             </button>
+          )}
 
-            {/* Share Dropdown */}
-            {showShareDropdown && (
-              <>
-                {/* Backdrop to close dropdown */}
-                <div className="fixed inset-0 z-10" onClick={() => setShowShareDropdown(false)} />
-                <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-20 p-4">
-                  {/* Visibility Toggle */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">Public sharing</div>
-                      <div className="text-xs text-gray-500">Anyone with link can view</div>
-                    </div>
-                    <button
-                      onClick={handleToggleShare}
-                      disabled={shareLoading}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        caseData.is_public ? 'bg-green-500' : 'bg-gray-200'
-                      } ${shareLoading ? 'opacity-50' : ''}`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          caseData.is_public ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
+          {/* Delete - always available */}
+          {canDelete && (
+            <button
+              onClick={handleDeleteClick}
+              className="text-xs px-3 py-1.5 bg-white rounded-lg shadow-sm text-gray-400 hover:text-red-600 hover:bg-red-50 border border-gray-200 flex items-center gap-1.5"
+              title="Delete consultation"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Delete
+            </button>
+          )}
 
-                  {/* Share Link (only when public) */}
-                  {caseData.is_public && caseData.public_slug && (
-                    <div className="pt-3 border-t border-gray-100">
-                      <div className="text-xs font-medium text-gray-700 mb-2">Share link</div>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          readOnly
-                          value={`${window.location.origin}/c/${caseData.public_slug}`}
-                          className="flex-1 px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs bg-gray-50 text-gray-700 font-mono"
-                        />
-                        <button
-                          onClick={copyShareLink}
-                          className="px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-xs font-medium"
-                        >
-                          {copySuccess ? 'Copied!' : 'Copy'}
-                        </button>
+          {/* Share - only for completed cases with content */}
+          {canShare && (
+            <div className="relative">
+              <button
+                onClick={() => setShowShareDropdown(!showShareDropdown)}
+                className={`text-xs px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 ${
+                  caseData.is_public
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-amber-600 text-white hover:bg-amber-700'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                {caseData.is_public ? 'Shared' : 'Share'}
+                <svg className={`w-3 h-3 transition-transform ${showShareDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Share Dropdown */}
+              {showShareDropdown && (
+                <>
+                  {/* Backdrop to close dropdown */}
+                  <div className="fixed inset-0 z-10" onClick={() => setShowShareDropdown(false)} />
+                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-20 p-4">
+                    {/* Visibility Toggle */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Public sharing</div>
+                        <div className="text-xs text-gray-500">Anyone with link can view</div>
                       </div>
+                      <button
+                        onClick={handleToggleShare}
+                        disabled={shareLoading}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          caseData.is_public ? 'bg-green-500' : 'bg-gray-200'
+                        } ${shareLoading ? 'opacity-50' : ''}`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            caseData.is_public ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
                     </div>
-                  )}
 
-                  {/* Private notice */}
-                  {!caseData.is_public && (
-                    <div className="text-xs text-gray-500 pt-2 border-t border-gray-100">
-                      Turn on to create a shareable link
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+                    {/* Share Link (only when public) */}
+                    {caseData.is_public && caseData.public_slug && (
+                      <div className="pt-3 border-t border-gray-100">
+                        <div className="text-xs font-medium text-gray-700 mb-2">Share link</div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            readOnly
+                            value={`${window.location.origin}/c/${caseData.public_slug}`}
+                            className="flex-1 px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs bg-gray-50 text-gray-700 font-mono"
+                          />
+                          <button
+                            onClick={copyShareLink}
+                            className="px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-xs font-medium"
+                          >
+                            {copySuccess ? 'Copied!' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Private notice */}
+                    {!caseData.is_public && (
+                      <div className="text-xs text-gray-500 pt-2 border-t border-gray-100">
+                        Turn on to create a shareable link
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -441,14 +543,14 @@ ${messages.map(msg => {
           )}
 
           {/* Failed state */}
-          {caseData.status === 'failed' && !isProcessing && (
+          {isFailed && (
             <div className="mb-8">
               <ConsultationWaiting status={caseData.status as CaseStatus} onRetry={handleRetry} />
             </div>
           )}
 
           {/* Main Content - Timeline */}
-          {(caseData.status === 'completed' || !caseData.status) && (
+          {isCompleted && (
             <div className="relative">
               {/* Vertical Line */}
               <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-gradient-to-b from-amber-300 via-orange-300 to-red-300" />
@@ -571,48 +673,89 @@ ${messages.map(msg => {
 
                         {/* Feedback row */}
                         {exchange.output && (
-                          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                              <span>Confidence:</span>
-                              <div className="w-12 bg-gray-200 rounded-full h-1.5">
-                                <div
-                                  className={`h-1.5 rounded-full ${
-                                    exchange.output.confidence >= 0.8 ? 'bg-green-500' :
-                                    exchange.output.confidence >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'
-                                  }`}
-                                  style={{ width: `${exchange.output.confidence * 100}%` }}
-                                />
+                          <div className="mt-4 pt-3 border-t border-gray-100">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                                <span>Confidence:</span>
+                                <div className="w-12 bg-gray-200 rounded-full h-1.5">
+                                  <div
+                                    className={`h-1.5 rounded-full ${
+                                      exchange.output.confidence >= 0.8 ? 'bg-green-500' :
+                                      exchange.output.confidence >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'
+                                    }`}
+                                    style={{ width: `${exchange.output.confidence * 100}%` }}
+                                  />
+                                </div>
+                                <span className="font-medium">{(exchange.output.confidence * 100).toFixed(0)}%</span>
                               </div>
-                              <span className="font-medium">{(exchange.output.confidence * 100).toFixed(0)}%</span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => exchange.output && handleFeedback(exchange.output.id, 'up')}
+                                  disabled={feedbackLoading === exchange.output?.id}
+                                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+                                    feedback === 'up'
+                                      ? 'bg-green-500 text-white'
+                                      : 'bg-gray-100 text-gray-400 hover:bg-green-100 hover:text-green-600'
+                                  }`}
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => exchange.output && handleFeedback(exchange.output.id, 'down')}
+                                  disabled={feedbackLoading === exchange.output?.id}
+                                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+                                    feedback === 'down' || expandedFeedback === exchange.output?.id
+                                      ? 'bg-red-500 text-white'
+                                      : 'bg-gray-100 text-gray-400 hover:bg-red-100 hover:text-red-600'
+                                  }`}
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                                  </svg>
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => exchange.output && handleFeedback(exchange.output.id, 'up')}
-                                disabled={feedbackLoading === exchange.output?.id}
-                                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-                                  feedback === 'up'
-                                    ? 'bg-green-500 text-white'
-                                    : 'bg-gray-100 text-gray-400 hover:bg-green-100 hover:text-green-600'
-                                }`}
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => exchange.output && handleFeedback(exchange.output.id, 'down')}
-                                disabled={feedbackLoading === exchange.output?.id}
-                                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-                                  feedback === 'down'
-                                    ? 'bg-red-500 text-white'
-                                    : 'bg-gray-100 text-gray-400 hover:bg-red-100 hover:text-red-600'
-                                }`}
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
-                                </svg>
-                              </button>
-                            </div>
+
+                            {/* Expanded feedback text input */}
+                            {expandedFeedback === exchange.output?.id && (
+                              <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
+                                <p className="text-xs text-gray-600 mb-2">What could be improved? (optional)</p>
+                                <textarea
+                                  value={feedbackText[exchange.output.id] || ''}
+                                  onChange={(e) => setFeedbackText(prev => ({
+                                    ...prev,
+                                    [exchange.output!.id]: e.target.value.slice(0, 280)
+                                  }))}
+                                  placeholder="Tell us what wasn't helpful..."
+                                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                                  rows={2}
+                                  maxLength={280}
+                                />
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className="text-xs text-gray-400">
+                                    {(feedbackText[exchange.output.id] || '').length}/280
+                                  </span>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleCancelFeedback(exchange.output!.id)}
+                                      disabled={feedbackLoading === exchange.output?.id}
+                                      className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      onClick={() => handleSubmitNegativeFeedback(exchange.output!.id)}
+                                      disabled={feedbackLoading === exchange.output?.id}
+                                      className="px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                                    >
+                                      {feedbackLoading === exchange.output?.id ? 'Sending...' : 'Submit'}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -648,12 +791,13 @@ ${messages.map(msg => {
 
                   {showPaths && (
                     <div className="mt-3 space-y-3">
-                      <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+                      {/* Path selector cards - equal width and height */}
+                      <div className="grid grid-cols-3 gap-2 items-stretch">
                         {firstOutput.result_json.options.map((opt, idx) => (
                           <button
                             key={idx}
                             onClick={() => setSelectedOption(idx)}
-                            className={`flex-shrink-0 w-28 p-3 rounded-xl border-2 text-left transition-all ${
+                            className={`p-3 rounded-xl border-2 text-left transition-all h-full ${
                               selectedOption === idx
                                 ? 'bg-red-50 border-red-400 shadow-md'
                                 : 'bg-white border-gray-200 hover:border-red-200'
@@ -662,7 +806,7 @@ ${messages.map(msg => {
                             <div className={`text-xs font-semibold ${selectedOption === idx ? 'text-red-700' : 'text-gray-500'}`}>
                               Path {idx + 1}
                             </div>
-                            <div className={`text-sm font-medium mt-1 leading-tight ${selectedOption === idx ? 'text-red-900' : 'text-gray-700'}`}>
+                            <div className={`text-sm font-medium mt-1 leading-snug ${selectedOption === idx ? 'text-red-900' : 'text-gray-700'}`}>
                               {opt.title.replace(' Approach', '')}
                             </div>
                           </button>
@@ -783,7 +927,7 @@ ${messages.map(msg => {
           )}
 
           {/* Follow-up Input */}
-          {(caseData.status === 'completed' || !caseData.status) && (
+          {canFollowUp && (
             <div className="mt-4 bg-white rounded-xl shadow-md p-4">
               <form onSubmit={handleFollowUpSubmit}>
                 <div className="flex items-center gap-3">
@@ -808,6 +952,19 @@ ${messages.map(msg => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        title="Delete Consultation"
+        message={`Are you sure you want to delete "${caseData?.title}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Keep"
+        variant="danger"
+        loading={deleteLoading}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </div>
   );
 }
