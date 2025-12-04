@@ -31,8 +31,9 @@ export function CaseHeader({
   onCopyShareLink,
 }: CaseHeaderProps) {
   return (
-    <div className="px-4 py-3 flex items-center justify-between border-b border-amber-200/50 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-      <Link to="/consultations" className="text-amber-700 hover:text-amber-800 text-sm flex items-center gap-1">
+    <div className="border-b border-amber-200/50 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+        <Link to="/consultations" className="text-amber-700 hover:text-amber-800 text-sm flex items-center gap-1">
         ← Back
       </Link>
       <div className="flex gap-2">
@@ -142,6 +143,7 @@ export function CaseHeader({
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

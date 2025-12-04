@@ -106,12 +106,14 @@ export default function PublicCaseView() {
       <Navbar />
 
       {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between border-b border-amber-200/50 bg-white/50 backdrop-blur-sm">
-        <Link to="/" className="text-amber-700 hover:text-amber-800 text-sm flex items-center gap-1">
-          ← Home
-        </Link>
-        <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-          Shared Consultation
+      <div className="border-b border-amber-200/50 bg-white/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+          <Link to="/" className="text-amber-700 hover:text-amber-800 text-sm flex items-center gap-1">
+            ← Home
+          </Link>
+          <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+            Shared Consultation
+          </div>
         </div>
       </div>
 
