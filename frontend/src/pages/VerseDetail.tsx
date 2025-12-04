@@ -142,7 +142,7 @@ export default function VerseDetail() {
           {/* Verse Header */}
           <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
             <div className="flex items-baseline gap-4 mb-6">
-              <h1 className="text-4xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-gray-900">
                 {formatVerseId(verse.canonical_id)}
               </h1>
               <span className="text-lg text-orange-600 font-medium">

@@ -58,7 +58,7 @@ export default function About() {
           <div className="flex justify-center mb-6">
             <img src="/logo.svg" alt="Geetanjali" className="h-20 w-20" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">About Geetanjali</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">About Geetanjali</h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Ancient wisdom for modern decisions. Navigate life's complex choices with timeless principles from the Bhagavad Geeta.
           </p>
@@ -291,7 +291,7 @@ export default function About() {
               </div>
 
               {submitStatus === 'error' && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
                   {errorMessage}
                 </div>
               )}

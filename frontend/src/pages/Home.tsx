@@ -73,7 +73,7 @@ export default function Home() {
 
           {/* Backend Status - Only show errors */}
           {error && (
-            <div className="mb-8 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg max-w-2xl mx-auto">
+            <div className="mb-8 bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-lg max-w-2xl mx-auto">
               <div className="flex items-start gap-3">
                 <span className="text-xl">⚠️</span>
                 <div>
@@ -121,7 +121,7 @@ export default function Home() {
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900 mb-1">{case_.title}</h3>
-                          <p className="text-sm text-gray-500 line-clamp-2">{case_.description}</p>
+                          <p className="text-sm text-gray-600 line-clamp-2">{case_.description}</p>
                         </div>
                         <div className="text-xs text-gray-400 ml-4">
                           {new Date(case_.created_at || '').toLocaleDateString()}
