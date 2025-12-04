@@ -56,7 +56,7 @@ def backfill_paraphrase_metadata(dry_run: bool = False):
                 # Get existing entry from vector store
                 existing = vector_store.get_by_id(verse.canonical_id)
 
-                if not existing or not existing.get("ids"):
+                if not existing or not existing.get("id"):
                     logger.warning(
                         f"Verse {verse.canonical_id} not found in vector store, skipping"
                     )
@@ -64,11 +64,8 @@ def backfill_paraphrase_metadata(dry_run: bool = False):
                     continue
 
                 # Check if paraphrase already in metadata
-                current_metadata = (
-                    existing.get("metadatas", [{}])[0]
-                    if existing.get("metadatas")
-                    else {}
-                )
+                # get_by_id returns {"id": ..., "document": ..., "metadata": ...}
+                current_metadata = existing.get("metadata", {})
                 if current_metadata.get("paraphrase") == verse.paraphrase_en:
                     logger.debug(
                         f"Verse {verse.canonical_id} already has paraphrase in metadata, skipping"
