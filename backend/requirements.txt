@@ -27,7 +27,7 @@ anthropic==0.75.0  # Anthropic Claude API
 
 # Testing
 pytest==9.0.1
-pytest-asyncio==0.24.0
+pytest-asyncio>=1.0.0  # pytest 9.x requires pytest-asyncio 1.x
 pytest-cov==4.1.0
 
 # Code Quality
@@ -58,4 +58,7 @@ lxml==6.0.2  # XML/HTML parser
 pyyaml==6.0.3  # YAML config loading
 indic-transliteration==2.3.75  # Sanskrit IAST transliteration
 requests==2.32.5  # HTTP client for fetching
+
+# Email
+resend>=2.5.0  # Transactional email service
 

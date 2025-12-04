@@ -21,7 +21,7 @@ anthropic==0.75.0
 
 # Testing
 pytest==9.0.1
-pytest-asyncio==0.24.0
+pytest-asyncio>=1.0.0  # pytest 9.x requires pytest-asyncio 1.x
 pytest-cov==4.1.0
 
 # Code Quality
