@@ -111,7 +111,24 @@ export function VerseCard({
   const sanskritLines = formatSanskritLines(verse.sanskrit_devanagari || '', isCompact);
 
   // Compact mode: filter out speaker intros for cleaner display
-  const displayLines = showSpeaker ? sanskritLines : sanskritLines.filter(line => !line.includes('वाच'));
+  let displayLines = showSpeaker ? sanskritLines : sanskritLines.filter(line => !line.includes('वाच'));
+
+  // For compact mode, ensure all cards have same height by padding to 4 lines
+  if (isCompact) {
+    const targetLines = 4;
+    if (displayLines.length < targetLines) {
+      const spacersNeeded = targetLines - displayLines.length;
+      const spacersPerSide = Math.floor(spacersNeeded / 2);
+      const remainingSpacer = spacersNeeded % 2;
+
+      // Add spacer lines above and below
+      displayLines = [
+        ...Array(spacersPerSide).fill(''),
+        ...displayLines,
+        ...Array(spacersPerSide + remainingSpacer).fill('')
+      ];
+    }
+  }
 
   return (
     <div className="relative">
@@ -129,25 +146,26 @@ export function VerseCard({
         </div>
 
         {/* Verses centered - flex-grow to ensure consistent heights */}
-        <div className={`flex-grow flex flex-col justify-center ${isCompact ? '' : ''}`}>
+        <div className={`flex-grow flex flex-col ${isCompact ? 'justify-between' : 'justify-center'}`}>
           {/* Sanskrit Text */}
           {displayLines.length > 0 && (
             <div className={`${isCompact
-              ? 'text-sm text-amber-900 font-serif text-center leading-relaxed mb-3'
+              ? 'text-sm text-amber-900 font-serif text-center leading-relaxed'
               : 'text-xl md:text-2xl text-amber-800/60 font-serif text-center leading-relaxed tracking-wide mb-6'
             }`}>
               {displayLines.map((line, idx) => {
                 const isSpeakerIntro = line.includes('वाच');
+                const isEmpty = line === '';
 
                 return (
                   <p
                     key={idx}
                     className={`${isCompact
-                      ? 'mb-1'
+                      ? isEmpty ? 'h-4' : 'mb-1'
                       : isSpeakerIntro ? 'text-lg text-amber-600/60 mb-2' : 'mb-1'
                     }`}
                   >
-                    {line}
+                    {!isEmpty && line}
                   </p>
                 );
               })}
