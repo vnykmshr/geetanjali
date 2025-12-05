@@ -94,7 +94,6 @@ def _validate_canonical_id(canonical_id: str) -> bool:
     if not isinstance(canonical_id, str):
         return False
     # Valid format: BG_<chapter>_<verse> where chapter and verse are integers
-    import re
     return bool(re.match(r'^BG_\d+_\d+$', canonical_id))
 
 
