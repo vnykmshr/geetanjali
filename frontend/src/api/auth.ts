@@ -108,12 +108,25 @@ export const authApi = {
 
   /**
    * Refresh the access token using the refresh token cookie
+   *
+   * Returns null if no valid refresh token exists (e.g., anonymous user)
+   * This allows the caller to distinguish between "no refresh token" and other errors
    */
-  refresh: async (): Promise<RefreshResponse> => {
-    const response = await authClient.post<RefreshResponse>('/refresh');
-    // Update access token in memory
-    tokenStorage.setToken(response.data.access_token);
-    return response.data;
+  refresh: async (): Promise<RefreshResponse | null> => {
+    try {
+      const response = await authClient.post<RefreshResponse>('/refresh');
+      // Update access token in memory
+      tokenStorage.setToken(response.data.access_token);
+      return response.data;
+    } catch (error: any) {
+      // If 401 (Unauthorized), no valid refresh token exists - treat as expected for anonymous users
+      // Return null to indicate no refresh token, let caller handle as non-error case
+      if (error.response?.status === 401) {
+        return null;
+      }
+      // Re-throw other errors (network, 500, etc.)
+      throw error;
+    }
   },
 
   /**
