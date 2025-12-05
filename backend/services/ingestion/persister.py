@@ -341,6 +341,7 @@ class Persister:
                                 if not existing_trans:
                                     translation_data = {
                                         "text": trans.get("text", ""),
+                                        "language": trans.get("language", "en"),
                                         "translator": trans.get("translator", ""),
                                         "school": trans.get("school", ""),
                                         "source": trans.get("source", ""),
