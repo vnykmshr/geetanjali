@@ -1,9 +1,16 @@
 """Base repository class."""
 
-from typing import Generic, TypeVar, Type, Optional, List
+from typing import Generic, TypeVar, Type, Optional, List, Protocol
 from sqlalchemy.orm import Session
 
-ModelType = TypeVar("ModelType")
+
+class HasID(Protocol):
+    """Protocol for models with an id attribute."""
+
+    id: str
+
+
+ModelType = TypeVar("ModelType", bound=HasID)
 
 
 class BaseRepository(Generic[ModelType]):
@@ -30,7 +37,7 @@ class BaseRepository(Generic[ModelType]):
         Returns:
             Record or None if not found
         """
-        return self.db.query(self.model).filter(self.model.id == id).first()  # type: ignore[attr-defined]
+        return self.db.query(self.model).filter(self.model.id == id).first()
 
     def get_all(self, skip: int = 0, limit: int = 100) -> List[ModelType]:
         """
