@@ -3,55 +3,13 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { versesApi } from '../lib/api';
 import type { Verse } from '../types';
 import { Navbar } from '../components/Navbar';
+import { VerseCard } from '../components/VerseCard';
 import { errorMessages } from '../lib/errorMessages';
 
 const VERSES_PER_PAGE = 24;
 
 // Filter modes: 'featured' shows curated verses, 'all' shows all 701 verses
 type FilterMode = 'featured' | 'all' | number; // number = specific chapter
-
-/**
- * Extract meaningful Sanskrit preview for grid display.
- * Breaks at first danda (।) which marks natural clause boundary in Sanskrit.
- * Removes speaker intros and verse metadata to show actual verse content.
- */
-function getGridSanskritPreview(text: string): string {
-  if (!text) return '';
-
-  // Split into lines to detect and skip speaker intro
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-
-  // Skip first line if it's a speaker intro (contains वाच - "said/spoke")
-  // Using partial match to handle cases where उवाच gets merged with preceding word
-  let startIndex = 0;
-  if (lines.length > 1 && lines[0].includes('वाच')) {
-    startIndex = 1;
-  }
-
-  // Merge remaining lines
-  let cleaned = lines.slice(startIndex).join(' ').trim();
-
-  // Remove verse number metadata (।।2.47।। or ॥2.47॥)
-  cleaned = cleaned.replace(/[।॥]+\d+\.\d+[।॥]+\s*$/, '');
-
-  // Find first danda (।) - marks natural pause/clause boundary in Sanskrit
-  const dandaIndex = cleaned.indexOf('।');
-
-  if (dandaIndex > 0) {
-    // Take text up to and including first danda
-    let preview = cleaned.substring(0, dandaIndex + 1).trim();
-
-    // Add ellipsis if there's more content following the danda
-    if (dandaIndex < cleaned.length - 1) {
-      preview += ' ...';
-    }
-
-    return preview;
-  }
-
-  // Fallback: no danda found, show first 100 characters
-  return cleaned.length > 100 ? cleaned.substring(0, 100) + '...' : cleaned;
-}
 
 export default function Verses() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -219,9 +177,6 @@ export default function Verses() {
     loadVerses(true);
   };
 
-  // Format canonical ID for display (BG_2_47 -> 2.47)
-  const formatVerseId = (id: string) => id.replace('BG_', '').replace(/_/g, '.');
-
   // Get filter description for results
   const getFilterDescription = () => {
     if (searchQuery) return '';
@@ -345,37 +300,21 @@ export default function Verses() {
                 {hasMore && ' (scroll for more)'}
               </div>
 
-              {/* Verse Grid - Clean Consistent Cards */}
+              {/* Verse Grid - Compact Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {verses.map((verse) => (
                   <Link
                     key={verse.id}
                     to={`/verses/${verse.canonical_id}`}
-                    className="group bg-white rounded-xl shadow-sm hover:shadow-lg border border-gray-100 hover:border-orange-200 transition-all p-5"
+                    className="transition-all hover:shadow-lg"
                   >
-                    {/* Verse ID + Chapter */}
-                    <div className="flex items-baseline justify-between mb-3">
-                      <span className="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
-                        {formatVerseId(verse.canonical_id)}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        Ch {verse.chapter}
-                      </span>
-                    </div>
-
-                    {/* Sanskrit - Break at first danda for meaningful preview */}
-                    {verse.sanskrit_devanagari && (
-                      <p className="text-gray-700 font-serif text-lg leading-relaxed mb-3 line-clamp-2">
-                        {getGridSanskritPreview(verse.sanskrit_devanagari)}
-                      </p>
-                    )}
-
-                    {/* Paraphrase - 3 lines for consistent height */}
-                    {verse.paraphrase_en && (
-                      <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
-                        {verse.paraphrase_en}
-                      </p>
-                    )}
+                    <VerseCard
+                      verse={verse}
+                      displayMode="compact"
+                      showSpeaker={false}
+                      showCitation={true}
+                      showTranslation={true}
+                    />
                   </Link>
                 ))}
               </div>
