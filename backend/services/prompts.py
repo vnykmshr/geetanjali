@@ -331,6 +331,40 @@ def post_process_ollama_response(
         else:
             data = {}
 
+    # Normalize verse reference format: convert BG_X.Y to BG_X_Y
+    def normalize_verse_id(verse_id: str) -> str:
+        """Convert verse ID format from BG_X.Y to BG_X_Y."""
+        if isinstance(verse_id, str) and verse_id.startswith("BG_"):
+            # Replace dots with underscores in verse references
+            return verse_id.replace(".", "_")
+        return verse_id
+
+    # Fix sources array if it contains verse IDs as strings
+    if data.get("sources") and isinstance(data["sources"], list):
+        for source in data["sources"]:
+            if isinstance(source, dict) and "canonical_id" in source:
+                source["canonical_id"] = normalize_verse_id(source["canonical_id"])
+
+    # Fix options sources arrays
+    if data.get("options") and isinstance(data["options"], list):
+        for option in data["options"]:
+            if isinstance(option, dict) and "sources" in option:
+                if isinstance(option["sources"], list):
+                    option["sources"] = [
+                        normalize_verse_id(src) if isinstance(src, str) else src
+                        for src in option["sources"]
+                    ]
+
+    # Fix recommended_action sources
+    if data.get("recommended_action") and isinstance(data["recommended_action"], dict):
+        if "sources" in data["recommended_action"]:
+            sources = data["recommended_action"]["sources"]
+            if isinstance(sources, list):
+                data["recommended_action"]["sources"] = [
+                    normalize_verse_id(src) if isinstance(src, str) else src
+                    for src in sources
+                ]
+
     # Ensure all required fields exist
     if not data.get("executive_summary"):
         data["executive_summary"] = (
