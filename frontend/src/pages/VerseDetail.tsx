@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { versesApi } from '../lib/api';
 import { formatSanskritLines, isSpeakerIntro } from '../lib/sanskritFormatter';
-import { PRINCIPLE_TAXONOMY, getPrincipleLabel } from '../constants/principles';
+import { PRINCIPLE_TAXONOMY } from '../constants/principles';
 import { getTranslatorPriority } from '../constants/translators';
 import type { Verse, Translation } from '../types';
 import { Navbar } from '../components/Navbar';

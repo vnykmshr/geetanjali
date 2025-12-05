@@ -101,9 +101,9 @@ describe('Home Page', () => {
         expect(api.versesApi.getRandom).toHaveBeenCalled()
       })
 
-      // Verse is wrapped in quotes - search for partial text
+      // Paraphrase is wrapped in quotes - search for partial text
       await waitFor(() => {
-        expect(screen.getByText(/You have the right to action/)).toBeInTheDocument()
+        expect(screen.getByText(/Focus on your duties without attachment/)).toBeInTheDocument()
       })
     })
 
