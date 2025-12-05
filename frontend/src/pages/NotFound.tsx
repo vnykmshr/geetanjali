@@ -7,6 +7,56 @@ import { Navbar } from '../components/Navbar';
 // Sample Sanskrit verses about finding the right path
 const PATH_VERSES = ['BG_2_48', 'BG_18_63', 'BG_6_25'];
 
+/**
+ * Format Sanskrit text to display with proper line breaks
+ * - Removes verse number at the end
+ * - Splits verse on danda marks and formats with alternating | and ||
+ */
+function formatSanskritLines(text: string): string[] {
+  if (!text) return [];
+
+  // Remove the verse number at the end (e.g., ।।2.52।। or ॥2.52॥)
+  const withoutVerseNum = text.replace(/[।॥]+\d+\.\d+[।॥]+\s*$/, '');
+
+  // Split by newlines to detect speaker intro lines
+  const lines = withoutVerseNum.split('\n').map(l => l.trim()).filter(l => l);
+
+  const result: string[] = [];
+
+  let verseLineIndex = 0;
+
+  // Process each line
+  for (const line of lines) {
+    // Check if this line contains speaker intro (contains वाच - said/spoke)
+    if (line.includes('वाच')) {
+      // This is a speaker intro line, add it as-is
+      result.push(line);
+    } else {
+      // This is verse content, split on danda
+      const parts = line.split(/।(?=[^।])/);
+
+      // Alternate between single (।) and double (॥) danda for each verse line
+      const isEvenLine = (verseLineIndex + 1) % 2 === 0;
+      const endDanda = isEvenLine ? ' ॥' : ' ।';
+
+      if (parts.length >= 2) {
+        // Multiple clauses in this line
+        for (let i = 0; i < parts.length - 1; i++) {
+          result.push(parts[i].trim() + ' ।');
+        }
+        result.push(parts[parts.length - 1].replace(/।+\s*$/, '').trim() + endDanda);
+      } else {
+        // Single clause
+        result.push(line.replace(/।+\s*$/, '').trim() + endDanda);
+      }
+
+      verseLineIndex++;
+    }
+  }
+
+  return result.length > 0 ? result : [text.trim()];
+}
+
 export default function NotFound() {
   const [verse, setVerse] = useState<Verse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,8 +95,15 @@ export default function NotFound() {
               {/* Sanskrit - Full Verse with proper formatting */}
               {verse.sanskrit_devanagari && (
                 <div className="mb-6 text-center">
-                  <div className="text-2xl md:text-3xl font-serif text-amber-900 leading-relaxed tracking-wide whitespace-pre-wrap mb-4">
-                    {verse.sanskrit_devanagari}
+                  <div className="text-2xl md:text-3xl font-serif text-amber-900 leading-relaxed tracking-wide mb-4">
+                    {formatSanskritLines(verse.sanskrit_devanagari).map((line, idx) => {
+                      const isSpeakerIntro = line.includes('वाच');
+                      return (
+                        <p key={idx} className={`${isSpeakerIntro ? 'text-xl text-amber-700/60 mb-3' : 'mb-2'}`}>
+                          {line}
+                        </p>
+                      );
+                    })}
                   </div>
                   <div className="text-amber-600/70 text-sm font-serif">
                     ॥ {verse.chapter}.{verse.verse} ॥
