@@ -356,11 +356,17 @@ def enrich_verses(
 
     try:
         # Count verses that need enrichment
+        # Count all verses that have translations but no enrichment data
         query = db.query(Verse).filter(Verse.translation_en.isnot(None))
         if not request.force:
+            # Mark for enrichment if either paraphrase is empty/null OR principles is empty/null
+            from sqlalchemy import and_, or_
             query = query.filter(
-                (Verse.paraphrase_en.is_(None))
-                | (Verse.consulting_principles.is_(None))
+                or_(
+                    and_(Verse.paraphrase_en.is_(None)),
+                    and_(Verse.paraphrase_en == ''),
+                    and_(Verse.consulting_principles.is_(None)),
+                )
             )
 
         if request.limit > 0:
@@ -421,9 +427,14 @@ def run_enrich_task(limit: int = 0, force: bool = False):
         # Load verses with translations
         query = db.query(Verse).filter(Verse.translation_en.isnot(None))
         if not force:
+            # Mark for enrichment if either paraphrase is empty/null OR principles is empty/null
+            from sqlalchemy import and_, or_
             query = query.filter(
-                (Verse.paraphrase_en.is_(None))
-                | (Verse.consulting_principles.is_(None))
+                or_(
+                    and_(Verse.paraphrase_en.is_(None)),
+                    and_(Verse.paraphrase_en == ''),
+                    and_(Verse.consulting_principles.is_(None)),
+                )
             )
 
         if limit > 0:
