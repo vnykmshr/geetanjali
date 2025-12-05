@@ -22,7 +22,7 @@ function getVerseLink(verse: Verse): string {
  * - Separates speaker intros (श्री भगवानुवाच, धृतराष्ट्र उवाच, etc.) on their own line
  * - Splits verse content on single danda (।) and adds proper spacing
  * - Uses alternating danda pattern: single (।), double (॥), single (।), double (॥)
- * - For compact mode: merge lines to ensure max 2 lines for consistent card heights
+ * - For compact mode: preserve natural formatting with danda marks
  */
 function formatSanskritLines(text: string, compactMode: boolean = false): string[] {
   if (!text) return [];
@@ -34,44 +34,38 @@ function formatSanskritLines(text: string, compactMode: boolean = false): string
   const lines = withoutVerseNum.split('\n').map(l => l.trim()).filter(l => l);
 
   if (compactMode) {
-    // For compact mode: merge lines to ensure consistent 2-line display
+    // For compact mode: preserve natural verse formatting with danda marks
     const result: string[] = [];
-    let currentLine = '';
-    let lineCount = 0;
+    let verseLineIndex = 0;
 
     for (const line of lines) {
       if (line.includes('वाच')) {
-        // Speaker intro - add as separate line if we have current content
-        if (currentLine.trim()) {
-          result.push(currentLine.trim());
-          currentLine = '';
-          lineCount++;
-        }
-        continue; // Skip speaker intros
+        // Skip speaker intros
+        continue;
       }
 
-      // Clean danda marks for joining
-      const cleanedLine = line.replace(/[।॥]/g, '').trim();
+      // Split on danda marks
+      const parts = line.split(/।/).filter(p => p.trim());
 
-      if (lineCount < 2) {
-        if (currentLine) {
-          currentLine += ' ' + cleanedLine;
+      if (parts.length === 0) continue;
+
+      // Alternate between single (।) and double (॥) danda
+      const isEvenLine = (verseLineIndex + 1) % 2 === 0;
+
+      for (let i = 0; i < parts.length; i++) {
+        let formattedPart = parts[i].trim();
+
+        // Add appropriate danda
+        if (i < parts.length - 1) {
+          formattedPart += ' |';
         } else {
-          currentLine = cleanedLine;
+          formattedPart += isEvenLine ? ' ॥' : ' ।';
         }
 
-        // Check if we should move to next line (aim for ~2 lines max)
-        if (currentLine.length > 80 && lineCount === 0) {
-          result.push(currentLine);
-          currentLine = '';
-          lineCount++;
-        }
+        result.push(formattedPart);
       }
-    }
 
-    // Add any remaining content
-    if (currentLine.trim()) {
-      result.push(currentLine.trim());
+      verseLineIndex++;
     }
 
     return result.length > 0 ? result : [text.trim()];
