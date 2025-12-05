@@ -276,7 +276,10 @@ export default function CaseView() {
   const handleSave = () => {
     if (!caseData) return;
 
-    const markdown = `# ${caseData.title}
+    // Get the first (main) output for paths, steps, and reflections
+    const firstOutput = outputs.length > 0 ? outputs[outputs.length - 1] : null;
+
+    let markdown = `# ${caseData.title}
 
 *Consultation on ${caseData.created_at ? new Date(caseData.created_at).toLocaleDateString() : 'Unknown date'}*
 
@@ -298,9 +301,61 @@ ${messages.map(msg => {
 }).join('\n---\n\n')}
 
 ---
-
-*Exported from Geetanjali*
 `;
+
+    // Add Paths Before You (Options)
+    if (firstOutput?.result_json.options?.length > 0) {
+      markdown += `\n## Paths Before You\n\n`;
+      firstOutput.result_json.options.forEach((option, idx) => {
+        markdown += `### Path ${idx + 1}: ${option.title}\n\n`;
+        markdown += `${option.description}\n\n`;
+
+        if (option.pros?.length) {
+          markdown += `**Strengths:**\n`;
+          option.pros.forEach(pro => {
+            markdown += `- ${pro}\n`;
+          });
+          markdown += '\n';
+        }
+
+        if (option.cons?.length) {
+          markdown += `**Considerations:**\n`;
+          option.cons.forEach(con => {
+            markdown += `- ${con}\n`;
+          });
+          markdown += '\n';
+        }
+
+        if (option.sources?.length) {
+          markdown += `**Related Verses:** ${option.sources.join(', ')}\n\n`;
+        }
+      });
+      markdown += `---\n`;
+    }
+
+    // Add Recommended Steps
+    if (firstOutput?.result_json.recommended_action?.steps?.length > 0) {
+      markdown += `\n## Recommended Steps\n\n`;
+      firstOutput.result_json.recommended_action.steps.forEach((step, idx) => {
+        markdown += `${idx + 1}. ${step}\n`;
+      });
+
+      if (firstOutput.result_json.recommended_action.sources?.length) {
+        markdown += `\n**Supporting Verses:** ${firstOutput.result_json.recommended_action.sources.join(', ')}\n`;
+      }
+      markdown += `\n---\n`;
+    }
+
+    // Add Reflection Prompts
+    if (firstOutput?.result_json.reflection_prompts?.length > 0) {
+      markdown += `\n## Reflection Prompts\n\nTake time to reflect on these questions:\n\n`;
+      firstOutput.result_json.reflection_prompts.forEach((prompt, idx) => {
+        markdown += `${idx + 1}. ${prompt}\n`;
+      });
+      markdown += `\n---\n`;
+    }
+
+    markdown += `\n*Exported from Geetanjali*\n`;
 
     const blob = new Blob([markdown], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
