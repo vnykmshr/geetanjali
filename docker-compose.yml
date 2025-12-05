@@ -92,6 +92,8 @@ services:
       # Secrets from .env (no defaults - required for production)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      API_KEY: ${API_KEY:-}
 
       # Optional .env overrides (config.py has defaults)
       APP_ENV: ${APP_ENV:-}
@@ -100,6 +102,8 @@ services:
       USE_MOCK_LLM: ${USE_MOCK_LLM:-}
       LLM_PROVIDER: ${LLM_PROVIDER:-}
       LLM_FALLBACK_PROVIDER: ${LLM_FALLBACK_PROVIDER:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
     ports:
       - "8000:8000"
     volumes:
@@ -133,6 +137,8 @@ services:
 
       # Secrets from .env (no defaults - required for production)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      API_KEY: ${API_KEY:-}
 
       # Optional .env overrides (config.py has defaults)
       APP_ENV: ${APP_ENV:-}
@@ -140,6 +146,8 @@ services:
       USE_MOCK_LLM: ${USE_MOCK_LLM:-}
       LLM_PROVIDER: ${LLM_PROVIDER:-}
       LLM_FALLBACK_PROVIDER: ${LLM_FALLBACK_PROVIDER:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
     volumes:
       - ./backend:/app
     depends_on:
@@ -163,6 +171,13 @@ services:
     container_name: geetanjali-frontend
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      # Mount SSL certificates for HTTPS
+      - /etc/letsencrypt/live/geetanjaliapp.com:/etc/letsencrypt/live/geetanjaliapp.com:ro
+      - /etc/letsencrypt/archive/geetanjaliapp.com:/etc/letsencrypt/archive/geetanjaliapp.com:ro
+      # Mount certbot challenge directory
+      - /var/www/certbot:/var/www/certbot:ro
     depends_on:
       backend:
         condition: service_started

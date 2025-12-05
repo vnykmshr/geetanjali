@@ -431,6 +431,9 @@ class IngestionPipeline:
         """
         Ingest a group of sources with fallback support.
 
+        For translation sources with different languages, all are processed.
+        For other sources, use fallback strategy (skip later sources if earlier succeeds).
+
         Args:
             source_type: Type of sources being ingested
             enabled_sources: List of enabled source configs
@@ -444,6 +447,13 @@ class IngestionPipeline:
         """
         stats = {}
         succeeded = False
+
+        # Check if this is a translation source group with multiple languages
+        is_multi_language_translation = (
+            source_type == "translations"
+            and len(enabled_sources) > 1
+            and all(s.get("language") for s in enabled_sources)
+        )
 
         for idx, source in enumerate(enabled_sources):
             source_name = source.get("name", "unnamed")
@@ -471,7 +481,8 @@ class IngestionPipeline:
                     f"Successfully ingested {total_items} items from {source_name}"
                 )
                 succeeded = True
-                if not is_fallback:
+                # For multi-language translations, continue processing all sources
+                if not is_fallback and not is_multi_language_translation:
                     logger.info(
                         f"Primary source succeeded, skipping {len(enabled_sources) - 1} fallback sources"
                     )

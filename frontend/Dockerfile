@@ -30,8 +30,8 @@ RUN chmod -R 755 /usr/share/nginx/html && \
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port
-EXPOSE 80
+# Expose ports (80 for HTTP, 443 for HTTPS)
+EXPOSE 80 443
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
