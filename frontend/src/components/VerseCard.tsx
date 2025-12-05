@@ -14,8 +14,9 @@ function getVerseLink(verse: Verse): string {
 }
 
 /**
- * Format Sanskrit text to display on two lines
- * Splits on single danda (।) and adds proper spacing
+ * Format Sanskrit text to display with proper line breaks
+ * - Separates speaker intros (श्री भगवानुवाच, धृतराष्ट्र उवाच, etc.) on their own line
+ * - Splits verse content on single danda (।) and adds proper spacing
  */
 function formatSanskritLines(text: string): string[] {
   if (!text) return [];
@@ -23,19 +24,36 @@ function formatSanskritLines(text: string): string[] {
   // Remove the verse number at the end (e.g., ।।2.52।। or ॥2.52॥)
   const withoutVerseNum = text.replace(/[।॥]+\d+\.\d+[।॥]+\s*$/, '');
 
-  // Split on single danda followed by content (but not double danda)
-  const parts = withoutVerseNum.split(/।(?=[^।])/);
+  // Split by newlines to detect speaker intro lines
+  const lines = withoutVerseNum.split('\n').map(l => l.trim()).filter(l => l);
 
-  if (parts.length >= 2) {
-    // Format: first line ends with ।, second line ends with ॥
-    return [
-      parts[0].trim() + ' ।',
-      parts.slice(1).join('।').replace(/।+\s*$/, '').trim() + ' ॥'
-    ];
+  const result: string[] = [];
+
+  // Process each line
+  for (const line of lines) {
+    // Check if this line contains speaker intro (contains वाच - said/spoke)
+    if (line.includes('वाच')) {
+      // This is a speaker intro line, add it as-is
+      result.push(line);
+    } else {
+      // This is verse content, split on danda
+      const parts = line.split(/।(?=[^।])/);
+
+      if (parts.length >= 2) {
+        // Multiple clauses in this line, add each with danda
+        for (let i = 0; i < parts.length - 1; i++) {
+          result.push(parts[i].trim() + ' ।');
+        }
+        // Last part ends with double danda (॥) to mark verse end
+        result.push(parts[parts.length - 1].replace(/।+\s*$/, '').trim() + ' ॥');
+      } else {
+        // Single clause, add as-is with double danda at end
+        result.push(line.replace(/।+\s*$/, '').trim() + ' ॥');
+      }
+    }
   }
 
-  // If can't split, return as single line
-  return [text.trim()];
+  return result.length > 0 ? result : [text.trim()];
 }
 
 export function VerseCard({ verse }: VerseCardProps) {
@@ -50,12 +68,19 @@ export function VerseCard({ verse }: VerseCardProps) {
 
         {/* Verses centered */}
         <div>
-          {/* Sanskrit Text - two lines */}
+          {/* Sanskrit Text */}
           {sanskritLines.length > 0 && (
             <div className="text-xl md:text-2xl text-amber-800/60 font-serif text-center leading-relaxed tracking-wide mb-6">
-              {sanskritLines.map((line, idx) => (
-                <p key={idx} className="mb-1">{line}</p>
-              ))}
+              {sanskritLines.map((line, idx) => {
+                // Check if this is a speaker intro line (contains वाच)
+                const isSpeakerIntro = line.includes('वाच');
+
+                return (
+                  <p key={idx} className={`${isSpeakerIntro ? 'text-amber-700/80 font-medium mb-2' : 'mb-1'}`}>
+                    {line}
+                  </p>
+                );
+              })}
             </div>
           )}
 
