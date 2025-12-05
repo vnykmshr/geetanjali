@@ -42,11 +42,11 @@ export default function NotFound() {
               {/* Om Symbol */}
               <div className="text-4xl text-amber-400/50 mb-4 font-light">ॐ</div>
 
-              {/* Sanskrit */}
+              {/* Sanskrit - Full Verse with proper formatting */}
               {verse.sanskrit_devanagari && (
-                <div className="mb-4 text-center">
-                  <div className="text-2xl md:text-3xl font-serif text-amber-900 leading-relaxed tracking-wide mb-2">
-                    {verse.sanskrit_devanagari.split('\n')[0]}
+                <div className="mb-6 text-center">
+                  <div className="text-2xl md:text-3xl font-serif text-amber-900 leading-relaxed tracking-wide whitespace-pre-wrap mb-4">
+                    {verse.sanskrit_devanagari}
                   </div>
                   <div className="text-amber-600/70 text-sm font-serif">
                     ॥ {verse.chapter}.{verse.verse} ॥
@@ -56,7 +56,7 @@ export default function NotFound() {
 
               {/* English paraphrase */}
               {verse.paraphrase_en && (
-                <p className="text-base md:text-lg text-gray-800 leading-relaxed italic">
+                <p className="text-base text-gray-800 leading-relaxed italic border-t border-amber-200/50 pt-4">
                   "{verse.paraphrase_en}"
                 </p>
               )}
