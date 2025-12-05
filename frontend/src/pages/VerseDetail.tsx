@@ -151,9 +151,6 @@ export default function VerseDetail() {
     loadVerseDetails();
   }, [canonicalId]);
 
-  // Format canonical ID for display (BG_2_47 -> 2.47)
-  const formatVerseId = (id: string) => id.replace('BG_', '').replace(/_/g, '.');
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
@@ -205,22 +202,9 @@ export default function VerseDetail() {
 
           {/* Main Spotlight Section */}
           <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 rounded-3xl shadow-2xl p-12 mb-8 border border-amber-200/50">
-            {/* Verse Header */}
-            <div className="text-center mb-8">
-              <div className="inline-block text-xs font-semibold text-amber-700 uppercase tracking-wider bg-amber-100/60 px-4 py-1 rounded-full mb-4">
-                Bhagavad Geeta Verse
-              </div>
-              <h1 className="text-4xl md:text-5xl font-bold text-amber-900 mb-2">
-                {formatVerseId(verse.canonical_id)}
-              </h1>
-              <p className="text-lg text-amber-700/70 font-serif">
-                Chapter {verse.chapter}, Verse {verse.verse}
-              </p>
-            </div>
-
             {/* Sanskrit Spotlight */}
             {verse.sanskrit_devanagari && (
-              <div className="mb-8 text-center">
+              <div className="mb-8 text-center pt-4">
                 <div className="text-4xl text-amber-400/50 mb-6 font-light">ॐ</div>
                 <div className="text-3xl md:text-4xl font-serif text-amber-900/70 leading-relaxed tracking-wide mb-6">
                   {formatSanskritLines(verse.sanskrit_devanagari).map((line, idx) => {
