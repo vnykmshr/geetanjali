@@ -21,9 +21,10 @@ function getGridSanskritPreview(text: string): string {
   // Split into lines to detect and skip speaker intro
   const lines = text.split('\n').map(l => l.trim()).filter(l => l);
 
-  // Skip first line if it's a speaker intro (ends with उवाच - "said/spoke")
+  // Skip first line if it's a speaker intro (contains वाच - "said/spoke")
+  // Using partial match to handle cases where उवाच gets merged with preceding word
   let startIndex = 0;
-  if (lines.length > 1 && lines[0].includes('उवाच')) {
+  if (lines.length > 1 && lines[0].includes('वाच')) {
     startIndex = 1;
   }
 
