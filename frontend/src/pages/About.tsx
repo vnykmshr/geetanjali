@@ -310,7 +310,7 @@ export default function About() {
         {/* Credits */}
         <section className="text-center text-gray-500 text-sm">
           <p className="mb-2">
-            Built with care by a team passionate about making ancient wisdom accessible.
+            Dedicated to making ancient wisdom accessible to modern seekers.
           </p>
           <p>
             Verse translations sourced from public domain texts.
