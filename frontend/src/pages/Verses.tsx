@@ -220,7 +220,7 @@ export default function Verses() {
             </div>
           </form>
 
-          {/* Filter Pills - Full Width */}
+          {/* Filter Pills - Responsive Layout */}
           <div className="flex gap-2 items-center">
             {/* Featured (default) */}
             <button
@@ -246,20 +246,44 @@ export default function Verses() {
             </button>
             {/* Divider */}
             <div className="w-px h-10 bg-gray-300 flex-shrink-0" />
-            {/* Chapter pills - evenly distributed */}
-            {Array.from({ length: 18 }, (_, i) => i + 1).map((chapter) => (
-              <button
-                key={chapter}
-                onClick={() => handleFilterSelect(chapter)}
-                className={`flex-1 min-w-0 h-10 rounded-lg font-medium transition-colors ${
-                  selectedChapter === chapter
-                    ? 'bg-red-600 text-white shadow-md'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                }`}
-              >
-                {chapter}
-              </button>
-            ))}
+
+            {/* Mobile: Chapter Dropdown */}
+            <select
+              value={selectedChapter || 'all-chapters'}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === 'all-chapters') {
+                  handleFilterSelect('all');
+                } else {
+                  handleFilterSelect(parseInt(value));
+                }
+              }}
+              className="lg:hidden px-4 py-2 rounded-lg font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              <option value="all-chapters">All Chapters</option>
+              {Array.from({ length: 18 }, (_, i) => i + 1).map((chapter) => (
+                <option key={chapter} value={chapter}>
+                  Chapter {chapter}
+                </option>
+              ))}
+            </select>
+
+            {/* Desktop: Chapter pills - hidden on mobile */}
+            <div className="hidden lg:flex gap-2 flex-1">
+              {Array.from({ length: 18 }, (_, i) => i + 1).map((chapter) => (
+                <button
+                  key={chapter}
+                  onClick={() => handleFilterSelect(chapter)}
+                  className={`flex-1 min-w-0 h-10 rounded-lg font-medium transition-colors ${
+                    selectedChapter === chapter
+                      ? 'bg-red-600 text-white shadow-md'
+                      : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  }`}
+                >
+                  {chapter}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

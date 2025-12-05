@@ -2,64 +2,17 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { versesApi } from '../lib/api';
 import { formatSanskritLines, isSpeakerIntro } from '../lib/sanskritFormatter';
+import { PRINCIPLE_TAXONOMY, getPrincipleLabel } from '../constants/principles';
+import { getTranslatorPriority } from '../constants/translators';
 import type { Verse, Translation } from '../types';
 import { Navbar } from '../components/Navbar';
 import { errorMessages } from '../lib/errorMessages';
 
-// Translator priority order (1 = highest)
-const TRANSLATOR_PRIORITY: Record<string, number> = {
-  'Swami Gambirananda': 1,
-  'Swami Adidevananda': 2,
-  'Swami Sivananda': 3,
-  'Dr. S. Sankaranarayan': 4,
-  'Shri Purohit Swami': 5,
-};
-
-// Principle taxonomy with labels and descriptions
-const PRINCIPLE_TAXONOMY: Record<string, { label: string; description: string }> = {
-  duty_focus: {
-    label: 'Duty-focused action',
-    description: 'Act based on dharma and responsibility, not on desired outcomes.',
-  },
-  detachment: {
-    label: 'Non-attachment to outcomes',
-    description: 'Emphasize process over results. Perform actions without attachment.',
-  },
-  self_control: {
-    label: 'Leader temperament',
-    description: 'Cultivate self-discipline, mental clarity, and personal integrity.',
-  },
-  informed_choice: {
-    label: 'Autonomous decision-making',
-    description: 'Make decisions with full knowledge and freedom.',
-  },
-  role_fit: {
-    label: 'Fit tasks to nature',
-    description: 'Match responsibilities to natural capabilities and strengths.',
-  },
-  compassion: {
-    label: 'Compassionate equilibrium',
-    description: 'Minimize harm and balance stakeholder needs with empathy.',
-  },
-  self_responsibility: {
-    label: 'Self-effort and example',
-    description: 'Lead through personal action and take responsibility for growth.',
-  },
-  ethical_character: {
-    label: 'Character traits',
-    description: 'Filter actions through virtuous qualities like truthfulness and courage.',
-  },
-  consistent_duty: {
-    label: 'Consistent performance',
-    description: 'Perform duties regularly. Avoid impulsive or erratic behavior.',
-  },
-};
-
 // Sort translations by priority
 function sortTranslations(translations: Translation[]): Translation[] {
   return [...translations].sort((a, b) => {
-    const priorityA = a.translator ? (TRANSLATOR_PRIORITY[a.translator] || 99) : 99;
-    const priorityB = b.translator ? (TRANSLATOR_PRIORITY[b.translator] || 99) : 99;
+    const priorityA = getTranslatorPriority(a.translator);
+    const priorityB = getTranslatorPriority(b.translator);
     return priorityA - priorityB;
   });
 }
@@ -312,12 +265,16 @@ export default function VerseDetail() {
             ) : (
               <div />
             )}
-            <Link
-              to={`/verses/BG_${verse.chapter}_${verse.verse + 1}`}
-              className="text-red-600 hover:text-red-700 font-medium"
-            >
-              Next Verse →
-            </Link>
+            {verse.chapter < 18 ? (
+              <Link
+                to={`/verses/BG_${verse.chapter}_${verse.verse + 1}`}
+                className="text-red-600 hover:text-red-700 font-medium"
+              >
+                Next Verse →
+              </Link>
+            ) : (
+              <div />
+            )}
           </div>
         </div>
       </div>

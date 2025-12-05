@@ -1,0 +1,118 @@
+import { useState, useCallback, useEffect } from 'react';
+import { casesApi, outputsApi } from '../lib/api';
+import { messagesApi } from '../api/messages';
+import type { Case, Message, Output } from '../types';
+import { errorMessages } from '../lib/errorMessages';
+
+interface UseCaseDataOptions {
+  caseId: string | undefined;
+  isAuthenticated: boolean;
+}
+
+/**
+ * Manages case data loading and polling
+ * Extracts data-fetching concerns from CaseView component
+ */
+export function useCaseData({ caseId, isAuthenticated }: UseCaseDataOptions) {
+  const [caseData, setCaseData] = useState<Case | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [outputs, setOutputs] = useState<Output[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
+  const [wasProcessing, setWasProcessing] = useState(false);
+  const [showCompletionBanner, setShowCompletionBanner] = useState(false);
+
+  const isProcessing = caseData?.status === 'pending' || caseData?.status === 'processing';
+  const isFailed = caseData?.status === 'failed';
+  const isCompleted = caseData?.status === 'completed' || !caseData?.status;
+
+  const loadCaseData = useCallback(async () => {
+    if (!caseId) return;
+
+    try {
+      const data = await casesApi.get(caseId);
+      setCaseData(data);
+
+      if (data.status === 'completed' || data.status === 'failed' || !data.status) {
+        const messagesData = await messagesApi.list(caseId);
+        setMessages(messagesData);
+
+        const outputsData = await outputsApi.listByCaseId(caseId);
+        setOutputs(outputsData);
+
+        if (!isAuthenticated && outputsData.length > 0) {
+          setShowSignupPrompt(true);
+        }
+      }
+    } catch (err) {
+      setError(errorMessages.caseLoad(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [caseId, isAuthenticated]);
+
+  useEffect(() => {
+    loadCaseData();
+  }, [loadCaseData]);
+
+  // Track when case transitions from processing to completed
+  useEffect(() => {
+    if (isProcessing) {
+      setWasProcessing(true);
+    }
+  }, [isProcessing]);
+
+  // Show completion banner when analysis finishes
+  useEffect(() => {
+    if (wasProcessing && isCompleted && outputs.length > 0) {
+      setShowCompletionBanner(true);
+      setWasProcessing(false);
+      const timer = setTimeout(() => setShowCompletionBanner(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [wasProcessing, isCompleted, outputs.length]);
+
+  // Polling for processing status
+  useEffect(() => {
+    if (!isProcessing || !caseId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const data = await casesApi.get(caseId);
+        setCaseData(data);
+
+        if (data.status === 'completed' || data.status === 'failed') {
+          clearInterval(pollInterval);
+          loadCaseData();
+        }
+      } catch {
+        // Silent fail - polling will retry
+      }
+    }, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [isProcessing, caseId, loadCaseData]);
+
+  return {
+    caseData,
+    messages,
+    outputs,
+    loading,
+    error,
+    showSignupPrompt,
+    showCompletionBanner,
+    isProcessing,
+    isFailed,
+    isCompleted,
+    setShowSignupPrompt,
+    setShowCompletionBanner,
+    setMessages,
+    setOutputs,
+    setError,
+    setCaseData,
+    loadCaseData,
+  };
+}
+
+export default useCaseData;
