@@ -123,7 +123,7 @@ export default function VerseDetail() {
   const [translations, setTranslations] = useState<Translation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showAllTranslations, setShowAllTranslations] = useState(false);
+  const [showAllTranslations, setShowAllTranslations] = useState(true);
 
   useEffect(() => {
     if (!canonicalId) return;
@@ -220,13 +220,6 @@ export default function VerseDetail() {
               </div>
             )}
 
-            {/* Divider */}
-            <div className="flex justify-center items-center gap-4 my-8">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent to-amber-300/50" />
-              <span className="text-amber-400/50 text-xl">।</span>
-              <div className="flex-1 h-px bg-gradient-to-l from-transparent to-amber-300/50" />
-            </div>
-
             {/* Leadership Insight - Prominent */}
             {verse.paraphrase_en && (
               <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-amber-100/50 mb-8">
@@ -269,11 +262,7 @@ export default function VerseDetail() {
             )}
 
             {/* Divider */}
-            <div className="flex justify-center items-center gap-4 my-8">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent to-amber-300/50" />
-              <span className="text-amber-400/50 text-xl">।</span>
-              <div className="flex-1 h-px bg-gradient-to-l from-transparent to-amber-300/50" />
-            </div>
+            <div className="my-6 h-px bg-gradient-to-r from-transparent via-amber-300/50 to-transparent" />
 
             {/* Translations - Side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -313,23 +302,27 @@ export default function VerseDetail() {
             </div>
           </div>
 
-          {/* Translations Section - Collapsible */}
+          {/* Translations Section - Toggle Switch */}
           {translations.length > 0 && (
             <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-              <button
-                onClick={() => setShowAllTranslations(!showAllTranslations)}
-                className="w-full flex items-center justify-between hover:opacity-70 transition-opacity"
-              >
-                <h2 className="text-xl font-bold text-gray-900">
-                  All Translations ({translations.length})
-                </h2>
-                <span className={`text-2xl text-amber-600 transition-transform ${showAllTranslations ? 'rotate-180' : ''}`}>
-                  ▼
-                </span>
-              </button>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Translations</h2>
+                <button
+                  onClick={() => setShowAllTranslations(!showAllTranslations)}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                    showAllTranslations ? 'bg-amber-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                      showAllTranslations ? 'translate-x-7' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
 
               {showAllTranslations && (
-                <div className="mt-6 space-y-8">
+                <div className="space-y-8 animate-in fade-in duration-200">
                   {translations.map((translation, index) => (
                     <div key={translation.id}>
                       <div className="border-l-4 border-amber-300 pl-6 py-3">
