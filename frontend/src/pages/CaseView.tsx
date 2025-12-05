@@ -350,7 +350,7 @@ ${messages.map(msg => {
     }
 
     // Add Reflection Prompts
-    if (firstOutput?.result_json.reflection_prompts?.length > 0) {
+    if (firstOutput && firstOutput.result_json.reflection_prompts?.length > 0) {
       markdown += `\n## Reflection Prompts\n\nTake time to reflect on these questions:\n\n`;
       firstOutput.result_json.reflection_prompts.forEach((prompt: string, idx: number) => {
         markdown += `${idx + 1}. ${prompt}\n`;
