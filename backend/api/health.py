@@ -3,6 +3,8 @@
 import logging
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
+import httpx
 
 from db import get_db, check_db_connection
 from config import settings
@@ -48,8 +50,14 @@ def check_chroma_connection(timeout: int = 2) -> bool:
     except TimeoutError:
         logger.warning(f"ChromaDB health check timed out after {timeout}s")
         return False
+    except httpx.ConnectError as e:
+        logger.warning(f"ChromaDB connection failed: {e}")
+        return False
+    except httpx.TimeoutException as e:
+        logger.warning(f"ChromaDB HTTP timeout: {e}")
+        return False
     except Exception as e:
-        logger.error(f"ChromaDB health check failed: {e}")
+        logger.error(f"ChromaDB health check failed (unexpected): {e}", exc_info=True)
         return False
 
 
@@ -90,8 +98,14 @@ def check_ollama_connection(timeout: int = 2) -> bool:
     except TimeoutError:
         logger.warning(f"Ollama health check timed out after {timeout}s")
         return False
+    except httpx.ConnectError as e:
+        logger.warning(f"Ollama connection failed: {e}")
+        return False
+    except httpx.TimeoutException as e:
+        logger.warning(f"Ollama HTTP timeout: {e}")
+        return False
     except Exception as e:
-        logger.error(f"Ollama health check failed: {e}")
+        logger.error(f"Ollama health check failed (unexpected): {e}", exc_info=True)
         return False
 
 
@@ -144,20 +158,26 @@ async def readiness_check(db: Session = Depends(get_db)):
     # Check database
     try:
         checks["database"] = check_db_connection()
+    except (OperationalError, SQLAlchemyError) as e:
+        logger.warning(f"Database health check failed: {e}")
     except Exception as e:
-        logger.error(f"Database health check failed: {e}")
+        logger.error(f"Database health check failed (unexpected): {e}", exc_info=True)
 
     # Check ChromaDB
     try:
         checks["chroma"] = check_chroma_connection()
+    except httpx.ConnectError as e:
+        logger.warning(f"ChromaDB connection failed: {e}")
     except Exception as e:
-        logger.error(f"ChromaDB health check failed: {e}")
+        logger.error(f"ChromaDB health check failed (unexpected): {e}", exc_info=True)
 
     # Check Ollama
     try:
         checks["ollama"] = check_ollama_connection()
+    except httpx.ConnectError as e:
+        logger.warning(f"Ollama connection failed: {e}")
     except Exception as e:
-        logger.error(f"Ollama health check failed: {e}")
+        logger.error(f"Ollama health check failed (unexpected): {e}", exc_info=True)
 
     # Overall status
     all_ready = checks["database"] and checks["chroma"] and checks["ollama"]
