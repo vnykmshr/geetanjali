@@ -73,11 +73,19 @@ def _create_assistant_message(
     )
 
 
-def run_analysis_background(case_id: str, case_data: dict):
+def run_analysis_background(case_id: str, case_data: dict, request_correlation_id: str = "background"):
     """
     Background task to run RAG analysis.
     Uses a new database session since background tasks run outside request context.
+
+    Args:
+        case_id: Case ID to analyze
+        case_data: Case data for RAG pipeline
+        request_correlation_id: Correlation ID from original request
     """
+    from utils.logging import correlation_id as correlation_id_var
+
+    correlation_id_var.set(request_correlation_id)  # Set correlation ID for this task
     db = SessionLocal()
     try:
         logger.info(f"[Background] Starting analysis for case {case_id}")
@@ -178,14 +186,17 @@ async def analyze_case_async(
     # Build case data
     case_data = _build_case_data(case)
 
+    # Get correlation ID from request state (if available)
+    request_correlation_id = getattr(request.state, 'correlation_id', 'background')
+
     # Try RQ first, fallback to BackgroundTasks
-    job_id = enqueue_task(run_analysis_background, case.id, case_data)
+    job_id = enqueue_task(run_analysis_background, case.id, case_data, request_correlation_id)
 
     if job_id:
         logger.info(f"Analysis queued via RQ (job: {job_id}) for case {case.id}")
     else:
         # Fallback to FastAPI BackgroundTasks
-        background_tasks.add_task(run_analysis_background, case.id, case_data)
+        background_tasks.add_task(run_analysis_background, case.id, case_data, request_correlation_id)
         logger.info(f"Analysis queued via BackgroundTasks for case {case.id}")
 
     return case
