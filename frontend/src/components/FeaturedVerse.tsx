@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import type { Verse, Translation } from '../types';
+import type { Verse } from '../types';
 
 /**
  * Format Sanskrit text with proper line breaks and danda marks
@@ -53,25 +53,12 @@ function formatSanskritLines(text: string): string[] {
   return result.length > 0 ? result : [text.trim()];
 }
 
-/**
- * Clean translation text - removes verse numbers and extra formatting
- */
-function cleanTranslation(text: string): string {
-  if (!text) return '';
-  // Remove leading/trailing verse numbers in any format
-  let cleaned = text.replace(/^[।॥]+\d+\.\d+[।॥]+\s*/, '').replace(/\s*[।॥]+\d+\.\d+[।॥]+$/, '');
-  // Remove opening/closing quotes if present
-  cleaned = cleaned.replace(/^[""]/, '').replace(/[""]$/, '');
-  return cleaned.trim();
-}
-
 interface FeaturedVerseProps {
   verse: Verse;
-  translations?: Translation[];
   loading?: boolean;
 }
 
-export function FeaturedVerse({ verse, translations = [], loading = false }: FeaturedVerseProps) {
+export function FeaturedVerse({ verse, loading = false }: FeaturedVerseProps) {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -88,13 +75,6 @@ export function FeaturedVerse({ verse, translations = [], loading = false }: Fea
   if (!verse) {
     return null;
   }
-
-  // Get Hindi and English translations
-  const hindiTranslations = translations.filter(t => t.language === 'hindi' || t.translator === 'Swami Tejomayananda');
-  const englishTranslations = translations.filter(t => t.language === 'en' || t.language === 'english');
-
-  const primaryHindi = hindiTranslations.length > 0 ? hindiTranslations[0].text : '';
-  const primaryEnglish = verse.translation_en || englishTranslations.find(t => t.translator === 'Swami Gambirananda')?.text || englishTranslations[0]?.text || '';
 
   const verseRef = `${verse.chapter}.${verse.verse}`;
   const sanskritLines = formatSanskritLines(verse.sanskrit_devanagari || '');
@@ -126,32 +106,6 @@ export function FeaturedVerse({ verse, translations = [], loading = false }: Fea
             </Link>
           </div>
         )}
-
-        {/* Visual Separator */}
-        <div className="flex justify-center items-center gap-4 my-8">
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent to-amber-300/50" />
-          <span className="text-amber-400/50 text-lg">।</span>
-          <div className="flex-1 h-px bg-gradient-to-l from-transparent to-amber-300/50" />
-        </div>
-
-        {/* Translations */}
-        <div className="space-y-6">
-          {primaryEnglish && (
-            <div className="text-center">
-              <p className="text-lg md:text-xl text-gray-800 leading-relaxed italic">
-                "{cleanTranslation(primaryEnglish)}"
-              </p>
-            </div>
-          )}
-
-          {primaryHindi && (
-            <div className="text-center">
-              <p className="text-lg md:text-xl text-gray-800 leading-relaxed">
-                "{cleanTranslation(primaryHindi)}"
-              </p>
-            </div>
-          )}
-        </div>
 
         {/* Paraphrase - Leadership Insight */}
         {verse.paraphrase_en && (

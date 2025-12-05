@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { checkHealth, casesApi, versesApi } from '../lib/api';
-import type { Case, Verse, Translation } from '../types';
+import type { Case, Verse } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { FeaturedVerse } from '../components/FeaturedVerse';
 import { Navbar } from '../components/Navbar';
@@ -10,7 +10,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [recentCases, setRecentCases] = useState<Case[]>([]);
   const [dailyVerse, setDailyVerse] = useState<Verse | null>(null);
-  const [translations, setTranslations] = useState<Translation[]>([]);
   const [verseLoading, setVerseLoading] = useState(true);
   const { isAuthenticated } = useAuth();
 
@@ -39,19 +38,13 @@ export default function Home() {
     return () => { cancelled = true; };
   }, [isAuthenticated]);
 
-  // Load random verse and its translations on mount
+  // Load random verse on mount
   useEffect(() => {
     let cancelled = false;
     versesApi.getRandom()
       .then((data) => {
         if (!cancelled) {
           setDailyVerse(data);
-          // Also fetch translations for this verse
-          return versesApi.getTranslations(data.canonical_id)
-            .then((trans) => {
-              if (!cancelled) setTranslations(trans);
-            })
-            .catch(() => { /* Silent fail - translations just won't show */ });
         }
       })
       .catch(() => { /* Silent fail - verse section just won't show */ })
@@ -97,7 +90,6 @@ export default function Home() {
           <div className="mb-12">
             <FeaturedVerse
               verse={dailyVerse!}
-              translations={translations}
               loading={verseLoading}
             />
           </div>
