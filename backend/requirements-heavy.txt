@@ -1,9 +1,0 @@
-# Heavy dependencies - installed first for better caching
-# These rarely change and take longest to install
-# Note: torch CPU-only is installed separately in Dockerfile to avoid CUDA downloads
-
-# Embeddings (requires torch, installed in Dockerfile)
-sentence-transformers==5.1.2
-
-# Vector Database
-chromadb==1.3.5
