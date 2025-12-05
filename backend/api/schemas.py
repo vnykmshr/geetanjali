@@ -1,8 +1,10 @@
 """Pydantic schemas for API request/response validation."""
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TypeVar, Generic
 from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
+
+T = TypeVar("T")
 
 
 # ============================================================================
@@ -335,3 +337,48 @@ class ReadinessCheckResponse(BaseModel):
 
     status: str
     checks: Dict[str, bool]
+
+
+# ============================================================================
+# Pagination Schemas
+# ============================================================================
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Generic paginated response wrapper.
+
+    Usage:
+        @router.get("/items", response_model=PaginatedResponse[ItemResponse])
+        async def list_items(skip: int = 0, limit: int = 10):
+            items = db.query(Item).offset(skip).limit(limit).all()
+            total = db.query(Item).count()
+            return PaginatedResponse.create(items, total, skip // limit + 1, limit)
+    """
+
+    data: List[T] = Field(..., description="List of items")
+    total: int = Field(..., description="Total number of items", ge=0)
+    page: int = Field(..., description="Current page number", ge=1)
+    page_size: int = Field(..., description="Items per page", ge=1)
+    total_pages: int = Field(..., description="Total number of pages", ge=1)
+
+    @classmethod
+    def create(cls, items: List[T], total: int, page: int, page_size: int) -> "PaginatedResponse[T]":
+        """Create a paginated response.
+
+        Args:
+            items: List of items for current page
+            total: Total number of items across all pages
+            page: Current page number (1-indexed)
+            page_size: Number of items per page
+
+        Returns:
+            PaginatedResponse instance
+        """
+        total_pages = max(1, (total + page_size - 1) // page_size)
+        return cls(
+            data=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+        )
