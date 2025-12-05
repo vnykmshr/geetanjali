@@ -304,7 +304,7 @@ ${messages.map(msg => {
 `;
 
     // Add Paths Before You (Options)
-    if (firstOutput?.result_json.options?.length > 0) {
+    if (firstOutput && firstOutput.result_json.options?.length > 0) {
       markdown += `\n## Paths Before You\n\n`;
       firstOutput.result_json.options.forEach((option: any, idx: number) => {
         markdown += `### Path ${idx + 1}: ${option.title}\n\n`;
@@ -336,7 +336,7 @@ ${messages.map(msg => {
     }
 
     // Add Recommended Steps
-    if (firstOutput && typeof firstOutput.result_json.recommended_action === 'object' && firstOutput.result_json.recommended_action?.steps?.length > 0) {
+    if (firstOutput && typeof firstOutput.result_json.recommended_action === 'object' && (firstOutput.result_json.recommended_action as any)?.steps?.length > 0) {
       markdown += `\n## Recommended Steps\n\n`;
       const recommendedAction = firstOutput.result_json.recommended_action as any;
       recommendedAction.steps.forEach((step: string, idx: number) => {
