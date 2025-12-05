@@ -58,14 +58,6 @@ export function FeaturedVerse({ verse, loading = false }: FeaturedVerseProps) {
           </div>
         )}
 
-        {/* Paraphrase - Leadership Insight */}
-        {verse.paraphrase_en && (
-          <div className="mt-8 bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-amber-100/50">
-            <p className="text-lg text-gray-800 leading-relaxed italic">
-              "{verse.paraphrase_en}"
-            </p>
-          </div>
-        )}
       </div>
     </Link>
   );
