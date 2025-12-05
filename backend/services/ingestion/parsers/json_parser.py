@@ -251,9 +251,22 @@ class JSONParser:
         """
         from collections import defaultdict
 
-        # Determine which language to filter by
+        # Determine which language to filter by (from gita/gita source)
         # If not specified in source config, default to 'english' for backward compatibility
-        target_language = source_config.get("language", "english")
+        target_language_config = source_config.get("language", "english")
+
+        # Map full language names to ISO 639-1 codes for database storage
+        language_code_map = {
+            "english": "en",
+            "hindi": "hi",
+            "tamil": "ta",
+            "telugu": "te",
+            "marathi": "mr",
+        }
+        target_language = target_language_config
+        target_language_code = language_code_map.get(
+            target_language_config.lower(), target_language_config.lower()[:2]
+        )
 
         # Group by verse_id, filtered by target language
         by_verse = defaultdict(list)
@@ -281,7 +294,7 @@ class JSONParser:
             by_verse[verse_id].append(
                 {
                     "text": t.get("description", "").strip(),
-                    "language": target_language,
+                    "language": target_language_code,
                     "translator": translator_name,
                     "school": translator_school.get(translator_name, ""),
                     "priority": translator_priority.get(translator_name, 99),
