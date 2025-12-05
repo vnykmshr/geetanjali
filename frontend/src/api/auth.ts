@@ -13,6 +13,9 @@ const authClient = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true, // Enable cookies for refresh token
+  // Treat 401 as a valid response (not an error) to suppress console logging
+  // This is expected for anonymous users who don't have a refresh token
+  validateStatus: (status) => status !== 401 || true, // Accept all status codes
 });
 
 // Add session ID to auth requests for anonymous case migration
@@ -113,20 +116,17 @@ export const authApi = {
    * This allows the caller to distinguish between "no refresh token" and other errors
    */
   refresh: async (): Promise<RefreshResponse | null> => {
-    try {
-      const response = await authClient.post<RefreshResponse>('/refresh');
-      // Update access token in memory
-      tokenStorage.setToken(response.data.access_token);
-      return response.data;
-    } catch (error: any) {
-      // If 401 (Unauthorized), no valid refresh token exists - treat as expected for anonymous users
-      // Return null to indicate no refresh token, let caller handle as non-error case
-      if (error.response?.status === 401) {
-        return null;
-      }
-      // Re-throw other errors (network, 500, etc.)
-      throw error;
+    const response = await authClient.post<RefreshResponse>('/refresh');
+
+    // If 401 (Unauthorized), no valid refresh token exists - treat as expected for anonymous users
+    // Return null to indicate no refresh token, let caller handle as non-error case
+    if (response.status === 401) {
+      return null;
     }
+
+    // Update access token in memory
+    tokenStorage.setToken(response.data.access_token);
+    return response.data;
   },
 
   /**
