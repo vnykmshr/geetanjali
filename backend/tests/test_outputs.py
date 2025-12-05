@@ -74,9 +74,7 @@ def test_list_outputs_empty(client, case_for_analysis):
     )
 
     assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert data["data"] == []
-    assert data["total"] == 0
+    assert response.json() == []
 
 
 def test_analyze_async_returns_202(client, case_for_analysis):

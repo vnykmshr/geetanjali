@@ -50,8 +50,7 @@ def test_search_verses_by_chapter(client, sample_verse):
     response = client.get("/api/v1/verses?chapter=2")
 
     assert response.status_code == status.HTTP_200_OK
-    paginated = response.json()
-    data = paginated["data"]
+    data = response.json()
     assert len(data) > 0
     assert all(v["chapter"] == 2 for v in data)
 
@@ -61,8 +60,7 @@ def test_search_verses_by_canonical_id(client, sample_verse):
     response = client.get("/api/v1/verses?q=BG_2_47")
 
     assert response.status_code == status.HTTP_200_OK
-    paginated = response.json()
-    data = paginated["data"]
+    data = response.json()
     assert len(data) == 1
     assert data[0]["canonical_id"] == "BG_2_47"
 
@@ -72,6 +70,5 @@ def test_list_all_verses(client, sample_verse):
     response = client.get("/api/v1/verses")
 
     assert response.status_code == status.HTTP_200_OK
-    paginated = response.json()
-    data = paginated["data"]
+    data = response.json()
     assert len(data) > 0
