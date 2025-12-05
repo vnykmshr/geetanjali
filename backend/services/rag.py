@@ -238,17 +238,21 @@ class RAGPipeline:
 
     def validate_output(self, output: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Validate and enrich LLM output.
+        Validate and enrich LLM output, handling incomplete or malformed responses.
+
+        This function ensures all required fields are present and properly formatted.
+        If LLM fails to generate exactly 3 options, we intelligently fill gaps rather
+        than reject the response, and flag for scholar review.
 
         Args:
-            output: Raw LLM output
+            output: Raw LLM output (potentially incomplete)
 
         Returns:
-            Validated and enriched output
+            Validated and enriched output with all required fields
         """
         logger.debug("Validating output")
 
-        # Ensure required fields
+        # Ensure required fields exist
         required_fields = [
             "executive_summary",
             "options",
@@ -261,26 +265,165 @@ class RAGPipeline:
         for field in required_fields:
             if field not in output:
                 logger.warning(f"Missing required field: {field}")
-                # Set defaults
+                # Set safe defaults
                 if field == "confidence":
                     output["confidence"] = 0.5
                 elif field == "scholar_flag":
                     output["scholar_flag"] = True
+                elif field == "executive_summary":
+                    output["executive_summary"] = "Ethical analysis based on Bhagavad Geeta principles."
+                elif field == "recommended_action":
+                    output["recommended_action"] = {
+                        "option": 1,
+                        "steps": ["Reflect on the situation", "Consider all perspectives", "Act with clarity and integrity"],
+                        "sources": [],
+                    }
+                elif field == "reflection_prompts":
+                    output["reflection_prompts"] = [
+                        "What is my duty in this situation?",
+                        "How can I act with integrity?",
+                    ]
                 else:
                     output[field] = []
 
-        # Validate confidence and set scholar flag
-        confidence = output.get("confidence", 0.5)
+        # Validate and fix options (critical requirement: exactly 3)
+        options = output.get("options", [])
+        num_options = len(options)
 
-        if confidence < settings.RAG_SCHOLAR_REVIEW_THRESHOLD:
+        if num_options != 3:
+            logger.warning(
+                f"LLM returned {num_options} options instead of required 3. "
+                f"Will attempt to fill gaps intelligently."
+            )
+
+            # Flag for scholar review since LLM didn't follow constraint
             output["scholar_flag"] = True
-            logger.info(f"Low confidence ({confidence}) - flagged for scholar review")
+            output["confidence"] = max(output.get("confidence", 0.5) - 0.15, 0.3)  # Penalize confidence
+
+            # If we have some valid options, try to intelligently fill missing ones
+            if num_options > 0 and num_options < 3:
+                # Validate existing options have required fields
+                for option in options:
+                    if "title" not in option:
+                        option["title"] = f"Option {options.index(option) + 1}"
+                    if "description" not in option:
+                        option["description"] = "An alternative approach"
+                    if "pros" not in option or not isinstance(option["pros"], list):
+                        option["pros"] = []
+                    if "cons" not in option or not isinstance(option["cons"], list):
+                        option["cons"] = []
+                    if "sources" not in option or not isinstance(option["sources"], list):
+                        option["sources"] = []
+
+                # Generate missing options using available context
+                base_verses = output.get("sources", [])
+                verse_ids = [v.get("canonical_id", f"BG_{i}_{i}") for i, v in enumerate(base_verses[:3], 1)]
+
+                while len(options) < 3:
+                    idx = len(options) + 1
+                    verse_id = verse_ids[idx - 1] if idx - 1 < len(verse_ids) else f"BG_{idx}_{idx}"
+
+                    missing_option = {
+                        "title": f"Option {idx}: Alternative Perspective",
+                        "description": (
+                            "A balanced approach considering different perspectives "
+                            "and values from Bhagavad Geeta wisdom"
+                        ),
+                        "pros": [
+                            "Considers multiple viewpoints",
+                            "Grounded in principles",
+                            "Sustainable long-term",
+                        ],
+                        "cons": [
+                            "Requires careful implementation",
+                            "May involve compromise",
+                        ],
+                        "sources": [verse_id],
+                    }
+                    options.append(missing_option)
+                    logger.info(f"Generated missing Option {idx} to meet requirement of 3 options")
+
+                output["options"] = options
+            elif num_options == 0:
+                # Complete failure - generate all 3 default options
+                logger.warning("No options found in LLM response. Generating default options.")
+                output["options"] = [
+                    {
+                        "title": "Option 1: Path of Duty and Dharma",
+                        "description": (
+                            "Follow your rightful duty (svadharma) with focus on principles "
+                            "rather than outcomes, aligning with core Geeta teachings"
+                        ),
+                        "pros": [
+                            "Aligns with dharma and personal duty",
+                            "Promotes spiritual growth",
+                            "Creates positive karma",
+                        ],
+                        "cons": [
+                            "May require immediate sacrifice",
+                            "Outcomes uncertain",
+                        ],
+                        "sources": [v.get("canonical_id", "BG_2_47") for v in base_verses[:1]],
+                    },
+                    {
+                        "title": "Option 2: Balanced Approach with Flexibility",
+                        "description": (
+                            "Integrate duty with pragmatic considerations, adapting to "
+                            "circumstances while maintaining ethical principles"
+                        ),
+                        "pros": [
+                            "Balances ideals with reality",
+                            "Allows for adaptation",
+                            "Considers stakeholders",
+                        ],
+                        "cons": [
+                            "Requires ongoing reflection",
+                            "May appear uncertain",
+                        ],
+                        "sources": [v.get("canonical_id", "BG_3_35") for v in base_verses[1:2]],
+                    },
+                    {
+                        "title": "Option 3: Seek Deeper Understanding",
+                        "description": (
+                            "Pause for reflection and deeper inquiry into your values, "
+                            "circumstances, and the wisdom traditions before committing"
+                        ),
+                        "pros": [
+                            "Builds clarity and confidence",
+                            "Reduces future regret",
+                            "Honors complexity",
+                        ],
+                        "cons": [
+                            "Delays decision-making",
+                            "May require more effort",
+                        ],
+                        "sources": [v.get("canonical_id", "BG_18_63") for v in base_verses[2:3]],
+                    },
+                ]
+                output["scholar_flag"] = True
+                output["confidence"] = 0.4  # Very low confidence for completely generated options
+
+        # Validate confidence is numeric and in range
+        confidence = output.get("confidence", 0.5)
+        if not isinstance(confidence, (int, float)) or confidence < 0 or confidence > 1:
+            logger.warning(f"Invalid confidence value: {confidence}. Setting to 0.5")
+            output["confidence"] = 0.5
+        else:
+            output["confidence"] = float(confidence)
+
+        # Set scholar flag based on confidence threshold
+        if output["confidence"] < settings.RAG_SCHOLAR_REVIEW_THRESHOLD:
+            output["scholar_flag"] = True
+            logger.info(
+                f"Low confidence ({output['confidence']}) - flagged for scholar review"
+            )
         else:
             output["scholar_flag"] = output.get("scholar_flag", False)
 
-        # Ensure exactly 3 options
-        if len(output.get("options", [])) != 3:
-            logger.warning(f"Expected 3 options, got {len(output.get('options', []))}")
+        logger.info(
+            f"Output validation complete: {len(output.get('options', []))} options, "
+            f"confidence={output['confidence']:.2f}, scholar_flag={output['scholar_flag']}"
+        )
 
         return output
 
