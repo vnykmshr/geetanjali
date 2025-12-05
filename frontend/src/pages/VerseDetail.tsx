@@ -227,74 +227,37 @@ export default function VerseDetail() {
               <div className="flex-1 h-px bg-gradient-to-l from-transparent to-amber-300/50" />
             </div>
 
-            {/* Primary Translations */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              {/* Hindi Translation */}
-              {primaryHindi && (
-                <div>
-                  <p className="text-xs font-semibold text-amber-700/70 uppercase tracking-widest mb-3">
-                    हिंदी अनुवाद
-                  </p>
-                  <p className="text-xl text-gray-800 leading-relaxed italic">
-                    "{primaryHindi.text}"
-                  </p>
-                  {primaryHindi.translator && (
-                    <p className="text-sm text-gray-600 mt-3">
-                      — {primaryHindi.translator}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* English Translation */}
-              {primaryEnglish && (
-                <div>
-                  <p className="text-xs font-semibold text-amber-700/70 uppercase tracking-widest mb-3">
-                    English Translation
-                  </p>
-                  <p className="text-xl text-gray-800 leading-relaxed italic">
-                    "{primaryEnglish.text}"
-                  </p>
-                  {primaryEnglish.translator && (
-                    <p className="text-sm text-gray-600 mt-3">
-                      — {primaryEnglish.translator}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Paraphrase / Leadership Summary */}
+            {/* Leadership Insight - Prominent */}
             {verse.paraphrase_en && (
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-amber-100/50 mb-8">
-                <p className="text-xs font-semibold text-red-700/70 uppercase tracking-widest mb-3">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-amber-100/50 mb-8">
+                <p className="text-xs font-semibold text-red-700/70 uppercase tracking-widest mb-4">
                   Leadership Insight
                 </p>
-                <p className="text-xl text-gray-800 leading-relaxed italic">
+                <p className="text-lg md:text-xl text-gray-800 leading-relaxed italic">
                   "{verse.paraphrase_en}"
                 </p>
               </div>
             )}
 
-            {/* Consulting Principles */}
+            {/* Consulting Principles - Prominent */}
             {verse.consulting_principles && verse.consulting_principles.length > 0 && (
-              <div>
+              <div className="mb-8">
                 <p className="text-xs font-semibold text-amber-700/70 uppercase tracking-widest mb-4">
                   Consulting Principles
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {verse.consulting_principles.map((principleId) => {
                     const principle = PRINCIPLE_TAXONOMY[principleId];
                     return (
                       <div
                         key={principleId}
-                        className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-orange-100/50 hover:border-orange-200 hover:bg-white/80 transition-all"
+                        className="bg-white/70 backdrop-blur-sm rounded-lg p-5 border border-orange-100/50 hover:border-orange-200 hover:bg-white/90 transition-all shadow-sm"
                       >
-                        <h3 className="font-semibold text-orange-800 text-sm mb-1">
+                        <h3 className="font-semibold text-orange-800 text-base mb-2">
                           {principle?.label || principleId}
                         </h3>
                         {principle?.description && (
-                          <p className="text-xs text-gray-600 leading-relaxed">
+                          <p className="text-sm text-gray-700 leading-relaxed">
                             {principle.description}
                           </p>
                         )}
@@ -304,6 +267,50 @@ export default function VerseDetail() {
                 </div>
               </div>
             )}
+
+            {/* Divider */}
+            <div className="flex justify-center items-center gap-4 my-8">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent to-amber-300/50" />
+              <span className="text-amber-400/50 text-xl">।</span>
+              <div className="flex-1 h-px bg-gradient-to-l from-transparent to-amber-300/50" />
+            </div>
+
+            {/* Translations - Side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Hindi Translation */}
+              {primaryHindi && (
+                <div>
+                  <p className="text-xs font-semibold text-amber-700/70 uppercase tracking-widest mb-4">
+                    हिंदी अनुवाद
+                  </p>
+                  <p className="text-lg text-gray-800 leading-relaxed italic">
+                    "{primaryHindi.text}"
+                  </p>
+                  {primaryHindi.translator && (
+                    <p className="text-sm text-gray-600 mt-4">
+                      — {primaryHindi.translator}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* English Translation */}
+              {primaryEnglish && (
+                <div>
+                  <p className="text-xs font-semibold text-amber-700/70 uppercase tracking-widest mb-4">
+                    English Translation
+                  </p>
+                  <p className="text-lg text-gray-800 leading-relaxed italic">
+                    "{primaryEnglish.text}"
+                  </p>
+                  {primaryEnglish.translator && (
+                    <p className="text-sm text-gray-600 mt-4">
+                      — {primaryEnglish.translator}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Translations Section - Collapsible */}
