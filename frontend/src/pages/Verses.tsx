@@ -10,6 +10,48 @@ const VERSES_PER_PAGE = 24;
 // Filter modes: 'featured' shows curated verses, 'all' shows all 701 verses
 type FilterMode = 'featured' | 'all' | number; // number = specific chapter
 
+/**
+ * Extract meaningful Sanskrit preview for grid display.
+ * Breaks at first danda (।) which marks natural clause boundary in Sanskrit.
+ * Removes speaker intros and verse metadata to show actual verse content.
+ */
+function getGridSanskritPreview(text: string): string {
+  if (!text) return '';
+
+  // Split into lines to detect and skip speaker intro
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+
+  // Skip first line if it's a speaker intro (ends with उवाच - "said/spoke")
+  let startIndex = 0;
+  if (lines.length > 1 && lines[0].includes('उवाच')) {
+    startIndex = 1;
+  }
+
+  // Merge remaining lines
+  let cleaned = lines.slice(startIndex).join(' ').trim();
+
+  // Remove verse number metadata (।।2.47।। or ॥2.47॥)
+  cleaned = cleaned.replace(/[।॥]+\d+\.\d+[।॥]+\s*$/, '');
+
+  // Find first danda (।) - marks natural pause/clause boundary in Sanskrit
+  const dandaIndex = cleaned.indexOf('।');
+
+  if (dandaIndex > 0) {
+    // Take text up to and including first danda
+    let preview = cleaned.substring(0, dandaIndex + 1).trim();
+
+    // Add ellipsis if there's more content following the danda
+    if (dandaIndex < cleaned.length - 1) {
+      preview += ' ...';
+    }
+
+    return preview;
+  }
+
+  // Fallback: no danda found, show first 100 characters
+  return cleaned.length > 100 ? cleaned.substring(0, 100) + '...' : cleaned;
+}
+
 export default function Verses() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [verses, setVerses] = useState<Verse[]>([]);
@@ -320,10 +362,10 @@ export default function Verses() {
                       </span>
                     </div>
 
-                    {/* Sanskrit - First line only */}
+                    {/* Sanskrit - Break at first danda for meaningful preview */}
                     {verse.sanskrit_devanagari && (
-                      <p className="text-gray-700 font-serif text-lg leading-relaxed mb-3 line-clamp-1">
-                        {verse.sanskrit_devanagari.split('\n')[0]}
+                      <p className="text-gray-700 font-serif text-lg leading-relaxed mb-3 line-clamp-2">
+                        {getGridSanskritPreview(verse.sanskrit_devanagari)}
                       </p>
                     )}
 
