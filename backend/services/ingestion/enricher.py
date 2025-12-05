@@ -32,6 +32,45 @@ class Enricher:
             f"Enricher initialized with {len(self.principle_taxonomy)} principles"
         )
 
+    def _clean_paraphrase(self, text: str) -> str:
+        """
+        Clean markdown and formatting from LLM-generated paraphrase.
+
+        Removes:
+        - Markdown headers (# ## ###)
+        - Bold markers (**)
+        - Italic markers (*)
+        - Extra whitespace and newlines
+        - Metadata like "**Actionable Wisdom:**", "**Key Takeaway:**", etc.
+
+        Args:
+            text: Raw paraphrase text from LLM
+
+        Returns:
+            Cleaned plain text paraphrase
+        """
+        import re
+
+        # Remove markdown headers
+        text = re.sub(r'^#+\s+', '', text, flags=re.MULTILINE)
+
+        # Remove bold markers (**)
+        text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+
+        # Remove italic markers (*)
+        text = re.sub(r'\*([^*]+)\*', r'\1', text)
+
+        # Remove metadata labels (lines ending with colon and bold markers)
+        text = re.sub(r'\*\*[^:]+:\*\*\s*', '', text)
+
+        # Replace multiple newlines with single space
+        text = re.sub(r'\n+', ' ', text)
+
+        # Remove extra whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        return text
+
     def _load_principles(self) -> Dict:
         """
         Load consulting principles taxonomy from config.
@@ -170,7 +209,7 @@ Focus on actionable wisdom for modern leaders and decision-makers.
 Verse:
 {verse_text}
 
-Provide a concise, leadership-focused summary:"""
+IMPORTANT: Respond with ONLY plain text. No markdown, no headers, no formatting. Just a single concise sentence or brief paragraph."""
 
         try:
             result = self.llm.generate(
@@ -178,6 +217,9 @@ Provide a concise, leadership-focused summary:"""
             )
 
             paraphrase = result["response"].strip()
+
+            # Remove markdown headers and formatting
+            paraphrase = self._clean_paraphrase(paraphrase)
 
             # Remove quotes if LLM wrapped the response
             if paraphrase.startswith('"') and paraphrase.endswith('"'):
