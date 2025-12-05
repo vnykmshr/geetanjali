@@ -115,18 +115,27 @@ export function VerseCard({
 
   // For compact mode, ensure all cards have same height by padding to 4 lines
   if (isCompact) {
+    // Count only non-empty lines to determine padding
+    const nonEmptyLines = displayLines.filter(line => line.trim() !== '');
     const targetLines = 4;
-    if (displayLines.length < targetLines) {
-      const spacersNeeded = targetLines - displayLines.length;
+
+    if (nonEmptyLines.length < targetLines) {
+      const spacersNeeded = targetLines - nonEmptyLines.length;
       const spacersPerSide = Math.floor(spacersNeeded / 2);
       const remainingSpacer = spacersNeeded % 2;
 
       // Add spacer lines above and below
       displayLines = [
         ...Array(spacersPerSide).fill(''),
-        ...displayLines,
+        ...nonEmptyLines,
         ...Array(spacersPerSide + remainingSpacer).fill('')
       ];
+    } else if (nonEmptyLines.length > targetLines) {
+      // If verse has more than 4 lines, use those lines as is
+      displayLines = nonEmptyLines;
+    } else {
+      // If exactly 4 lines, use them
+      displayLines = nonEmptyLines;
     }
   }
 
