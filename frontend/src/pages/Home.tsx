@@ -126,7 +126,7 @@ export default function Home() {
 
           {/* Recent Consultations */}
           {!casesLoading && recentCases.length > 0 && (
-            <div className="mb-8 sm:mb-10 max-w-2xl mx-auto">
+            <div className="mb-8 sm:mb-10 max-w-4xl mx-auto">
               <div className="flex justify-between items-center mb-3">
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">Continue where you left off</h2>
                 <Link to="/consultations" className="text-red-600 hover:text-red-700 font-medium text-sm">
