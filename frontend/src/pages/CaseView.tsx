@@ -453,8 +453,8 @@ ${messages.map(msg => {
         onCopyShareLink={copyShareLink}
       />
 
-      <div className="flex-1 py-6">
-        <div className="max-w-2xl mx-auto px-4">
+      <div className="flex-1 py-4 sm:py-6">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4">
           {/* Analysis Complete Banner */}
           {showCompletionBanner && (
             <div className="mb-6 bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 duration-300">
@@ -516,7 +516,7 @@ ${messages.map(msg => {
           {isCompleted && (
             <div className="relative">
               {/* Vertical Line */}
-              <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-gradient-to-b from-amber-300 via-orange-300 to-red-300" />
+              <div className="absolute left-2.5 sm:left-3 top-6 bottom-0 w-0.5 bg-gradient-to-b from-amber-300 via-orange-300 to-red-300" />
 
               {/* Exchanges */}
               {exchanges.map((exchange, exchangeIdx) => {
@@ -527,12 +527,12 @@ ${messages.map(msg => {
                 return (
                   <div key={exchange.user.id}>
                     {/* Question */}
-                    <div className="relative pl-10 pb-4">
-                      <div className={`absolute left-0 w-7 h-7 rounded-full flex items-center justify-center ${
+                    <div className="relative pl-8 sm:pl-10 pb-3 sm:pb-4">
+                      <div className={`absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ${
                         isFirst ? 'bg-amber-500 text-white' : 'bg-blue-100 border-2 border-blue-400'
                       }`}>
                         {isFirst ? (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         ) : (
@@ -544,10 +544,10 @@ ${messages.map(msg => {
                       }`}>
                         {isFirst ? 'Your Question' : 'Follow-up'}
                       </div>
-                      <div className={`rounded-xl p-4 ${
+                      <div className={`rounded-xl p-3 sm:p-4 ${
                         isFirst ? 'bg-white shadow-lg border-2 border-amber-200' : 'bg-blue-50 border border-blue-100'
                       }`}>
-                        <p className={`leading-relaxed whitespace-pre-wrap ${isFirst ? 'text-gray-900 text-base' : 'text-gray-700 text-sm'}`}>
+                        <p className={`leading-relaxed whitespace-pre-wrap ${isFirst ? 'text-gray-900 text-sm sm:text-base' : 'text-gray-700 text-sm'}`}>
                           {exchange.user.content}
                         </p>
                         {isFirst && (caseData.stakeholders.length > 1 || caseData.stakeholders[0] !== 'self' ||
@@ -569,12 +569,12 @@ ${messages.map(msg => {
                     </div>
 
                     {/* Response */}
-                    <div className="relative pl-10 pb-6">
-                      <div className={`absolute left-0 w-7 h-7 rounded-full flex items-center justify-center ${
+                    <div className="relative pl-8 sm:pl-10 pb-4 sm:pb-6">
+                      <div className={`absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ${
                         isFirst ? 'bg-orange-500 text-white' : 'bg-orange-100 border-2 border-orange-300'
                       }`}>
                         {isFirst ? (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                           </svg>
                         ) : (
@@ -587,10 +587,10 @@ ${messages.map(msg => {
                         {isFirst ? 'Wisdom from the Gita' : 'Guidance'}
                       </div>
 
-                      <div className={`rounded-xl p-4 border ${
+                      <div className={`rounded-xl p-3 sm:p-4 border ${
                         isFirst ? 'bg-white shadow-lg border-orange-200' : 'bg-white shadow-md border-orange-100'
                       }`}>
-                        <p className={`leading-relaxed whitespace-pre-wrap ${isFirst ? 'text-gray-900' : 'text-gray-800 text-sm'}`}>
+                        <p className={`leading-relaxed whitespace-pre-wrap ${isFirst ? 'text-gray-900 text-sm sm:text-base' : 'text-gray-800 text-sm'}`}>
                           {exchange.assistant.content}
                         </p>
 
