@@ -95,7 +95,7 @@ export const mockVerse: Verse = {
   translation_en: 'You have the right to action, but never to its fruits.',
   paraphrase_en: 'Focus on your duties without attachment to results.',
   consulting_principles: ['Focus on action', 'Let go of attachment'],
-  source: 'Bhagavad Gita',
+  source: 'Bhagavad Geeta',
   license: 'Public Domain',
   created_at: '2024-01-01T00:00:00Z',
 }

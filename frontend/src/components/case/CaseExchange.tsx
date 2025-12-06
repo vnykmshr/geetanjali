@@ -123,7 +123,7 @@ export function CaseExchange({
             isFirst ? 'text-orange-700' : 'text-orange-600'
           }`}
         >
-          {isFirst ? 'Wisdom from the Gita' : 'Guidance'}
+          {isFirst ? 'Wisdom from the Geeta' : 'Guidance'}
         </div>
 
         <div
