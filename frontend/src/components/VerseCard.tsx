@@ -26,98 +26,75 @@ export function VerseCard({
   showTranslation = true,
 }: VerseCardProps) {
   const isCompact = displayMode === 'compact';
+
+  // For compact mode: no speaker intros, compact formatting
+  // For detail mode: respect showSpeaker prop
   const sanskritLines = formatSanskritLines(verse.sanskrit_devanagari || '', {
     mode: isCompact ? 'compact' : 'detail',
-    includeSpeakerIntro: showSpeaker,
+    includeSpeakerIntro: isCompact ? false : showSpeaker,
   });
 
-  // Compact mode: filter out speaker intros for cleaner display
-  let displayLines = showSpeaker ? sanskritLines : sanskritLines.filter(line => !line.includes('वाच'));
-
-  // For compact mode, ensure all cards have same height by padding to 4 lines
+  // Compact mode: Sanskrit-only display for verse browsing
   if (isCompact) {
-    // Count only non-empty lines to determine padding
-    const nonEmptyLines = displayLines.filter(line => line.trim() !== '');
-    const targetLines = 4;
+    return (
+      <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 rounded-xl p-3 sm:p-4 border border-amber-200/50 shadow-md hover:shadow-lg hover:border-amber-300 transition-all">
+        {/* Verse Reference */}
+        <div className="text-amber-600 font-serif font-medium text-xs sm:text-sm mb-2 sm:mb-3">
+          ॥ {formatVerseRef(verse)} ॥
+        </div>
 
-    if (nonEmptyLines.length < targetLines) {
-      const spacersNeeded = targetLines - nonEmptyLines.length;
-      const spacersPerSide = Math.floor(spacersNeeded / 2);
-      const remainingSpacer = spacersNeeded % 2;
-
-      // Add spacer lines above and below
-      displayLines = [
-        ...Array(spacersPerSide).fill(''),
-        ...nonEmptyLines,
-        ...Array(spacersPerSide + remainingSpacer).fill('')
-      ];
-    } else if (nonEmptyLines.length > targetLines) {
-      // If verse has more than 4 lines, use those lines as is
-      displayLines = nonEmptyLines;
-    } else {
-      // If exactly 4 lines, use them
-      displayLines = nonEmptyLines;
-    }
+        {/* Full Sanskrit Verse */}
+        <div className="text-amber-900 font-serif text-sm sm:text-base leading-relaxed text-center">
+          {sanskritLines.map((line, idx) => (
+            <p key={idx} className="mb-0.5">{line}</p>
+          ))}
+        </div>
+      </div>
+    );
   }
 
+  // Detail mode: keep speaker intro filtering logic
+  const displayLines = showSpeaker ? sanskritLines : sanskritLines.filter(line => !isSpeakerIntro(line));
+
+  // Detail mode: original layout
   return (
     <div className="relative">
-      {/* Main Card */}
-      <div className={`${isCompact
-        ? 'bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 rounded-xl p-6 border border-amber-200/50 shadow-md hover:shadow-lg hover:border-amber-300 transition-all h-full flex flex-col'
-        : 'bg-gradient-to-b from-orange-50 to-amber-50 rounded-xl p-8 border-2 border-amber-200/50 shadow-inner'
-      }`}>
-        {/* Decorative Om - centered */}
-        <div className={`text-center mb-4 ${isCompact
-          ? 'text-2xl text-amber-400/50 font-light'
-          : 'text-3xl text-amber-400/50 font-light'
-        }`}>
+      <div className="bg-gradient-to-b from-orange-50 to-amber-50 rounded-xl p-5 sm:p-6 lg:p-8 border-2 border-amber-200/50 shadow-inner">
+        {/* Decorative Om */}
+        <div className="text-center mb-3 sm:mb-4 text-2xl sm:text-3xl text-amber-400/50 font-light">
           ॐ
         </div>
 
-        {/* Verses centered - flex-grow to ensure consistent heights */}
-        <div className={`flex-grow flex flex-col ${isCompact ? 'justify-between' : 'justify-center'}`}>
+        {/* Verses centered */}
+        <div className="flex-grow flex flex-col justify-center">
           {/* Sanskrit Text */}
           {displayLines.length > 0 && (
-            <div className={`${isCompact
-              ? 'text-sm text-amber-900 font-serif text-center leading-relaxed'
-              : 'text-xl md:text-2xl text-amber-800/60 font-serif text-center leading-relaxed tracking-wide mb-6'
-            }`}>
-              {displayLines.map((line, idx) => {
-                const isEmpty = line === '';
-
-                return (
-                  <p
-                    key={idx}
-                    className={`${isCompact
-                      ? isEmpty ? 'h-4' : 'mb-1'
-                      : isSpeakerIntro(line) ? 'text-lg text-amber-600/60 mb-2' : 'mb-1'
-                    }`}
-                  >
-                    {!isEmpty && line}
-                  </p>
-                );
-              })}
+            <div className="text-base sm:text-xl md:text-2xl text-amber-800/60 font-serif text-center leading-relaxed tracking-wide mb-4 sm:mb-6">
+              {displayLines.map((line, idx) => (
+                <p
+                  key={idx}
+                  className={isSpeakerIntro(line) ? 'text-lg text-amber-600/60 mb-2' : 'mb-1'}
+                >
+                  {line}
+                </p>
+              ))}
             </div>
           )}
 
-          {/* English Translation - only in detail mode */}
-          {!isCompact && showTranslation && (verse.translation_en || verse.paraphrase_en) && (
-            <p className="text-lg text-gray-700 text-center leading-relaxed italic">
+          {/* English Translation */}
+          {showTranslation && (verse.translation_en || verse.paraphrase_en) && (
+            <p className="text-sm sm:text-base lg:text-lg text-gray-700 text-center leading-relaxed italic">
               "{verse.translation_en || verse.paraphrase_en}"
             </p>
           )}
         </div>
 
-        {/* Citation Link - centered */}
+        {/* Citation Link */}
         {showCitation && (
-          <div className={`text-center ${isCompact ? 'pt-3' : 'pt-6'}`}>
+          <div className="text-center pt-4 sm:pt-6">
             <Link
               to={getVerseLink(verse)}
-              className={`inline-block transition-colors ${isCompact
-                ? 'text-amber-700/70 hover:text-amber-900 text-xs font-medium'
-                : 'text-amber-600/70 hover:text-amber-700 text-sm font-medium'
-              }`}
+              className="inline-block transition-colors text-amber-600/70 hover:text-amber-700 text-xs sm:text-sm font-medium"
             >
               ॥ {formatVerseRef(verse)} ॥
             </Link>

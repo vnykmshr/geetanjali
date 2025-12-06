@@ -19,7 +19,6 @@ export default function Verses() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const observerTarget = useRef<HTMLDivElement>(null);
 
   // Parse initial filter from URL
@@ -28,7 +27,7 @@ export default function Verses() {
     if (chapter) return parseInt(chapter);
     const showAll = searchParams.get('all');
     if (showAll === 'true') return 'all';
-    return 'featured'; // Default to featured
+    return 'featured';
   };
 
   const [filterMode, setFilterMode] = useState<FilterMode>(getInitialFilter);
@@ -46,7 +45,6 @@ export default function Verses() {
       const count = await versesApi.count(chapter, featured);
       setTotalCount(count);
     } catch {
-      // Silently fail - count is optional
       setTotalCount(null);
     }
   }, [filterMode]);
@@ -62,11 +60,8 @@ export default function Verses() {
       }
       setError(null);
 
-      // Determine API parameters based on filter mode
       const chapter = typeof filterMode === 'number' ? filterMode : undefined;
       const featured = filterMode === 'featured' ? true : undefined;
-
-      // For non-reset loads, we need to get current verses length
       const skip = reset ? 0 : undefined;
 
       const data = await versesApi.list(skip ?? 0, VERSES_PER_PAGE, chapter, featured);
@@ -74,10 +69,7 @@ export default function Verses() {
       if (reset) {
         setVerses(data);
       } else {
-        setVerses(prev => {
-          // Use previous length for skip calculation in next request
-          return [...prev, ...data];
-        });
+        setVerses(prev => [...prev, ...data]);
       }
 
       setHasMore(data.length === VERSES_PER_PAGE);
@@ -89,16 +81,13 @@ export default function Verses() {
     }
   }, [filterMode]);
 
-  // Load initial verses and count when filter changes
   useEffect(() => {
     loadVerses(true);
     loadCount();
   }, [loadVerses, loadCount]);
 
-  // Intersection Observer for infinite scroll - load more based on current verses count
   const loadMore = useCallback(() => {
     setVerses(currentVerses => {
-      // Trigger async load with current count
       (async () => {
         try {
           setLoadingMore(true);
@@ -116,7 +105,7 @@ export default function Verses() {
           setLoadingMore(false);
         }
       })();
-      return currentVerses; // Return unchanged to avoid state mutation
+      return currentVerses;
     });
   }, [filterMode]);
 
@@ -138,48 +127,19 @@ export default function Verses() {
     return () => observer.disconnect();
   }, [handleObserver]);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) {
-      loadVerses(true);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await versesApi.search(searchQuery);
-      setVerses(data);
-      setHasMore(false); // Search results don't paginate
-    } catch (err) {
-      setError(errorMessages.search(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleFilterSelect = (filter: FilterMode) => {
     setFilterMode(filter);
-    setSearchQuery('');
 
-    // Update URL params
     if (typeof filter === 'number') {
       setSearchParams({ chapter: filter.toString() });
     } else if (filter === 'all') {
       setSearchParams({ all: 'true' });
     } else {
-      setSearchParams({}); // Featured is default, no params needed
+      setSearchParams({});
     }
   };
 
-  const clearSearch = () => {
-    setSearchQuery('');
-    loadVerses(true);
-  };
-
-  // Get filter description for results
   const getFilterDescription = () => {
-    if (searchQuery) return '';
     if (showFeatured) return 'featured ';
     if (selectedChapter) return `from Chapter ${selectedChapter} `;
     return '';
@@ -189,43 +149,15 @@ export default function Verses() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
       <Navbar />
 
-      {/* Sticky Filter Bar */}
+      {/* Sticky Filter Bar - Compact on mobile */}
       <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="mb-4">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search verses by text, principles, or ID..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              />
-              <button
-                type="submit"
-                className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors"
-              >
-                Search
-              </button>
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={clearSearch}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </form>
-
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
           {/* Filter Pills - Responsive Layout */}
-          <div className="flex gap-2 items-center">
-            {/* Featured (default) */}
+          <div className="flex gap-1.5 sm:gap-2 items-center">
+            {/* Featured */}
             <button
               onClick={() => handleFilterSelect('featured')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 showFeatured
                   ? 'bg-red-600 text-white shadow-md'
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
@@ -233,10 +165,10 @@ export default function Verses() {
             >
               Featured
             </button>
-            {/* All verses */}
+            {/* All */}
             <button
               onClick={() => handleFilterSelect('all')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 showAll
                   ? 'bg-red-600 text-white shadow-md'
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
@@ -245,9 +177,9 @@ export default function Verses() {
               All
             </button>
             {/* Divider */}
-            <div className="w-px h-10 bg-gray-300 flex-shrink-0" />
+            <div className="w-px h-8 bg-gray-300 flex-shrink-0 hidden sm:block" />
 
-            {/* Mobile: Chapter Dropdown */}
+            {/* Mobile/Tablet: Chapter Dropdown */}
             <select
               value={selectedChapter || 'all-chapters'}
               onChange={(e) => {
@@ -258,23 +190,23 @@ export default function Verses() {
                   handleFilterSelect(parseInt(value));
                 }
               }}
-              className="lg:hidden px-4 py-2 rounded-lg font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition-colors"
+              className="lg:hidden flex-1 min-w-0 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-sm font-medium border border-gray-300 bg-white text-gray-700 transition-colors"
             >
-              <option value="all-chapters">All Chapters</option>
+              <option value="all-chapters">Chapter</option>
               {Array.from({ length: 18 }, (_, i) => i + 1).map((chapter) => (
                 <option key={chapter} value={chapter}>
-                  Chapter {chapter}
+                  Ch. {chapter}
                 </option>
               ))}
             </select>
 
-            {/* Desktop: Chapter pills - hidden on mobile */}
-            <div className="hidden lg:flex gap-2 flex-1">
+            {/* Desktop: Chapter pills */}
+            <div className="hidden lg:flex gap-1.5 flex-1">
               {Array.from({ length: 18 }, (_, i) => i + 1).map((chapter) => (
                 <button
                   key={chapter}
                   onClick={() => handleFilterSelect(chapter)}
-                  className={`flex-1 min-w-0 h-10 rounded-lg font-medium transition-colors ${
+                  className={`flex-1 min-w-0 h-9 rounded-lg text-sm font-medium transition-colors ${
                     selectedChapter === chapter
                       ? 'bg-red-600 text-white shadow-md'
                       : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
@@ -289,43 +221,35 @@ export default function Verses() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex-1 py-4 sm:py-6">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           {/* Error State */}
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg">
-              <p className="font-semibold">Error loading verses</p>
-              <p className="text-sm">{error}</p>
+            <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <p className="font-semibold text-sm sm:text-base">Error loading verses</p>
+              <p className="text-xs sm:text-sm">{error}</p>
             </div>
           )}
 
           {/* Loading State */}
           {loading && verses.length === 0 ? (
-            <div className="flex justify-center items-center py-20">
-              <div className="text-gray-500 text-lg">Loading verses...</div>
+            <div className="flex justify-center items-center py-16 sm:py-20">
+              <div className="text-gray-500 text-base sm:text-lg">Loading verses...</div>
             </div>
           ) : verses.length === 0 ? (
-            <div className="text-center py-20">
-              <p className="text-gray-500 text-lg mb-4">No verses found</p>
-              {searchQuery && (
-                <button
-                  onClick={clearSearch}
-                  className="text-orange-600 hover:text-orange-700 font-medium"
-                >
-                  Clear search and show featured verses
-                </button>
-              )}
+            <div className="text-center py-16 sm:py-20">
+              <p className="text-gray-500 text-base sm:text-lg">No verses found</p>
             </div>
           ) : (
             <>
               {/* Results Count */}
-              <div className="mb-4 text-sm text-gray-600">
+              <div className="mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600">
                 Showing {verses.length}{totalCount ? ` of ${totalCount}` : ''} {getFilterDescription()}verse{(totalCount || verses.length) !== 1 ? 's' : ''}
-                {hasMore && ' (scroll for more)'}
+                {hasMore && <span className="hidden sm:inline"> (scroll for more)</span>}
               </div>
 
-              {/* Verse Grid - Compact Cards with consistent heights */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
+              {/* Verse Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {verses.map((verse) => (
                   <Link
                     key={verse.id}
@@ -344,17 +268,17 @@ export default function Verses() {
               </div>
 
               {/* Infinite Scroll Trigger */}
-              <div ref={observerTarget} className="h-10 mt-6">
+              <div ref={observerTarget} className="h-10 mt-4 sm:mt-6">
                 {loadingMore && (
                   <div className="flex justify-center items-center py-4">
-                    <div className="text-gray-500">Loading more verses...</div>
+                    <div className="text-gray-500 text-sm sm:text-base">Loading more verses...</div>
                   </div>
                 )}
               </div>
 
               {/* End of Results */}
               {!hasMore && verses.length > 0 && (
-                <div className="text-center py-8 text-gray-400 text-sm">
+                <div className="text-center py-6 sm:py-8 text-gray-400 text-xs sm:text-sm">
                   End of verses
                 </div>
               )}
@@ -362,6 +286,9 @@ export default function Verses() {
           )}
         </div>
       </div>
+
+      {/* Bottom padding for FAB on mobile */}
+      <div className="h-20 sm:hidden" />
     </div>
   );
 }
