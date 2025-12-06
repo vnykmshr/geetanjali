@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { versesApi } from '../lib/api';
 import { formatSanskritLines, isSpeakerIntro } from '../lib/sanskritFormatter';
 import { PRINCIPLE_TAXONOMY } from '../constants/principles';
@@ -20,6 +20,7 @@ function sortTranslations(translations: Translation[]): Translation[] {
 
 export default function VerseDetail() {
   const { canonicalId } = useParams<{ canonicalId: string }>();
+  const navigate = useNavigate();
   const [verse, setVerse] = useState<Verse | null>(null);
   const [translations, setTranslations] = useState<Translation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,9 +71,12 @@ export default function VerseDetail() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-gray-600 mb-4">{error || 'Verse not found'}</p>
-            <Link to="/verses" className="text-red-600 hover:text-red-700">
-              ← Back to Verses
-            </Link>
+            <button
+              onClick={() => navigate(-1)}
+              className="text-red-600 hover:text-red-700"
+            >
+              ← Go Back
+            </button>
           </div>
         </div>
       </div>
@@ -96,9 +100,12 @@ export default function VerseDetail() {
         <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6">
           {/* Back Link */}
           <div className="mb-4 sm:mb-6">
-            <Link to="/verses" className="text-red-600 hover:text-red-700 font-medium text-sm">
-              ← Back to Verses
-            </Link>
+            <button
+              onClick={() => navigate(-1)}
+              className="text-red-600 hover:text-red-700 font-medium text-sm"
+            >
+              ← Go Back
+            </button>
           </div>
 
           {/* Main Spotlight Section */}
