@@ -32,6 +32,7 @@ export default function Verses() {
   };
 
   const [filterMode, setFilterMode] = useState<FilterMode>(getInitialFilter);
+  const [showChapterDropdown, setShowChapterDropdown] = useState(false);
 
   // Derived state
   const selectedChapter = typeof filterMode === 'number' ? filterMode : null;
@@ -163,8 +164,8 @@ export default function Verses() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
       <Navbar />
 
-      {/* Sticky Filter Bar - Compact on mobile */}
-      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200">
+      {/* Sticky Filter Bar - Below navbar */}
+      <div className="sticky top-14 sm:top-16 z-10 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
           {/* Filter Pills - Responsive Layout */}
           <div className="flex gap-1.5 sm:gap-2 items-center">
@@ -191,44 +192,60 @@ export default function Verses() {
               All
             </button>
             {/* Divider */}
-            <div className="w-px h-8 bg-gray-300 flex-shrink-0 hidden sm:block" />
+            <div className="w-px h-8 bg-gray-300 flex-shrink-0" />
 
-            {/* Mobile/Tablet: Chapter Dropdown */}
-            <select
-              value={selectedChapter || 'all-chapters'}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === 'all-chapters') {
-                  handleFilterSelect('all');
-                } else {
-                  handleFilterSelect(parseInt(value));
-                }
-              }}
-              className="lg:hidden flex-1 min-w-0 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-sm font-medium border border-gray-300 bg-white text-gray-700 transition-colors"
-            >
-              <option value="all-chapters">Chapter</option>
-              {Array.from({ length: 18 }, (_, i) => i + 1).map((chapter) => (
-                <option key={chapter} value={chapter}>
-                  Ch. {chapter}
-                </option>
-              ))}
-            </select>
-
-            {/* Desktop: Chapter pills */}
-            <div className="hidden lg:flex gap-1.5 flex-1">
-              {Array.from({ length: 18 }, (_, i) => i + 1).map((chapter) => (
-                <button
-                  key={chapter}
-                  onClick={() => handleFilterSelect(chapter)}
-                  className={`flex-1 min-w-0 h-9 rounded-lg text-sm font-medium transition-colors ${
-                    selectedChapter === chapter
-                      ? 'bg-red-600 text-white shadow-md'
-                      : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                  }`}
+            {/* Chapter Dropdown - All screen sizes */}
+            <div className="relative">
+              <button
+                onClick={() => setShowChapterDropdown(!showChapterDropdown)}
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                  selectedChapter
+                    ? 'bg-red-600 text-white shadow-md'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                {selectedChapter ? `Chapter ${selectedChapter}` : 'Chapter'}
+                <svg
+                  className={`w-4 h-4 transition-transform ${showChapterDropdown ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  {chapter}
-                </button>
-              ))}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Dropdown Panel */}
+              {showChapterDropdown && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowChapterDropdown(false)}
+                  />
+                  {/* Panel */}
+                  <div className="absolute right-0 sm:left-0 mt-2 p-3 bg-white rounded-xl shadow-xl border border-gray-200 z-20 w-64 sm:w-72">
+                    <div className="grid grid-cols-6 gap-2">
+                      {Array.from({ length: 18 }, (_, i) => i + 1).map((chapter) => (
+                        <button
+                          key={chapter}
+                          onClick={() => {
+                            handleFilterSelect(chapter);
+                            setShowChapterDropdown(false);
+                          }}
+                          className={`h-10 rounded-lg text-sm font-medium transition-all ${
+                            selectedChapter === chapter
+                              ? 'bg-red-600 text-white shadow-md'
+                              : 'bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-700 border border-gray-200'
+                          }`}
+                        >
+                          {chapter}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
