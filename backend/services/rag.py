@@ -3,7 +3,7 @@
 import logging
 import json
 import re
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, cast
 
 from config import settings
 from services.vector_store import get_vector_store
@@ -42,7 +42,7 @@ def _extract_json_from_text(response_text: str) -> dict:
     """
     # Strategy 1: Try direct JSON parse (LLM followed instructions perfectly)
     try:
-        return json.loads(response_text)
+        return cast(Dict[Any, Any], json.loads(response_text))
     except json.JSONDecodeError:
         pass
 
@@ -53,7 +53,7 @@ def _extract_json_from_text(response_text: str) -> dict:
         for match in matches:
             json_text = match.group(1).strip()
             try:
-                return json.loads(json_text)
+                return cast(Dict[Any, Any], json.loads(json_text))
             except json.JSONDecodeError as e:
                 logger.debug(
                     f"Markdown block parse failed at pos {e.pos}: "
@@ -70,7 +70,7 @@ def _extract_json_from_text(response_text: str) -> dict:
                 decoder = json.JSONDecoder()
                 parsed, end_idx = decoder.raw_decode(response_text, start_idx)
                 logger.debug(f"Extracted JSON from position {start_idx}")
-                return parsed
+                return cast(Dict[Any, Any], parsed)
             except json.JSONDecodeError:
                 continue
 
@@ -180,11 +180,12 @@ def _validate_source_object_structure(source: Dict[str, Any]) -> tuple[bool, str
         return False, "Source is not a dict"
 
     # Check canonical_id
-    if not isinstance(source.get("canonical_id"), str):
+    canonical_id = source.get("canonical_id")
+    if not isinstance(canonical_id, str):
         return False, "Source missing or invalid canonical_id"
 
-    if not _validate_canonical_id(source.get("canonical_id")):
-        return False, f"Source canonical_id invalid format: {source.get('canonical_id')}"
+    if not _validate_canonical_id(canonical_id):
+        return False, f"Source canonical_id invalid format: {canonical_id}"
 
     # Check paraphrase
     if not isinstance(source.get("paraphrase"), str) or len(str(source.get("paraphrase", "")).strip()) == 0:

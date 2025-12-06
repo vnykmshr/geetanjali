@@ -108,7 +108,7 @@ class LLMService:
             return False
         try:
             response = self.ollama_client.get("/api/tags", timeout=5)
-            return response.status_code == 200
+            return bool(response.status_code == 200)
         except Exception as e:
             logger.error(f"Ollama health check failed: {e}")
             return False
