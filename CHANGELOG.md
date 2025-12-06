@@ -18,7 +18,7 @@ First production release of Geetanjali - ethical leadership guidance from the Bh
 ### Technical
 - FastAPI backend with PostgreSQL, Redis, and ChromaDB
 - React + TypeScript + Tailwind frontend
-- Docker Compose deployment with 8 services
+- Docker Compose deployment with 7 services
 - 65 tests with 52% code coverage
 - Configurable LLM providers (Ollama, Anthropic Claude)
 - Two-layer caching (Redis + HTTP Cache-Control)

@@ -19,7 +19,7 @@ The system uses retrieval-augmented generation (RAG) to ground responses in actu
 
 - **Case Analysis** - Submit ethical dilemmas, get structured recommendations
 - **Verse Browser** - Explore 701 verses across 18 chapters with translations
-- **Scholar Review** - Optional expert review of generated guidance
+- **Confidence Scoring** - Low-confidence responses flagged for review
 - **User Feedback** - Rate outputs to improve recommendations
 - **Session Tracking** - Anonymous users can save and revisit cases
 
@@ -32,7 +32,7 @@ The system uses retrieval-augmented generation (RAG) to ground responses in actu
 | Database | PostgreSQL 15 |
 | Vector DB | ChromaDB |
 | Cache | Redis 7 |
-| LLM | Ollama (qwen2.5:3b) or Anthropic Claude |
+| LLM | Ollama (qwen2.5:3b) primary, Anthropic Claude fallback |
 | Embeddings | sentence-transformers/all-MiniLM-L6-v2 |
 
 ## Quick Start
@@ -67,13 +67,24 @@ Environment variables (set in `.env` or docker-compose):
 JWT_SECRET=your-secret-key
 API_KEY=your-api-key
 
-# LLM Provider (choose one)
+# LLM Provider
+LLM_PROVIDER=ollama                    # Primary: ollama, anthropic, or mock
+LLM_FALLBACK_PROVIDER=anthropic        # Fallback provider
+USE_MOCK_LLM=false                     # Set true for instant mock responses
+
+# Ollama (primary)
 OLLAMA_BASE_URL=http://ollama:11434
+OLLAMA_MODEL=qwen2.5:3b
+
+# Anthropic (fallback)
 ANTHROPIC_API_KEY=your-anthropic-key
 
 # Database
 DATABASE_URL=postgresql://user:pass@postgres:5432/geetanjali
 REDIS_URL=redis://redis:6379/0
+
+# Email (optional)
+RESEND_API_KEY=your-resend-key
 ```
 
 ## Development
@@ -117,6 +128,7 @@ geetanjali/
 │   │   ├── components/
 │   │   └── api/      # API clients
 ├── data/             # Verse data files
+├── CHANGELOG.md      # Release history
 └── docs/
     ├── SETUP.md         # Development guide
     ├── ARCHITECTURE.md  # System design

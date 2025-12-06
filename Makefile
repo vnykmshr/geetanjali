@@ -75,14 +75,14 @@ typecheck: ## Run MyPy type checker
 	docker-compose exec backend mypy .
 
 # Ollama
-ollama-pull: ## Pull Llama 3.1 model
-	docker-compose exec ollama ollama pull llama3.1:8b
+ollama-pull: ## Pull qwen2.5:3b model
+	docker-compose exec ollama ollama pull qwen2.5:3b
 
 ollama-list: ## List available models
 	docker-compose exec ollama ollama list
 
 ollama-shell: ## Interactive Ollama shell
-	docker-compose exec ollama ollama run llama3.1:8b
+	docker-compose exec ollama ollama run qwen2.5:3b
 
 # Cleanup
 clean: ## Remove all containers, volumes, and images

@@ -5,7 +5,7 @@ Local development environment setup for Geetanjali.
 ## Prerequisites
 
 - Docker and Docker Compose (recommended)
-- Or: Python 3.10+, Node.js 18+, PostgreSQL, Redis
+- Or: Python 3.10+, Node.js 20+, PostgreSQL, Redis
 
 ## Docker Setup (Recommended)
 
@@ -186,7 +186,7 @@ alembic stamp 001
 
 **Missing verses**: Run data ingestion:
 ```bash
-docker compose exec backend python -c "from services.ingestion import ingest_all; ingest_all()"
+docker compose exec backend python scripts/ingest_data.py --all --no-enrich
 ```
 
 **ChromaDB errors**: Check NumPy version compatibility (<2.0 required).

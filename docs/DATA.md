@@ -57,7 +57,7 @@ On first run, the backend:
 
 Manual re-ingestion:
 ```bash
-docker compose exec backend python -c "from services.ingestion import ingest_all; ingest_all()"
+docker compose exec backend python scripts/ingest_data.py --all
 ```
 
 ## Embeddings

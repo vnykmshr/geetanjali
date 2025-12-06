@@ -29,7 +29,7 @@ User Query → Embedding → Vector Search → LLM Generation → Structured Out
 │               ▼             ▼             ▼              ▼      │
 │         ┌──────────┐  ┌─────────┐  ┌─────────┐  ┌────────────┐ │
 │         │ ChromaDB │  │  Redis  │  │ Ollama  │  │   Worker   │ │
-│         │  :8000   │  │  :6379  │  │ :11434  │  │    (RQ)    │ │
+│         │ 8001:8000│  │  :6379  │  │ :11434  │  │    (RQ)    │ │
 │         └──────────┘  └─────────┘  └─────────┘  └────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -42,7 +42,7 @@ User Query → Embedding → Vector Search → LLM Generation → Structured Out
 | PostgreSQL | Cases, users, outputs, verses, feedback |
 | ChromaDB | Vector embeddings for semantic verse search |
 | Redis | Caching, session storage, task queues, rate limiting |
-| Ollama | Local LLM inference (or Anthropic Claude API) |
+| Ollama | Local LLM inference (primary), Anthropic Claude (fallback) |
 
 ## RAG Pipeline
 
@@ -96,7 +96,9 @@ RESTful API at `/api/v1/`:
 /auth/*          - Login, signup, refresh, logout
 /cases/*         - CRUD + analyze
 /verses/*        - Browse, search, daily verse
-/outputs/*       - View analysis, submit feedback
+/outputs/*       - View analysis, submit feedback, export
+/messages/*      - Follow-up questions on cases
+/contact         - Contact form submission
 ```
 
 Full OpenAPI docs at `/docs` when running.
