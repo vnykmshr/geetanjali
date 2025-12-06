@@ -10,7 +10,8 @@ from config import settings
 is_sqlite = "sqlite" in settings.DATABASE_URL
 
 engine_kwargs: dict[str, Any] = {
-    "echo": settings.DEBUG,
+    # SQL echo is very verbose - only enable explicitly, not with general DEBUG
+    "echo": settings.DB_ECHO,
 }
 
 if is_sqlite:

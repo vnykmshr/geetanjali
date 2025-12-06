@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = 10
     DB_POOL_RECYCLE: int = 3600
     DB_POOL_PRE_PING: bool = True
+    DB_ECHO: bool = False  # Log all SQL queries (very verbose, for debugging only)
 
     # Vector Database (ChromaDB)
     CHROMA_HOST: Optional[str] = None  # If set, use HTTP client instead of local
