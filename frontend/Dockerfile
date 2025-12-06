@@ -2,6 +2,10 @@
 
 FROM node:20-alpine AS builder
 
+# Build args for Vite environment variables (baked into bundle)
+ARG VITE_API_URL=http://localhost:8000
+ARG VITE_API_V1_PREFIX=/api/v1
+
 # Set working directory
 WORKDIR /app
 
@@ -13,6 +17,10 @@ RUN npm ci
 
 # Copy source code
 COPY . .
+
+# Pass build args as environment variables for Vite
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_API_V1_PREFIX=$VITE_API_V1_PREFIX
 
 # Build the application
 RUN npm run build

@@ -133,24 +133,22 @@ class Settings(BaseSettings):
     CONTACT_EMAIL_FROM: Optional[str] = None  # Sender address - MUST set in .env (use verified domain)
 
     @field_validator(
-        "APP_ENV",
-        "LOG_LEVEL",
-        "LLM_PROVIDER",
-        "ANTHROPIC_MODEL",
-        "OLLAMA_MODEL",
-        "OLLAMA_BASE_URL",
+        # Only apply to truly Optional fields (can be None)
         "ANTHROPIC_API_KEY",
         "RESEND_API_KEY",
         "CONTACT_EMAIL_TO",
         "CONTACT_EMAIL_FROM",
+        "REDIS_URL",
+        "CHROMA_HOST",
         mode="before",
     )
     @classmethod
     def empty_string_to_none(cls, v: Optional[str]) -> Optional[str]:
-        """Convert empty strings to None so defaults apply.
+        """Convert empty strings to None for Optional fields only.
 
-        Docker Compose passes empty strings for ${VAR:-} when unset.
-        This ensures config.py defaults are used instead.
+        This handles Docker Compose ${VAR:-} for optional API keys/URLs.
+        Required fields should NOT use this validator - they should
+        fail fast if not properly set in .env.
         """
         if v == "":
             return None
