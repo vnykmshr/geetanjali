@@ -128,13 +128,9 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
 
     # Email (Resend)
-    RESEND_API_KEY: Optional[str] = None  # Required for email sending
-    CONTACT_EMAIL_TO: str = (
-        "viks@vnykmshr.com"  # Recipient for contact form (registered in Resend)
-    )
-    CONTACT_EMAIL_FROM: str = (
-        "Geetanjali <onboarding@resend.dev>"  # Use resend.dev for testing until domain verified
-    )
+    RESEND_API_KEY: Optional[str] = None  # Set in .env to enable email
+    CONTACT_EMAIL_TO: Optional[str] = None  # Recipient for contact form - MUST set in .env
+    CONTACT_EMAIL_FROM: Optional[str] = None  # Sender address - MUST set in .env (use verified domain)
 
     @field_validator(
         "APP_ENV",
@@ -145,6 +141,8 @@ class Settings(BaseSettings):
         "OLLAMA_BASE_URL",
         "ANTHROPIC_API_KEY",
         "RESEND_API_KEY",
+        "CONTACT_EMAIL_TO",
+        "CONTACT_EMAIL_FROM",
         mode="before",
     )
     @classmethod
@@ -317,6 +315,11 @@ class Settings(BaseSettings):
         if not self.RESEND_API_KEY:
             logger.warning(
                 "PRODUCTION: RESEND_API_KEY not set. Email notifications disabled."
+            )
+        elif not self.CONTACT_EMAIL_TO or not self.CONTACT_EMAIL_FROM:
+            logger.warning(
+                "PRODUCTION: RESEND_API_KEY is set but CONTACT_EMAIL_TO or CONTACT_EMAIL_FROM missing. "
+                "Set both in .env for email to work."
             )
 
         # ========================================

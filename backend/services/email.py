@@ -53,6 +53,14 @@ def send_contact_email(
         logger.warning("Email service not available - message not sent")
         return False
 
+    # Validate email configuration
+    if not settings.CONTACT_EMAIL_TO or not settings.CONTACT_EMAIL_FROM:
+        logger.warning(
+            "Email configuration incomplete - CONTACT_EMAIL_TO or CONTACT_EMAIL_FROM not set. "
+            "Set both in .env to enable contact form emails."
+        )
+        return False
+
     # Build email subject
     email_subject = f"[Geetanjali {message_type.replace('_', ' ').title()}]"
     if subject:
