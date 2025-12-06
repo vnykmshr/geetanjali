@@ -435,7 +435,7 @@ ${messages.map(msg => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-red-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-red-50 flex flex-col overflow-x-hidden">
       <Navbar />
 
       <CaseHeader
