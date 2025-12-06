@@ -97,14 +97,17 @@ export default function CaseView() {
       const data = await casesApi.get(id);
       setCaseData(data);
 
-      if (data.status === 'completed' || data.status === 'failed' || !data.status) {
-        const messagesData = await messagesApi.list(id);
-        setMessages(messagesData);
+      // Always fetch messages and outputs (even during processing)
+      // This ensures we can show existing content while follow-up is being analyzed
+      const messagesData = await messagesApi.list(id);
+      setMessages(messagesData);
 
-        const outputsData = await outputsApi.listByCaseId(id);
-        setOutputs(outputsData);
+      const outputsData = await outputsApi.listByCaseId(id);
+      setOutputs(outputsData);
 
-        // Clear pending follow-up when analysis completes
+      // When completed/failed, clear pending state and set up UI
+      const isFinished = data.status === 'completed' || data.status === 'failed' || !data.status;
+      if (isFinished) {
         setPendingFollowUp(null);
 
         if (outputsData.length > 0) {
@@ -113,6 +116,16 @@ export default function CaseView() {
 
         if (!isAuthenticated && outputsData.length > 0) {
           setShowSignupPrompt(true);
+        }
+      } else if (data.status === 'processing' || data.status === 'pending') {
+        // During processing, detect pending follow-up from messages
+        // If the last user message doesn't have a corresponding output, it's the pending one
+        const userMessages = messagesData.filter(m => m.role === 'user');
+        const lastUserMessage = userMessages[userMessages.length - 1];
+
+        if (lastUserMessage && outputsData.length < userMessages.length) {
+          // There's a user message without a response - that's the pending follow-up
+          setPendingFollowUp(lastUserMessage.content);
         }
       }
     } catch (err) {
