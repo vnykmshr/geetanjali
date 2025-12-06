@@ -8,6 +8,37 @@ import { errorMessages } from '../lib/errorMessages';
 
 const VERSES_PER_PAGE = 20;
 
+// Back to Top button component
+function BackToTopButton() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setVisible(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  if (!visible) return null;
+
+  return (
+    <button
+      onClick={scrollToTop}
+      className="fixed bottom-6 right-6 z-40 w-12 h-12 bg-white border border-gray-300 rounded-full shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all flex items-center justify-center"
+      aria-label="Back to top"
+    >
+      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+      </svg>
+    </button>
+  );
+}
+
 // Filter modes: 'featured' shows curated verses, 'all' shows all 701 verses
 type FilterMode = 'featured' | 'all' | number; // number = specific chapter
 
@@ -303,6 +334,9 @@ export default function Verses() {
 
       {/* Bottom padding for FAB on mobile */}
       <div className="h-20 sm:hidden" />
+
+      {/* Back to Top Button */}
+      <BackToTopButton />
     </div>
   );
 }

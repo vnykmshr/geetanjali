@@ -37,7 +37,7 @@ export function VerseCard({
   // Compact mode: Sanskrit-only display for verse browsing
   if (isCompact) {
     return (
-      <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 rounded-xl p-3 sm:p-4 border border-amber-200/50 shadow-md hover:shadow-lg hover:border-amber-300 transition-all">
+      <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 rounded-xl p-3 sm:p-4 border border-amber-200/50 shadow-sm hover:shadow-md hover:border-amber-300 transition-shadow duration-150">
         {/* Verse Reference */}
         <div className="text-amber-600 font-serif font-medium text-xs sm:text-sm mb-2 sm:mb-3">
           ॥ {formatVerseRef(verse)} ॥
