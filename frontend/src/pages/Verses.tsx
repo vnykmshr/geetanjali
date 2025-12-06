@@ -20,6 +20,7 @@ export default function Verses() {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = useRef<HTMLDivElement>(null);
+  const loadingMoreRef = useRef(false); // Sync ref to prevent race conditions
 
   // Parse initial filter from URL
   const getInitialFilter = (): FilterMode => {
@@ -86,27 +87,40 @@ export default function Verses() {
     loadCount();
   }, [loadVerses, loadCount]);
 
-  const loadMore = useCallback(() => {
-    setVerses(currentVerses => {
-      (async () => {
-        try {
-          setLoadingMore(true);
-          setError(null);
+  const loadMore = useCallback(async () => {
+    // Use ref to prevent race conditions (state updates are async)
+    if (loadingMoreRef.current) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    setError(null);
 
-          const chapter = typeof filterMode === 'number' ? filterMode : undefined;
-          const featured = filterMode === 'featured' ? true : undefined;
-          const data = await versesApi.list(currentVerses.length, VERSES_PER_PAGE, chapter, featured);
+    try {
+      const chapter = typeof filterMode === 'number' ? filterMode : undefined;
+      const featured = filterMode === 'featured' ? true : undefined;
 
-          setVerses(prev => [...prev, ...data]);
-          setHasMore(data.length === VERSES_PER_PAGE);
-        } catch (err) {
-          setError(errorMessages.verseLoad(err));
-        } finally {
-          setLoadingMore(false);
-        }
-      })();
-      return currentVerses;
-    });
+      // Get current length synchronously via callback
+      const currentLength = await new Promise<number>(resolve => {
+        setVerses(prev => {
+          resolve(prev.length);
+          return prev;
+        });
+      });
+
+      const data = await versesApi.list(currentLength, VERSES_PER_PAGE, chapter, featured);
+
+      // Deduplicate when adding new verses
+      setVerses(prev => {
+        const existingIds = new Set(prev.map(v => v.id));
+        const newVerses = data.filter(v => !existingIds.has(v.id));
+        return [...prev, ...newVerses];
+      });
+      setHasMore(data.length === VERSES_PER_PAGE);
+    } catch (err) {
+      setError(errorMessages.verseLoad(err));
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
   }, [filterMode]);
 
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
