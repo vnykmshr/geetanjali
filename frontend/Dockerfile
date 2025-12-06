@@ -41,9 +41,9 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Expose ports (80 for HTTP, 443 for HTTPS)
 EXPOSE 80 443
 
-# Health check
+# Health check - use dedicated endpoint that bypasses HTTPS redirect
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+    CMD wget -q --spider http://localhost/nginx-health || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
