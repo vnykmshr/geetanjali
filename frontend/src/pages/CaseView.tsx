@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { casesApi, outputsApi } from '../lib/api';
 import { messagesApi } from '../api/messages';
-import type { Case, Message, Output, CaseStatus } from '../types';
+import type { Case, Message, Output, CaseStatus, Option } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { Navbar } from '../components/Navbar';
 import { errorMessages } from '../lib/errorMessages';
@@ -306,7 +306,7 @@ ${messages.map(msg => {
     // Add Paths Before You (Options)
     if (firstOutput && firstOutput.result_json.options?.length > 0) {
       markdown += `\n## Paths Before You\n\n`;
-      firstOutput.result_json.options.forEach((option: any, idx: number) => {
+      firstOutput.result_json.options.forEach((option: Option, idx: number) => {
         markdown += `### Path ${idx + 1}: ${option.title}\n\n`;
         if (option.description) {
           markdown += `${option.description}\n\n`;
@@ -336,9 +336,9 @@ ${messages.map(msg => {
     }
 
     // Add Recommended Steps
-    if (firstOutput && typeof firstOutput.result_json.recommended_action === 'object' && (firstOutput.result_json.recommended_action as any)?.steps?.length > 0) {
+    if (firstOutput && typeof firstOutput.result_json.recommended_action === 'object' && (firstOutput.result_json.recommended_action as { steps?: string[] })?.steps?.length) {
       markdown += `\n## Recommended Steps\n\n`;
-      const recommendedAction = firstOutput.result_json.recommended_action as any;
+      const recommendedAction = firstOutput.result_json.recommended_action as { steps?: string[]; sources?: string[] };
       recommendedAction.steps.forEach((step: string, idx: number) => {
         markdown += `${idx + 1}. ${step}\n`;
       });

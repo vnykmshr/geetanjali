@@ -49,11 +49,6 @@ export function Navbar({ showBack, backTo = '/', backLabel = 'Back' }: NavbarPro
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close mobile menu on route change
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [location.pathname]);
-
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -268,6 +263,7 @@ export function Navbar({ showBack, backTo = '/', backLabel = 'Back' }: NavbarPro
                 <Link
                   key={link.to}
                   to={link.to}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
                     link.isActive
                       ? 'text-orange-600 bg-orange-50'
@@ -322,12 +318,14 @@ export function Navbar({ showBack, backTo = '/', backLabel = 'Back' }: NavbarPro
               <div className="space-y-2">
                 <Link
                   to="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="block w-full px-4 py-2.5 text-center text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="block w-full px-4 py-2.5 text-center text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors"
                 >
                   Sign Up

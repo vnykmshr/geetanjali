@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const currentUser = await authApi.getCurrentUser();
           setUser(currentUser);
         }
-      } catch (error) {
+      } catch {
         // Real errors (network, 500, etc.) - clear token and stay anonymous
         tokenStorage.clearToken();
       }
