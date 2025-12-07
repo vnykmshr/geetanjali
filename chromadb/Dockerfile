@@ -18,6 +18,13 @@ RUN pip install --no-cache-dir \
 # Pre-download the embedding model to avoid first-request latency
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
+# Create non-root user for security
+RUN useradd -m -u 1000 chromauser && \
+    mkdir -p /chroma/chroma && \
+    chown -R chromauser:chromauser /chroma
+
+USER chromauser
+
 # Expose port
 EXPOSE 8000
 

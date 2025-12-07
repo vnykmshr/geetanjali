@@ -10,6 +10,9 @@ services:
       # Keep model loaded indefinitely to prevent 404 errors
       # Use "1h" for 1 hour, "24h" for 1 day, or "-1" for forever (never unload)
       OLLAMA_KEEP_ALIVE: "-1"
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 30s
@@ -31,6 +34,9 @@ services:
     # No external port - only accessible within Docker network
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Security hardening (PostgreSQL runs as non-root 'postgres' user by default)
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-geetanjali}"]
       interval: 10s
@@ -45,6 +51,14 @@ services:
     container_name: geetanjali-redis
     # No external port - only accessible within Docker network
     command: redis-server --save "" --appendonly no --requirepass ${REDIS_PASSWORD:-redis_dev_pass}
+    # Security hardening (Redis runs as non-root 'redis' user by default)
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_dev_pass}", "ping"]
       interval: 10s
@@ -68,6 +82,11 @@ services:
       IS_PERSISTENT: "TRUE"
       ANONYMIZED_TELEMETRY: "FALSE"
       PERSIST_DIRECTORY: "/chroma/chroma"
+    # Security hardening
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     networks:
       - geetanjali-network
 
@@ -90,6 +109,11 @@ services:
     volumes:
       - ./backend:/app
       - backend_chroma:/app/chroma_data
+    # Security hardening
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       postgres:
         condition: service_healthy
@@ -119,6 +143,11 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
     volumes:
       - ./backend:/app
+    # Security hardening
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       redis:
         condition: service_healthy
@@ -151,6 +180,13 @@ services:
       - /etc/letsencrypt/archive/geetanjaliapp.com:/etc/letsencrypt/archive/geetanjaliapp.com:ro
       # Mount certbot challenge directory
       - /var/www/certbot:/var/www/certbot:ro
+    # Security hardening (nginx needs NET_BIND_SERVICE for ports 80/443)
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       backend:
         condition: service_started
