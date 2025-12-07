@@ -139,8 +139,8 @@ task_health_check() {
 
     ISSUES=""
 
-    # Check backend health
-    BACKEND_STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/health 2>/dev/null || echo "000")
+    # Check backend health (via Docker network since port isn't exposed externally)
+    BACKEND_STATUS=$(docker exec geetanjali-backend curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/health 2>/dev/null || echo "000")
     if [[ "${BACKEND_STATUS}" != "200" ]]; then
         ISSUES="${ISSUES}\n- Backend unhealthy (HTTP ${BACKEND_STATUS})"
     fi
