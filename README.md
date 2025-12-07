@@ -1,6 +1,15 @@
 # Geetanjali
 
+[![CI](https://github.com/geetanjaliapp/geetanjali/actions/workflows/ci.yml/badge.svg)](https://github.com/geetanjaliapp/geetanjali/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Node 20+](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org/)
+
 Ethical leadership guidance from the Bhagavad Geeta.
+
+**[Live Demo](https://geetanjaliapp.com)** | [API Docs](https://geetanjaliapp.com/api/docs)
+
+![Geetanjali Demo](docs/screenshots/demo.gif)
 
 Geetanjali is a RAG-powered tool that transforms Bhagavad Geeta teachings into actionable guidance for ethical decisions in organizations.
 
