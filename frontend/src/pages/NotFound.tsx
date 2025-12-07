@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatSanskritLines, isSpeakerIntro } from '../lib/sanskritFormatter';
 import { Navbar } from '../components/Navbar';
@@ -44,10 +44,9 @@ const FAMOUS_VERSES = [
 ];
 
 export default function NotFound() {
-  // Select a random verse once on mount (stable across re-renders)
-  const verse = useMemo(
-    () => FAMOUS_VERSES[Math.floor(Math.random() * FAMOUS_VERSES.length)],
-    []
+  // Select a random verse once on mount (useState initializer runs only once)
+  const [verse] = useState(
+    () => FAMOUS_VERSES[Math.floor(Math.random() * FAMOUS_VERSES.length)]
   );
 
   return (
