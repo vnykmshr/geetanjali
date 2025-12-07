@@ -181,11 +181,14 @@ services:
       - /etc/letsencrypt/archive/geetanjaliapp.com:/etc/letsencrypt/archive/geetanjaliapp.com:ro
       # Mount certbot challenge directory
       - /var/www/certbot:/var/www/certbot:ro
-    # Security hardening (nginx needs NET_BIND_SERVICE for ports 80/443)
+    # Security hardening (nginx needs caps for binding ports and setting up cache dirs)
     cap_drop:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
+      - CHOWN
+      - SETUID
+      - SETGID
     security_opt:
       - no-new-privileges:true
     depends_on:
