@@ -100,6 +100,18 @@ shell-backend: ## Open shell in backend container
 shell-postgres: ## Open shell in Postgres container
 	docker-compose exec postgres /bin/sh
 
+# Deployment
+deploy: ## Deploy to production (builds, cleans cache, restarts)
+	./scripts/deploy.sh
+
+deploy-clean: ## Deploy with full Docker cleanup
+	./scripts/deploy.sh --clean
+
+docker-clean: ## Clean Docker build cache and unused images locally
+	docker builder prune -f
+	docker image prune -f
+	@echo "✅ Docker cleanup complete"
+
 # Quick Start
 init: build up db-migrate ## Initialize project (build, start, migrate)
 	@echo "✅ Project initialized successfully!"
