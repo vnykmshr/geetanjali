@@ -151,7 +151,7 @@ services:
       - no-new-privileges:true
     # Override Dockerfile healthcheck (worker doesn't run HTTP server)
     healthcheck:
-      test: ["CMD", "pgrep", "-f", "worker.py"]
+      test: ["CMD-SHELL", "ps aux | grep -v grep | grep worker.py || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
