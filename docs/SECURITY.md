@@ -102,6 +102,9 @@ Linux capabilities break down root privileges into ~40 distinct powers. We drop 
 | Capability | Description | Containers Using |
 |------------|-------------|------------------|
 | NET_BIND_SERVICE | Bind to ports < 1024 | Frontend (nginx) |
+| CHOWN | Change file ownership | Redis, Frontend |
+| SETUID | Set user ID | Redis, Frontend |
+| SETGID | Set group ID | Redis, Frontend |
 
 **Configuration in docker-compose.yml:**
 ```yaml
@@ -118,11 +121,11 @@ services:
 | Container | Runs As | Capabilities | Extra Hardening |
 |-----------|---------|--------------|-----------------|
 | postgres | postgres (non-root) | no-new-privileges | - |
-| redis | redis (non-root) | cap_drop: ALL | read_only, tmpfs |
+| redis | redis (non-root) | SETUID, SETGID, CHOWN only | - |
 | chromadb | chromauser (uid 1000) | cap_drop: ALL | - |
 | backend | appuser (uid 1000) | cap_drop: ALL | - |
 | worker | appuser (uid 1000) | cap_drop: ALL | - |
-| frontend | nginx (workers) | NET_BIND_SERVICE only | - |
+| frontend | nginx (workers) | NET_BIND_SERVICE, SETUID, SETGID, CHOWN | - |
 | ollama | default | no-new-privileges | - |
 
 ### no-new-privileges
