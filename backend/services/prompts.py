@@ -150,6 +150,18 @@ def build_user_prompt(
             prompt_parts.append(f"Principles: {principles}\n")
         prompt_parts.append("\n")
 
+    # Add explicit constraint on allowed verse IDs
+    valid_ids = [
+        verse.get("metadata", {}).get("canonical_id")
+        for verse in retrieved_verses
+        if verse.get("metadata", {}).get("canonical_id")
+    ]
+    if valid_ids:
+        prompt_parts.append(
+            f"**IMPORTANT**: ONLY cite these verse IDs in your response: {', '.join(valid_ids)}. "
+            "Do NOT reference any other verses.\n\n"
+        )
+
     # Add output format requirements
     prompt_parts.append("\n# Output Format Requirements\n")
     prompt_parts.append(
@@ -284,6 +296,7 @@ def build_ollama_prompt(
 
     # Add top 3 verses only
     prompt_parts.append("\n# Geeta Verses\n")
+    valid_ids = []
     for i, verse in enumerate(retrieved_verses[:3], 1):
         metadata = verse.get("metadata", {})
         canonical_id = metadata.get("canonical_id", "Unknown")
@@ -292,6 +305,12 @@ def build_ollama_prompt(
         prompt_parts.append(f"{i}. {canonical_id}: {paraphrase}\n")
         if translation:
             prompt_parts.append(f"   Translation: {translation}\n")
+        if canonical_id != "Unknown":
+            valid_ids.append(canonical_id)
+
+    # Add constraint on allowed verse IDs
+    if valid_ids:
+        prompt_parts.append(f"\nONLY cite: {', '.join(valid_ids)}\n")
 
     # Simplified task
     prompt_parts.append(

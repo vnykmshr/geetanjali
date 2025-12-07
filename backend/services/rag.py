@@ -664,15 +664,37 @@ class RAGPipeline:
                 )
                 output["sources"] = valid_sources
 
-        # Validate source references in options (check if option sources cite actual sources)
+        # Validate and filter source references in options
         if sources_array:
+            valid_canonical_ids = {s.get('canonical_id') for s in sources_array if s}
             for option_idx, option in enumerate(output.get("options", [])):
-                for source_ref in option.get("sources", []):
-                    if not _validate_source_reference(source_ref, sources_array):
-                        logger.warning(
-                            f"Option {option_idx} references undefined source {source_ref}. "
-                            f"Available sources: {[s.get('canonical_id') for s in sources_array]}"
-                        )
+                original_sources = option.get("sources", [])
+                valid_sources_for_option = [
+                    src for src in original_sources
+                    if _validate_source_reference(src, sources_array)
+                ]
+                invalid_sources = set(original_sources) - set(valid_sources_for_option)
+                if invalid_sources:
+                    logger.warning(
+                        f"Option {option_idx}: removed invalid citations {invalid_sources}. "
+                        f"Valid: {valid_canonical_ids}"
+                    )
+                    option["sources"] = valid_sources_for_option
+
+            # Also validate recommended_action sources
+            rec_action = output.get("recommended_action", {})
+            if rec_action and "sources" in rec_action:
+                original_rec_sources = rec_action.get("sources", [])
+                valid_rec_sources = [
+                    src for src in original_rec_sources
+                    if _validate_source_reference(src, sources_array)
+                ]
+                invalid_rec = set(original_rec_sources) - set(valid_rec_sources)
+                if invalid_rec:
+                    logger.warning(
+                        f"recommended_action: removed invalid citations {invalid_rec}"
+                    )
+                    rec_action["sources"] = valid_rec_sources
 
         # Validate confidence is numeric and in range
         confidence = output.get("confidence", 0.5)
