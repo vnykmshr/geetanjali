@@ -101,11 +101,16 @@ shell-postgres: ## Open shell in Postgres container
 	docker-compose exec postgres /bin/sh
 
 # Deployment
-deploy: ## Deploy to production (builds, cleans cache, restarts)
+deploy: ## Deploy to production
 	./scripts/deploy.sh
 
-deploy-clean: ## Deploy with full Docker cleanup
-	./scripts/deploy.sh --clean
+rollback: ## Rollback to previous deployment
+	@echo "Rolling back to previous images..."
+	ssh gitam@64.227.133.142 "cd /opt/geetanjali && \
+		docker tag geetanjali-backend:rollback geetanjali-backend:latest && \
+		docker tag geetanjali-frontend:rollback geetanjali-frontend:latest && \
+		docker compose up -d backend frontend"
+	@echo "Rollback complete. Verify at https://geetanjaliapp.com"
 
 docker-clean: ## Clean Docker build cache and unused images locally
 	docker builder prune -f
