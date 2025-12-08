@@ -28,6 +28,7 @@ ALERT_ENDPOINT="http://localhost:8000/api/v1/admin/alert"
 # Thresholds
 DISK_THRESHOLD=80
 SSL_WARN_DAYS=14
+ORPHAN_RETENTION_DAYS=30  # Days to keep orphaned anonymous session cases
 
 # Load environment variables for alerts
 if [[ -f "${APP_DIR}/.env" ]]; then
@@ -232,6 +233,43 @@ task_security_updates_check() {
     fi
 }
 
+task_orphan_cleanup() {
+    log "Cleaning up orphaned anonymous session cases..."
+
+    # Count orphans first (dry run)
+    ORPHAN_COUNT=$(docker exec geetanjali-postgres psql -U geetanjali -d geetanjali -t -c "
+        SELECT COUNT(*) FROM cases
+        WHERE user_id IS NULL
+          AND session_id IS NOT NULL
+          AND created_at < NOW() - INTERVAL '${ORPHAN_RETENTION_DAYS} days'
+          AND is_public = false;
+    " 2>/dev/null | tr -d ' ' || echo "0")
+
+    log "Found ${ORPHAN_COUNT} orphaned anonymous session cases older than ${ORPHAN_RETENTION_DAYS} days"
+
+    if [[ "${ORPHAN_COUNT}" -gt 0 ]]; then
+        # Soft delete orphaned cases (set is_deleted=true, preserve data)
+        DELETED=$(docker exec geetanjali-postgres psql -U geetanjali -d geetanjali -t -c "
+            UPDATE cases
+            SET is_deleted = true,
+                updated_at = NOW()
+            WHERE user_id IS NULL
+              AND session_id IS NOT NULL
+              AND created_at < NOW() - INTERVAL '${ORPHAN_RETENTION_DAYS} days'
+              AND is_public = false
+              AND is_deleted = false;
+            SELECT COUNT(*);
+        " 2>/dev/null | tail -1 | tr -d ' ' || echo "0")
+
+        log "Soft-deleted ${DELETED} orphaned cases"
+
+        # Only alert if significant cleanup happened
+        if [[ "${DELETED}" -gt 10 ]]; then
+            send_alert "Orphan Cleanup" "Soft-deleted ${DELETED} orphaned anonymous session cases older than ${ORPHAN_RETENTION_DAYS} days."
+        fi
+    fi
+}
+
 task_weekly_report() {
     log "Generating weekly report..."
 
@@ -275,6 +313,7 @@ case "${1:-daily}" in
     weekly)
         log "========== Starting Weekly Maintenance =========="
         task_postgres_maintenance
+        task_orphan_cleanup
         task_security_updates_check
         task_weekly_report
         log "========== Weekly Maintenance Complete =========="
@@ -291,8 +330,11 @@ case "${1:-daily}" in
     report)
         task_weekly_report
         ;;
+    orphan)
+        task_orphan_cleanup
+        ;;
     *)
-        echo "Usage: $0 {daily|weekly|backup|health|cleanup|report}"
+        echo "Usage: $0 {daily|weekly|backup|health|cleanup|report|orphan}"
         exit 1
         ;;
 esac
