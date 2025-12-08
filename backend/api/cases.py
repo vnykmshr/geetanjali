@@ -31,8 +31,9 @@ logger = logging.getLogger(__name__)
 
 # Redis cache TTL for public cases (1 hour - can be invalidated on toggle)
 PUBLIC_CASE_REDIS_TTL = 3600
-# HTTP Cache-Control TTL (5 minutes - cannot be invalidated, keep short)
-PUBLIC_CASE_HTTP_TTL = 300
+# HTTP Cache-Control TTL (1 minute - keep very short since shares can be revoked)
+# Browsers cache for this duration without checking server, so shorter = faster revocation
+PUBLIC_CASE_HTTP_TTL = 60
 
 T = TypeVar("T")
 
