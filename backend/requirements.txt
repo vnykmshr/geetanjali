@@ -41,7 +41,7 @@ types-redis==4.6.0.11  # Type stubs for redis
 # Authentication
 python-jose[cryptography]==3.5.0  # JWT tokens
 passlib[bcrypt]==1.7.4  # Password hashing
-bcrypt==4.3.0  # pinned due to passlib 1.7.4 incompatibility with bcrypt 5.0.0
+bcrypt==5.0.0  # pinned due to passlib 1.7.4 incompatibility with bcrypt 5.0.0
 
 # Utilities
 python-dotenv==1.2.1
