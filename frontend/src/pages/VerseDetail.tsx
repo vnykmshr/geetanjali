@@ -7,6 +7,7 @@ import { getTranslatorPriority } from '../constants/translators';
 import type { Verse, Translation } from '../types';
 import { Navbar, ContentNotFound } from '../components';
 import { errorMessages } from '../lib/errorMessages';
+import { useSEO } from '../hooks';
 
 // Sort translations by priority
 function sortTranslations(translations: Translation[]): Translation[] {
@@ -26,6 +27,16 @@ export default function VerseDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAllTranslations, setShowAllTranslations] = useState(true);
+
+  // Dynamic SEO based on verse data
+  useSEO({
+    title: verse ? `Bhagavad Gita ${verse.chapter}.${verse.verse}` : 'Verse',
+    description: verse?.paraphrase_en
+      ? `${verse.paraphrase_en.slice(0, 150)}...`
+      : 'Explore this verse from the Bhagavad Gita with multiple translations and leadership insights.',
+    canonical: canonicalId ? `/verses/${canonicalId}` : '/verses',
+    ogType: 'article',
+  });
 
   useEffect(() => {
     if (!canonicalId) return;

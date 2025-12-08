@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navbar } from '../components/Navbar';
 import { api } from '../lib/api';
+import { useSEO } from '../hooks';
 
 type ContactType = 'feedback' | 'question' | 'bug_report' | 'feature_request' | 'other';
 
@@ -13,6 +14,12 @@ interface ContactForm {
 }
 
 export default function About() {
+  useSEO({
+    title: 'About',
+    description: 'Learn about Geetanjali - ancient wisdom from the Bhagavad Gita for modern ethical decisions. Free, open source, and privacy-focused.',
+    canonical: '/about',
+  });
+
   const [formData, setFormData] = useState<ContactForm>({
     name: '',
     email: '',
@@ -56,7 +63,7 @@ export default function About() {
         {/* Hero Section */}
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
           <div className="flex justify-center mb-4 sm:mb-6">
-            <img src="/logo.svg" alt="Geetanjali" className="h-14 w-14 sm:h-16 sm:w-16 lg:h-20 lg:w-20" />
+            <img src="/logo.svg" alt="Geetanjali" loading="lazy" className="h-14 w-14 sm:h-16 sm:w-16 lg:h-20 lg:w-20" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">About Geetanjali</h1>
           <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto">

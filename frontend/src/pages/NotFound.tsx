@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatSanskritLines, isSpeakerIntro } from '../lib/sanskritFormatter';
 import { Navbar } from '../components/Navbar';
+import { useSEO } from '../hooks';
 
 // Top 5 most famous Gita verses - embedded statically to avoid API calls
 // Source: Correlated from multiple sources (shlokam.org, templepurohit.com, holy-bhagavad-gita.org)
@@ -44,6 +45,12 @@ const FAMOUS_VERSES = [
 ];
 
 export default function NotFound() {
+  useSEO({
+    title: 'Page Not Found',
+    description: 'The page you are looking for does not exist.',
+    noIndex: true, // 404 pages shouldn't be indexed
+  });
+
   // Select a random verse once on mount (useState initializer runs only once)
   const [verse] = useState(
     () => FAMOUS_VERSES[Math.floor(Math.random() * FAMOUS_VERSES.length)]
@@ -55,7 +62,7 @@ export default function NotFound() {
       <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 64px)' }}>
         <div className="text-center max-w-2xl px-4">
           {/* Logo */}
-          <img src="/logo.svg" alt="Geetanjali" className="h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 mx-auto mb-4 sm:mb-6 lg:mb-8" />
+          <img src="/logo.svg" alt="Geetanjali" loading="lazy" className="h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 mx-auto mb-4 sm:mb-6 lg:mb-8" />
 
           {/* Heading */}
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 sm:mb-6 lg:mb-8">The Path You Seek is Elsewhere</h1>

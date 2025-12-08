@@ -4,6 +4,7 @@ import { casesApi } from '../lib/api';
 import type { Case, Message, Output } from '../types';
 import { Navbar, ContentNotFound } from '../components';
 import { groupMessagesIntoExchanges } from '../lib/messageGrouping';
+import { useSEO } from '../hooks';
 
 /**
  * Public view of a shared consultation.
@@ -16,6 +17,16 @@ export default function PublicCaseView() {
   const [outputs, setOutputs] = useState<Output[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Dynamic SEO based on case data
+  useSEO({
+    title: caseData?.title ? `${caseData.title.slice(0, 50)}` : 'Shared Consultation',
+    description: caseData?.description
+      ? `${caseData.description.slice(0, 150)}...`
+      : 'View this shared ethical consultation with guidance from the Bhagavad Gita.',
+    canonical: slug ? `/c/${slug}` : '/',
+    ogType: 'article',
+  });
 
   // Expanded state for sections
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());

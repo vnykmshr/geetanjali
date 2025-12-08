@@ -1,0 +1,159 @@
+"""Dynamic sitemap generation endpoint.
+
+Generates an XML sitemap with:
+- Static pages (home, about, verses index, etc.)
+- All verse pages (~700 URLs)
+- Public consultations
+
+Cached in Redis for performance (1 hour TTL).
+"""
+
+import logging
+from datetime import datetime
+from xml.etree.ElementTree import Element, SubElement, tostring
+
+from fastapi import APIRouter, Depends, Request, Response
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from sqlalchemy.orm import Session
+
+from config import settings
+from db.connection import get_db
+from models.verse import Verse
+from models.case import Case
+from services.cache import cache
+
+logger = logging.getLogger(__name__)
+router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
+
+# Cache settings
+SITEMAP_CACHE_KEY = "sitemap:xml"
+SITEMAP_CACHE_TTL = 3600  # 1 hour
+
+# Base URL for sitemap (production URL)
+BASE_URL = "https://geetanjaliapp.com"
+
+# Static pages with their priorities and change frequencies
+STATIC_PAGES = [
+    {"path": "/", "priority": "1.0", "changefreq": "weekly"},
+    {"path": "/about", "priority": "0.8", "changefreq": "monthly"},
+    {"path": "/verses", "priority": "0.9", "changefreq": "weekly"},
+    {"path": "/consultations", "priority": "0.8", "changefreq": "daily"},
+    {"path": "/cases/new", "priority": "0.7", "changefreq": "monthly"},
+]
+
+
+def build_sitemap_xml(verses: list, public_cases: list) -> str:
+    """
+    Build XML sitemap string.
+
+    Args:
+        verses: List of Verse objects
+        public_cases: List of Case objects with is_public=True
+
+    Returns:
+        XML sitemap string
+    """
+    # Create root element with namespace
+    urlset = Element("urlset")
+    urlset.set("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9")
+
+    # Add static pages
+    for page in STATIC_PAGES:
+        url = SubElement(urlset, "url")
+        SubElement(url, "loc").text = f"{BASE_URL}{page['path']}"
+        SubElement(url, "changefreq").text = page["changefreq"]
+        SubElement(url, "priority").text = page["priority"]
+
+    # Add verse pages
+    for verse in verses:
+        url = SubElement(urlset, "url")
+        SubElement(url, "loc").text = f"{BASE_URL}/verses/{verse.canonical_id}"
+        SubElement(url, "changefreq").text = "monthly"
+        SubElement(url, "priority").text = "0.8"
+        if verse.updated_at:
+            SubElement(url, "lastmod").text = verse.updated_at.strftime("%Y-%m-%d")
+
+    # Add public consultation pages
+    for case in public_cases:
+        if case.public_slug:
+            url = SubElement(urlset, "url")
+            SubElement(url, "loc").text = f"{BASE_URL}/c/{case.public_slug}"
+            SubElement(url, "changefreq").text = "weekly"
+            SubElement(url, "priority").text = "0.6"
+            if case.updated_at:
+                SubElement(url, "lastmod").text = case.updated_at.strftime("%Y-%m-%d")
+
+    # Convert to string with XML declaration
+    xml_str = tostring(urlset, encoding="unicode")
+    return f'<?xml version="1.0" encoding="UTF-8"?>\n{xml_str}'
+
+
+@router.get("/sitemap.xml", include_in_schema=False)
+@limiter.limit("60/minute")
+async def get_sitemap(request: Request, db: Session = Depends(get_db)):
+    """
+    Generate dynamic XML sitemap.
+
+    Returns cached sitemap if available, otherwise generates fresh one.
+    Includes all static pages, verse pages, and public consultations.
+    """
+    # Try to get from cache
+    cached_sitemap = cache.get(SITEMAP_CACHE_KEY)
+    if cached_sitemap:
+        logger.debug("Sitemap served from cache")
+        return Response(
+            content=cached_sitemap,
+            media_type="application/xml",
+            headers={"X-Cache": "HIT"}
+        )
+
+    # Generate fresh sitemap
+    logger.info("Generating fresh sitemap")
+
+    # Query all verses ordered by chapter and verse number
+    verses = (
+        db.query(Verse)
+        .order_by(Verse.chapter, Verse.verse)
+        .all()
+    )
+
+    # Query public cases (only those with is_public=True and not deleted)
+    public_cases = (
+        db.query(Case)
+        .filter(Case.is_public == True)
+        .filter(Case.is_deleted == False)
+        .filter(Case.public_slug.isnot(None))
+        .order_by(Case.created_at.desc())
+        .all()
+    )
+
+    # Build XML
+    sitemap_xml = build_sitemap_xml(verses, public_cases)
+
+    # Cache the result
+    cache.set(SITEMAP_CACHE_KEY, sitemap_xml, SITEMAP_CACHE_TTL)
+    logger.info(f"Sitemap generated: {len(verses)} verses, {len(public_cases)} public cases")
+
+    return Response(
+        content=sitemap_xml,
+        media_type="application/xml",
+        headers={"X-Cache": "MISS"}
+    )
+
+
+def sitemap_cache_key() -> str:
+    """Build cache key for sitemap."""
+    return SITEMAP_CACHE_KEY
+
+
+def invalidate_sitemap_cache() -> bool:
+    """
+    Invalidate sitemap cache.
+
+    Call this when:
+    - A consultation is made public/private
+    - Verses are added/updated (rare)
+    """
+    return cache.delete(SITEMAP_CACHE_KEY)

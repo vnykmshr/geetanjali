@@ -4,8 +4,14 @@ import { casesApi } from '../lib/api';
 import type { Case } from '../types';
 import { Navbar } from '../components/Navbar';
 import { errorMessages } from '../lib/errorMessages';
+import { useSEO } from '../hooks';
 
 export default function NewCase() {
+  useSEO({
+    title: 'Ask a Question',
+    description: 'Seek ethical guidance grounded in the Bhagavad Gita. Describe your situation and receive wisdom for difficult decisions.',
+    canonical: '/cases/new',
+  });
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

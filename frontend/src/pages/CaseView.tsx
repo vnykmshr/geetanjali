@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Navbar, ConsultationWaiting, ConfirmModal, ContentNotFound } from '../components';
 import { errorMessages } from '../lib/errorMessages';
 import { groupMessagesIntoExchanges } from '../lib/messageGrouping';
+import { useSEO } from '../hooks';
 import {
   CaseHeader,
   OutputFeedback,
@@ -31,6 +32,14 @@ export default function CaseView() {
   const [pendingFollowUp, setPendingFollowUp] = useState<string | null>(null);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const { isAuthenticated } = useAuth();
+
+  // Dynamic SEO - private consultations shouldn't be indexed
+  useSEO({
+    title: caseData?.title ? caseData.title.slice(0, 50) : 'Consultation',
+    description: 'Your private ethical consultation with guidance from the Bhagavad Gita.',
+    canonical: id ? `/cases/${id}` : '/consultations',
+    noIndex: true, // Private consultations shouldn't be indexed
+  });
 
   // Expanded state for sections
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());

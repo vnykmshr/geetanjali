@@ -73,8 +73,12 @@ export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProp
 
   if (status === 'failed') {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-center">
-        <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">😔</div>
+      <div
+        className="bg-red-50 border border-red-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-center"
+        role="alert"
+        aria-live="assertive"
+      >
+        <div className="text-3xl sm:text-4xl mb-3 sm:mb-4" aria-hidden="true">😔</div>
         <h3 className="text-lg sm:text-xl font-semibold text-red-800 mb-1.5 sm:mb-2">Analysis Could Not Complete</h3>
         <p className="text-sm sm:text-base text-red-600 mb-4 sm:mb-6">
           We encountered an issue while preparing your consultation. This can happen during high demand.
@@ -96,16 +100,21 @@ export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProp
   }
 
   return (
-    <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8">
+    <div
+      className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
       {/* Header with animated indicator */}
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-white rounded-full shadow-lg mb-3 sm:mb-4 animate-pulse">
+        <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-white rounded-full shadow-lg mb-3 sm:mb-4 animate-pulse" aria-hidden="true">
           <span className="text-2xl sm:text-3xl">{PROCESSING_STAGES[currentStage].icon}</span>
         </div>
         <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-1.5 sm:mb-2">
           Consulting Ancient Wisdom
         </h2>
-        <p className="text-sm sm:text-base text-gray-600">
+        <p className="text-sm sm:text-base text-gray-600" aria-label={`Processing status: ${PROCESSING_STAGES[currentStage].label}`}>
           {PROCESSING_STAGES[currentStage].label}...
         </p>
       </div>

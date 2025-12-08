@@ -13,10 +13,12 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@sentry/react": "^10.29.0",
     "axios": "^1.13.2",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "react-router-dom": "^7.10.0"
+    "react-router-dom": "^7.10.0",
+    "web-vitals": "^5.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -34,6 +36,7 @@
     "globals": "^16.5.0",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.6",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.18",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.1",

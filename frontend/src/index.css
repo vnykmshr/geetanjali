@@ -11,3 +11,109 @@ body {
   margin: 0;
   min-height: 100vh;
 }
+
+/* ============================================
+   Reduced Motion - Respect user preferences
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================
+   Print Styles - Optimized for consultations
+   ============================================ */
+@media print {
+  /* Hide non-essential elements */
+  nav,
+  footer,
+  .no-print,
+  button:not(.print-visible),
+  [role="navigation"],
+  [aria-label="Skip to main content"],
+  .floating-action-button {
+    display: none !important;
+  }
+
+  /* Reset backgrounds and colors for printing */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  /* Ensure content uses full width */
+  main,
+  .container,
+  .max-w-4xl,
+  .max-w-3xl {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Verse cards - clean print layout */
+  .verse-card,
+  [data-print="verse"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 1px solid #ccc !important;
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
+    background: white !important;
+  }
+
+  /* Consultation sections */
+  .consultation-section,
+  [data-print="section"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* Links - show URL in print */
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+
+  /* Internal links - don't show URL */
+  a[href^="/"]:after,
+  a[href^="#"]:after {
+    content: none;
+  }
+
+  /* Headers */
+  h1, h2, h3 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Print header */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #000;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 2cm;
+  }
+
+  /* First page */
+  @page :first {
+    margin-top: 3cm;
+  }
+}

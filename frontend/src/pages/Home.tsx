@@ -5,8 +5,11 @@ import type { Case, Verse } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { FeaturedVerse } from '../components/FeaturedVerse';
 import { Navbar } from '../components/Navbar';
+import { useSEO } from '../hooks';
 
 export default function Home() {
+  // SEO - uses defaults for homepage
+  useSEO({ canonical: '/' });
   const [error, setError] = useState<string | null>(null);
   const [recentCases, setRecentCases] = useState<Case[]>([]);
   const [dailyVerse, setDailyVerse] = useState<Verse | null>(null);

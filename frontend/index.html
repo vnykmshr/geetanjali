@@ -3,12 +3,22 @@
   <head>
     <meta charset="UTF-8" />
 
+    <!-- Preconnect hints for performance -->
+    <link rel="preconnect" href="https://geetanjaliapp.com" />
+    <link rel="dns-prefetch" href="https://geetanjaliapp.com" />
+
     <!-- Favicons -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/logo.svg" />
 
     <!-- Viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Mobile web app capable -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Geetanjali" />
 
     <!-- Primary Meta Tags -->
     <title>Geetanjali - Ethical Guidance from the Bhagavad Gita</title>
@@ -21,17 +31,83 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
 
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://geetanjaliapp.com/" />
+
+    <!-- RSS Feed -->
+    <link rel="alternate" type="application/rss+xml" title="Geetanjali - Daily Verse" href="https://geetanjaliapp.com/feed.xml" />
+
+    <!-- Analytics (Umami) - Loaded dynamically in production via monitoring.ts -->
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://geetanjaliapp.com/" />
+    <meta property="og:site_name" content="Geetanjali" />
     <meta property="og:title" content="Geetanjali - Ethical Guidance from the Bhagavad Gita" />
-    <meta property="og:description" content="Ethical leadership guidance and wisdom from the Bhagavad Gita for life's difficult decisions" />
-    <meta property="og:image" content="/logo.svg" />
+    <meta property="og:description" content="Ethical leadership guidance and wisdom from the Bhagavad Gita for life's difficult decisions. Free consultations with timeless wisdom." />
+    <meta property="og:image" content="https://geetanjaliapp.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Geetanjali - Ethical Guidance from the Bhagavad Gita" />
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary" />
-    <meta property="twitter:title" content="Geetanjali - Ethical Guidance from the Bhagavad Gita" />
-    <meta property="twitter:description" content="Ethical leadership guidance and wisdom from the Bhagavad Gita for life's difficult decisions" />
-    <meta property="twitter:image" content="/logo.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Geetanjali - Ethical Guidance from the Bhagavad Gita" />
+    <meta name="twitter:description" content="Ethical leadership guidance and wisdom from the Bhagavad Gita for life's difficult decisions." />
+    <meta name="twitter:image" content="https://geetanjaliapp.com/og-image.png" />
+    <meta name="twitter:image:alt" content="Geetanjali - Ethical Guidance from the Bhagavad Gita" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": "https://geetanjaliapp.com/#application",
+          "name": "Geetanjali",
+          "description": "Ethical leadership guidance and wisdom from the Bhagavad Gita for life's difficult decisions. Free consultations with timeless wisdom.",
+          "url": "https://geetanjaliapp.com",
+          "applicationCategory": "LifestyleApplication",
+          "operatingSystem": "Web",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "featureList": [
+            "Ethical decision guidance",
+            "Bhagavad Gita verse search",
+            "Personalized consultations",
+            "Leadership wisdom"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://geetanjaliapp.com/#website",
+          "url": "https://geetanjaliapp.com",
+          "name": "Geetanjali",
+          "description": "Ethical guidance from the Bhagavad Gita",
+          "publisher": {
+            "@id": "https://geetanjaliapp.com/#organization"
+          }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://geetanjaliapp.com/#organization",
+          "name": "Geetanjali",
+          "url": "https://geetanjaliapp.com",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://geetanjaliapp.com/logo.svg"
+          },
+          "sameAs": [
+            "https://github.com/geetanjaliapp/geetanjali"
+          ]
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

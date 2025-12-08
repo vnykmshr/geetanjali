@@ -5,6 +5,7 @@ import type { Case, CaseStatus } from '../types';
 import { Navbar, ConfirmModal } from '../components';
 import { errorMessages } from '../lib/errorMessages';
 import { useAuth } from '../contexts/AuthContext';
+import { useSEO } from '../hooks';
 
 const CASES_PER_PAGE = 10;
 
@@ -27,6 +28,13 @@ function StatusBadge({ status }: { status?: CaseStatus }) {
 }
 
 export default function Consultations() {
+  useSEO({
+    title: 'My Consultations',
+    description: 'View and manage your ethical consultations with guidance from the Bhagavad Gita.',
+    canonical: '/consultations',
+    noIndex: true, // Personal data shouldn't be indexed
+  });
+
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -205,7 +213,7 @@ export default function Consultations() {
           {/* Consultations List */}
           {cases.length === 0 ? (
             <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-8 sm:p-12 text-center">
-              <img src="/logo.svg" alt="Geetanjali" className="h-16 w-16 sm:h-20 sm:w-20 mx-auto mb-4 sm:mb-6" />
+              <img src="/logo.svg" alt="Geetanjali" loading="lazy" className="h-16 w-16 sm:h-20 sm:w-20 mx-auto mb-4 sm:mb-6" />
               <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">You haven't asked any questions yet.</p>
               <Link
                 to="/cases/new"

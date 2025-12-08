@@ -3,8 +3,15 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Navbar } from '../components/Navbar';
 import { errorMessages } from '../lib/errorMessages';
+import { useSEO } from '../hooks';
 
 export default function Signup() {
+  useSEO({
+    title: 'Sign Up',
+    description: 'Create a Geetanjali account to save your ethical consultations and access wisdom from the Bhagavad Gita.',
+    canonical: '/signup',
+    noIndex: true, // Auth pages shouldn't be indexed
+  });
   const navigate = useNavigate();
   const { signup } = useAuth();
   const [name, setName] = useState('');
@@ -57,7 +64,7 @@ export default function Signup() {
         <div className="max-w-md w-full space-y-5 sm:space-y-6">
           <div className="text-center">
             <Link to="/" className="inline-block mb-3 sm:mb-4 hover:opacity-80 transition-opacity">
-              <img src="/logo.svg" alt="Geetanjali" className="h-12 w-12 sm:h-16 sm:w-16 mx-auto" />
+              <img src="/logo.svg" alt="Geetanjali" loading="lazy" className="h-12 w-12 sm:h-16 sm:w-16 mx-auto" />
             </Link>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
               Create Your Account

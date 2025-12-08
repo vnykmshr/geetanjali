@@ -134,6 +134,11 @@ secrets-encrypt: ## Encrypt a plaintext .env file to .env.enc (usage: make secre
 	@sops --encrypt --input-type dotenv --output-type dotenv --output .env.enc $(SRC)
 	@echo "✅ Secrets encrypted to .env.enc"
 
+secrets-add: ## Add a key-value to .env.enc (usage: make secrets-add KEY=FOO VAL=bar)
+	@if [ -z "$(KEY)" ] || [ -z "$(VAL)" ]; then echo "Error: Specify KEY and VAL"; exit 1; fi
+	@sops --set '["$(KEY)"] "$(VAL)"' .env.enc
+	@echo "✅ Added $(KEY) to .env.enc"
+
 # Quick Start
 init: build up db-migrate ## Initialize project (build, start, migrate)
 	@echo "✅ Project initialized successfully!"

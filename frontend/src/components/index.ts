@@ -20,6 +20,7 @@ export { ConfirmModal } from './ConfirmModal';
 export { ConsultationWaiting } from './ConsultationWaiting';
 export { FloatingActionButton } from './FloatingActionButton';
 export { ContentNotFound } from './ContentNotFound';
+export { SkipLink } from './SkipLink';
 
 // Case-related components
 export {

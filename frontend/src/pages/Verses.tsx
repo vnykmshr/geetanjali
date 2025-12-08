@@ -5,6 +5,7 @@ import type { Verse } from '../types';
 import { Navbar } from '../components/Navbar';
 import { VerseCard } from '../components/VerseCard';
 import { errorMessages } from '../lib/errorMessages';
+import { useSEO } from '../hooks';
 
 const VERSES_PER_PAGE = 20;
 
@@ -43,6 +44,12 @@ function BackToTopButton() {
 type FilterMode = 'featured' | 'all' | number; // number = specific chapter
 
 export default function Verses() {
+  useSEO({
+    title: 'Browse Verses',
+    description: 'Explore all 701 verses of the Bhagavad Gita. Search by chapter, browse featured verses, and discover timeless wisdom.',
+    canonical: '/verses',
+  });
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [verses, setVerses] = useState<Verse[]>([]);
   const [totalCount, setTotalCount] = useState<number | null>(null);
