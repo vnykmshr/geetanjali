@@ -46,7 +46,6 @@ export default function CaseView() {
 
   // Share state
   const [shareLoading, setShareLoading] = useState(false);
-  const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
   // Delete modal state
@@ -59,19 +58,6 @@ export default function CaseView() {
   // Path selection for options
   const [selectedOption, setSelectedOption] = useState(0);
 
-  // Close share dropdown on escape key
-  useEffect(() => {
-    if (!showShareDropdown) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowShareDropdown(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [showShareDropdown]);
 
   // Status-based flags for action visibility
   const isProcessing = caseData?.status === 'pending' || caseData?.status === 'processing';
@@ -418,10 +404,12 @@ ${messages.map(msg => {
       const updated = await casesApi.toggleShare(id, newIsPublic);
       setCaseData(updated);
 
-      if (newIsPublic) {
-        setCopySuccess(false);
-      } else {
-        setShowShareDropdown(false);
+      // Auto-copy link when sharing is enabled
+      if (newIsPublic && updated.public_slug) {
+        const url = `${window.location.origin}/c/${updated.public_slug}`;
+        await navigator.clipboard.writeText(url);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
       }
     } catch {
       setError(`Failed to ${caseData.is_public ? 'make private' : 'share'}`);
@@ -479,11 +467,9 @@ ${messages.map(msg => {
         canDelete={canDelete}
         canShare={canShare}
         shareLoading={shareLoading}
-        showShareDropdown={showShareDropdown}
         copySuccess={copySuccess}
         onSave={handleSave}
         onDeleteClick={handleDeleteClick}
-        onToggleShareDropdown={() => setShowShareDropdown(!showShareDropdown)}
         onToggleShare={handleToggleShare}
         onCopyShareLink={copyShareLink}
       />

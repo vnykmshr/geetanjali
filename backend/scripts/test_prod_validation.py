@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# flake8: noqa: E501
 """
 Test production data against our new validation and extraction fixes.
 
@@ -6,7 +7,6 @@ This script pulls actual production outputs with validation issues
 and confirms they are now handled correctly by our improvements.
 """
 
-import json
 import sys
 import logging
 

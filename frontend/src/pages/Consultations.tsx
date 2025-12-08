@@ -2,10 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { casesApi } from '../lib/api';
 import type { Case, CaseStatus } from '../types';
-import { Navbar } from '../components/Navbar';
+import { Navbar, ConfirmModal } from '../components';
 import { errorMessages } from '../lib/errorMessages';
 import { useAuth } from '../contexts/AuthContext';
-import { ConfirmModal } from '../components/ConfirmModal';
 
 const CASES_PER_PAGE = 10;
 
@@ -35,6 +34,8 @@ export default function Consultations() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [shareLoading, setShareLoading] = useState<string | null>(null);
+  const [copySuccess, setCopySuccess] = useState<string | null>(null);
   const { isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -80,6 +81,44 @@ export default function Consultations() {
     if (!actionLoading) {
       setDeleteTarget(null);
     }
+  };
+
+  const handleToggleShare = async (e: React.MouseEvent, caseItem: Case) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (shareLoading) return;
+
+    setShareLoading(caseItem.id);
+    setError(null);
+
+    try {
+      const newIsPublic = !caseItem.is_public;
+      const updated = await casesApi.toggleShare(caseItem.id, newIsPublic);
+      setCases(prev => prev.map(c => c.id === caseItem.id ? updated : c));
+
+      // Auto-copy link when sharing is enabled
+      if (newIsPublic && updated.public_slug) {
+        const url = `${window.location.origin}/c/${updated.public_slug}`;
+        await navigator.clipboard.writeText(url);
+        setCopySuccess(caseItem.id);
+        setTimeout(() => setCopySuccess(null), 2000);
+      }
+    } catch (err) {
+      setError(errorMessages.general(err));
+    } finally {
+      setShareLoading(null);
+    }
+  };
+
+  const handleCopyLink = async (e: React.MouseEvent, caseItem: Case) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!caseItem.public_slug) return;
+
+    const url = `${window.location.origin}/c/${caseItem.public_slug}`;
+    await navigator.clipboard.writeText(url);
+    setCopySuccess(caseItem.id);
+    setTimeout(() => setCopySuccess(null), 2000);
   };
 
   useEffect(() => {
@@ -178,29 +217,34 @@ export default function Consultations() {
           ) : (
             <>
               <div className="space-y-3 sm:space-y-4">
-                {cases.map((case_) => (
-                  <div
-                    key={case_.id}
-                    className="bg-white rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 hover:border-red-200 overflow-hidden"
-                  >
-                    <Link to={`/cases/${case_.id}`} className="block p-4 sm:p-5 lg:p-6">
-                      <div className="flex justify-between items-start mb-2 sm:mb-3 gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
-                            <h2 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{case_.title}</h2>
-                            <StatusBadge status={case_.status} />
+                {cases.map((case_) => {
+                  const isCompleted = !case_.status || case_.status === 'completed';
+                  const canShare = isCompleted;
+
+                  return (
+                    <div
+                      key={case_.id}
+                      className={`bg-white rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all border overflow-hidden ${
+                        case_.is_public ? 'border-green-200 hover:border-green-300' : 'border-gray-100 hover:border-red-200'
+                      }`}
+                    >
+                      <Link to={`/cases/${case_.id}`} className="block p-4 sm:p-5 lg:p-6">
+                        <div className="flex justify-between items-start mb-2 sm:mb-3 gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
+                              <h2 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{case_.title}</h2>
+                              <StatusBadge status={case_.status} />
+                            </div>
+                            <p className="text-xs sm:text-sm text-gray-400">
+                              {new Date(case_.created_at || '').toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </p>
                           </div>
-                          <p className="text-xs sm:text-sm text-gray-400">
-                            {new Date(case_.created_at || '').toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </p>
-                        </div>
-                        {/* Action buttons */}
-                        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                          {/* Retry button for failed cases */}
                           {case_.status === 'failed' && (
                             <button
                               onClick={(e) => handleRetry(e, case_.id)}
@@ -211,39 +255,81 @@ export default function Consultations() {
                               {actionLoading === case_.id ? '...' : 'Retry'}
                             </button>
                           )}
-                          <button
-                            onClick={(e) => handleDeleteClick(e, case_.id, case_.title)}
-                            disabled={actionLoading === case_.id}
-                            className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
-                            title="Delete consultation"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
                         </div>
+                        <p className="text-gray-600 text-xs sm:text-sm line-clamp-2 mb-2 sm:mb-3">{case_.description}</p>
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                          {case_.role && case_.role !== 'Individual' && (
+                            <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                              👤 {case_.role}
+                            </span>
+                          )}
+                          {case_.stakeholders && case_.stakeholders.length > 0 && case_.stakeholders[0] !== 'self' && (
+                            <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                              👥 {case_.stakeholders.join(', ')}
+                            </span>
+                          )}
+                          {case_.horizon && (
+                            <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                              ⏱️ {case_.horizon} term
+                            </span>
+                          )}
+                        </div>
+                      </Link>
+
+                      {/* Compact share URL (when public) - right aligned */}
+                      {case_.is_public && case_.public_slug && (
+                        <div className="px-4 sm:px-5 lg:px-6 py-2 border-t border-green-100 flex justify-end">
+                          <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
+                            <code className="text-xs text-green-700 font-mono truncate max-w-[180px] sm:max-w-none">
+                              {window.location.host}/c/{case_.public_slug}
+                            </code>
+                            <button
+                              onClick={(e) => handleCopyLink(e, case_)}
+                              className="px-2 py-0.5 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors"
+                            >
+                              {copySuccess === case_.id ? 'Copied!' : 'Copy'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action bar */}
+                      <div className="px-4 sm:px-5 lg:px-6 py-2.5 sm:py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
+                        {/* Share/Unshare button (only for completed cases) */}
+                        {canShare && (
+                          <button
+                            onClick={(e) => handleToggleShare(e, case_)}
+                            disabled={shareLoading === case_.id}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
+                              case_.is_public
+                                ? 'text-green-700 bg-green-100 hover:bg-green-200'
+                                : 'text-amber-700 bg-amber-100 hover:bg-amber-200'
+                            }`}
+                            title={case_.is_public ? 'Make private' : 'Share consultation'}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                            </svg>
+                            {shareLoading === case_.id ? '...' : case_.is_public ? 'Unshare' : 'Share'}
+                          </button>
+                        )}
+
+                        {/* Delete button */}
+                        <button
+                          onClick={(e) => handleDeleteClick(e, case_.id, case_.title)}
+                          disabled={actionLoading === case_.id}
+                          className="px-3 py-1.5 text-xs font-medium text-gray-500 bg-white border border-gray-200 hover:text-red-600 hover:bg-red-50 hover:border-red-200 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                          title="Delete consultation"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Delete
+                        </button>
                       </div>
-                      <p className="text-gray-600 text-xs sm:text-sm line-clamp-2 mb-2 sm:mb-3">{case_.description}</p>
-                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                        {case_.role && case_.role !== 'Individual' && (
-                          <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
-                            👤 {case_.role}
-                          </span>
-                        )}
-                        {case_.stakeholders && case_.stakeholders.length > 0 && case_.stakeholders[0] !== 'self' && (
-                          <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
-                            👥 {case_.stakeholders.join(', ')}
-                          </span>
-                        )}
-                        {case_.horizon && (
-                          <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
-                            ⏱️ {case_.horizon} term
-                          </span>
-                        )}
-                      </div>
-                    </Link>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Load More Button */}

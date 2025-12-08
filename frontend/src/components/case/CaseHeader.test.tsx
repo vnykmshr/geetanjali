@@ -15,11 +15,9 @@ describe('CaseHeader', () => {
     canDelete: true,
     canShare: true,
     shareLoading: false,
-    showShareDropdown: false,
     copySuccess: false,
     onSave: vi.fn(),
     onDeleteClick: vi.fn(),
-    onToggleShareDropdown: vi.fn(),
     onToggleShare: vi.fn(),
     onCopyShareLink: vi.fn(),
   }
@@ -55,24 +53,32 @@ describe('CaseHeader', () => {
     })
   })
 
-  describe('Delete button', () => {
-    it('should render delete button when canDelete is true', () => {
+  describe('Delete button (in overflow menu)', () => {
+    it('should render overflow menu button when canDelete is true', () => {
       renderWithRouter(<CaseHeader {...defaultProps} />)
 
-      expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /more options/i })).toBeInTheDocument()
     })
 
-    it('should not render delete button when canDelete is false', () => {
+    it('should not render overflow menu when canDelete is false', () => {
       renderWithRouter(<CaseHeader {...defaultProps} canDelete={false} />)
 
-      expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /more options/i })).not.toBeInTheDocument()
     })
 
-    it('should call onDeleteClick when clicked', () => {
+    it('should show delete option when overflow menu is clicked', () => {
+      renderWithRouter(<CaseHeader {...defaultProps} />)
+
+      fireEvent.click(screen.getByRole('button', { name: /more options/i }))
+      expect(screen.getByText('Delete')).toBeInTheDocument()
+    })
+
+    it('should call onDeleteClick when delete is clicked in menu', () => {
       const onDeleteClick = vi.fn()
       renderWithRouter(<CaseHeader {...defaultProps} onDeleteClick={onDeleteClick} />)
 
-      fireEvent.click(screen.getByRole('button', { name: /delete/i }))
+      fireEvent.click(screen.getByRole('button', { name: /more options/i }))
+      fireEvent.click(screen.getByText('Delete'))
       expect(onDeleteClick).toHaveBeenCalledTimes(1)
     })
   })
@@ -90,62 +96,78 @@ describe('CaseHeader', () => {
       expect(screen.queryByRole('button', { name: /share/i })).not.toBeInTheDocument()
     })
 
-    it('should show "Sharing is enabled" aria-label when case is public', () => {
+    it('should show "Stop sharing" aria-label when case is public', () => {
       renderWithRouter(
         <CaseHeader {...defaultProps} caseData={{ ...mockCase, is_public: true }} />
       )
 
-      expect(screen.getByRole('button', { name: /sharing is enabled/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /stop sharing/i })).toBeInTheDocument()
     })
 
-    it('should call onToggleShareDropdown when clicked', () => {
-      const onToggleShareDropdown = vi.fn()
-      renderWithRouter(<CaseHeader {...defaultProps} onToggleShareDropdown={onToggleShareDropdown} />)
+    it('should call onToggleShare when clicked', () => {
+      const onToggleShare = vi.fn()
+      renderWithRouter(<CaseHeader {...defaultProps} onToggleShare={onToggleShare} />)
 
       fireEvent.click(screen.getByRole('button', { name: /share/i }))
-      expect(onToggleShareDropdown).toHaveBeenCalledTimes(1)
+      expect(onToggleShare).toHaveBeenCalledTimes(1)
+    })
+
+    it('should be disabled when shareLoading is true', () => {
+      renderWithRouter(<CaseHeader {...defaultProps} shareLoading={true} />)
+
+      expect(screen.getByRole('button', { name: /share/i })).toBeDisabled()
     })
   })
 
-  describe('Share dropdown', () => {
-    it('should show dropdown when showShareDropdown is true', () => {
-      renderWithRouter(<CaseHeader {...defaultProps} showShareDropdown={true} />)
-
-      expect(screen.getByText('Public sharing')).toBeInTheDocument()
-      expect(screen.getByText('Anyone with link can view')).toBeInTheDocument()
-    })
-
-    it('should not show dropdown when showShareDropdown is false', () => {
-      renderWithRouter(<CaseHeader {...defaultProps} showShareDropdown={false} />)
-
-      expect(screen.queryByText('Public sharing')).not.toBeInTheDocument()
-    })
-
-    it('should show toggle in enabled state when case is public', () => {
+  describe('Inline share URL', () => {
+    it('should show share URL when case is public', () => {
       renderWithRouter(
         <CaseHeader
           {...defaultProps}
-          showShareDropdown={true}
           caseData={{ ...mockCase, is_public: true, public_slug: 'abc123' }}
         />
       )
 
-      expect(screen.getByText('Share link')).toBeInTheDocument()
+      expect(screen.getByText(/\/c\/abc123/)).toBeInTheDocument()
     })
 
-    it('should show private notice when case is not public', () => {
+    it('should not show share URL when case is private', () => {
       renderWithRouter(
-        <CaseHeader {...defaultProps} showShareDropdown={true} caseData={{ ...mockCase, is_public: false }} />
+        <CaseHeader {...defaultProps} caseData={{ ...mockCase, is_public: false }} />
       )
 
-      expect(screen.getByText('Turn on to create a shareable link')).toBeInTheDocument()
+      expect(screen.queryByText(/\/c\//)).not.toBeInTheDocument()
     })
 
-    it('should show copy success text when copy succeeds', () => {
+    it('should show copy button when case is public', () => {
       renderWithRouter(
         <CaseHeader
           {...defaultProps}
-          showShareDropdown={true}
+          caseData={{ ...mockCase, is_public: true, public_slug: 'abc123' }}
+        />
+      )
+
+      expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument()
+    })
+
+    it('should call onCopyShareLink when copy is clicked', () => {
+      const onCopyShareLink = vi.fn()
+      renderWithRouter(
+        <CaseHeader
+          {...defaultProps}
+          onCopyShareLink={onCopyShareLink}
+          caseData={{ ...mockCase, is_public: true, public_slug: 'abc123' }}
+        />
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: /copy/i }))
+      expect(onCopyShareLink).toHaveBeenCalledTimes(1)
+    })
+
+    it('should show "Copied!" when copySuccess is true', () => {
+      renderWithRouter(
+        <CaseHeader
+          {...defaultProps}
           copySuccess={true}
           caseData={{ ...mockCase, is_public: true, public_slug: 'abc123' }}
         />

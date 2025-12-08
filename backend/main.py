@@ -51,7 +51,15 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
     if not settings.DEBUG:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'"
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https:; "
+            "font-src 'self' data:; "
+            "connect-src 'self'"
+        )
+        response.headers["Content-Security-Policy"] = csp
     return response
 
 
@@ -88,7 +96,6 @@ logger.info(f"Starting {settings.APP_NAME} in {settings.APP_ENV} mode")
 async def startup_event():
     """Run on application startup."""
     import asyncio
-    from concurrent.futures import ThreadPoolExecutor
 
     def load_vector_store_sync():
         """Load vector store synchronously in a thread."""

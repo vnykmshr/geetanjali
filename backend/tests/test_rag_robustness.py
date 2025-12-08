@@ -9,7 +9,7 @@ Tests the three-layer defense architecture:
 
 import json
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from services.rag import (
     _extract_json_from_text,
     _validate_canonical_id,
