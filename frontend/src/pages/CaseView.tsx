@@ -36,7 +36,7 @@ export default function CaseView() {
   // Dynamic SEO - private consultations shouldn't be indexed
   useSEO({
     title: caseData?.title ? caseData.title.slice(0, 50) : 'Consultation',
-    description: 'Your private ethical consultation with guidance from the Bhagavad Gita.',
+    description: 'Your private ethical consultation with guidance from the Bhagavad Geeta.',
     canonical: id ? `/cases/${id}` : '/consultations',
     noIndex: true, // Private consultations shouldn't be indexed
   });

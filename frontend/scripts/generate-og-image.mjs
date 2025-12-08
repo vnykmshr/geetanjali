@@ -60,7 +60,7 @@ async function generateOgImage() {
             font-size="32"
             fill="#57534E"
             text-anchor="middle">
-        Ethical Guidance from the Bhagavad Gita
+        Ethical Guidance from the Bhagavad Geeta
       </text>
 
       <!-- Subtitle -->

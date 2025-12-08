@@ -38,10 +38,10 @@ export default function VerseDetail() {
 
   // Dynamic SEO based on verse data
   useSEO({
-    title: verse ? `Bhagavad Gita ${verse.chapter}.${verse.verse}` : 'Verse',
+    title: verse ? `Bhagavad Geeta ${verse.chapter}.${verse.verse}` : 'Verse',
     description: verse?.paraphrase_en
       ? `${verse.paraphrase_en.slice(0, 150)}...`
-      : 'Explore this verse from the Bhagavad Gita with multiple translations and leadership insights.',
+      : 'Explore this verse from the Bhagavad Geeta with multiple translations and leadership insights.',
     canonical: canonicalUppercase ? `/verses/${canonicalUppercase}` : '/verses',
     ogType: 'article',
   });

@@ -223,7 +223,7 @@ def send_password_reset_email(email: str, reset_url: str) -> bool:
             </p>
         </div>
         <div style="text-align: center; padding: 16px; color: #9ca3af; font-size: 12px;">
-            Geetanjali - Ethical Guidance from the Bhagavad Gita
+            Geetanjali - Ethical Guidance from the Bhagavad Geeta
         </div>
     </div>
     """.format(reset_url=reset_url)
@@ -240,7 +240,7 @@ Click this link to set a new password:
 This link will expire in 1 hour. If you didn't request this, you can safely ignore this email.
 
 ---
-Geetanjali - Ethical Guidance from the Bhagavad Gita
+Geetanjali - Ethical Guidance from the Bhagavad Geeta
     """.strip()
 
     try:

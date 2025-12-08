@@ -16,7 +16,7 @@ interface ContactForm {
 export default function About() {
   useSEO({
     title: 'About',
-    description: 'Learn about Geetanjali - ancient wisdom from the Bhagavad Gita for modern ethical decisions. Free, open source, and privacy-focused.',
+    description: 'Learn about Geetanjali - ancient wisdom from the Bhagavad Geeta for modern ethical decisions. Free, open source, and privacy-focused.',
     canonical: '/about',
   });
 

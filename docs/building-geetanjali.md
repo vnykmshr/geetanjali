@@ -393,7 +393,7 @@ Use verse IDs like BG_2_47. Output ONLY valid JSON."""
 ```mermaid
 flowchart LR
     subgraph Sources
-        Gita[gita/gita repo]
+        Geeta[gita/gita repo]
         Vedic[VedicScriptures API]
     end
 
@@ -408,7 +408,7 @@ flowchart LR
         Chroma[(ChromaDB)]
     end
 
-    Gita --> Parse
+    Geeta --> Parse
     Vedic --> Parse
     Parse --> Validate
     Validate --> Enrich

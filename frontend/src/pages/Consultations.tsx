@@ -30,7 +30,7 @@ function StatusBadge({ status }: { status?: CaseStatus }) {
 export default function Consultations() {
   useSEO({
     title: 'My Consultations',
-    description: 'View and manage your ethical consultations with guidance from the Bhagavad Gita.',
+    description: 'View and manage your ethical consultations with guidance from the Bhagavad Geeta.',
     canonical: '/consultations',
     noIndex: true, // Personal data shouldn't be indexed
   });

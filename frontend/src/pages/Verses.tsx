@@ -46,7 +46,7 @@ type FilterMode = 'featured' | 'all' | number; // number = specific chapter
 export default function Verses() {
   useSEO({
     title: 'Browse Verses',
-    description: 'Explore all 701 verses of the Bhagavad Gita. Search by chapter, browse featured verses, and discover timeless wisdom.',
+    description: 'Explore all 701 verses of the Bhagavad Geeta. Search by chapter, browse featured verses, and discover timeless wisdom.',
     canonical: '/verses',
   });
 

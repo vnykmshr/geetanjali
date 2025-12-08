@@ -9,7 +9,7 @@ import { useSEO } from '../hooks';
 export default function NewCase() {
   useSEO({
     title: 'Ask a Question',
-    description: 'Seek ethical guidance grounded in the Bhagavad Gita. Describe your situation and receive wisdom for difficult decisions.',
+    description: 'Seek ethical guidance grounded in the Bhagavad Geeta. Describe your situation and receive wisdom for difficult decisions.',
     canonical: '/cases/new',
   });
   const navigate = useNavigate();

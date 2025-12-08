@@ -23,7 +23,7 @@ export default function PublicCaseView() {
     title: caseData?.title ? `${caseData.title.slice(0, 50)}` : 'Shared Consultation',
     description: caseData?.description
       ? `${caseData.description.slice(0, 150)}...`
-      : 'View this shared ethical consultation with guidance from the Bhagavad Gita.',
+      : 'View this shared ethical consultation with guidance from the Bhagavad Geeta.',
     canonical: slug ? `/c/${slug}` : '/',
     ogType: 'article',
   });
