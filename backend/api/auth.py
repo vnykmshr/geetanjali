@@ -403,7 +403,7 @@ async def reset_password(
     # Iterate through users and verify token hash
     matching_user = None
     for user in users_with_tokens:
-        if verify_password(reset_data.token, user.reset_token_hash):
+        if user.reset_token_hash and verify_password(reset_data.token, user.reset_token_hash):
             matching_user = user
             break
 
