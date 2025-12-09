@@ -18,6 +18,7 @@ Ethical leadership guidance from the Bhagavad Geeta.
 
 - [Architecture](ARCHITECTURE.md) — System design, components, data flow
 - [Security](SECURITY.md) — Container hardening, secrets management, threat model
+- [Content Moderation](CONTENT-MODERATION.md) — Two-layer content filtering, configuration, patterns
 - [Data Sources](DATA.md) — Bhagavad Geeta content, licensing, ingestion
 
 ## Development

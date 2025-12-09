@@ -174,20 +174,28 @@ flowchart TB
 sequenceDiagram
     participant User
     participant API
+    participant Filter
     participant Embedder
     participant ChromaDB
     participant LLM
     participant Validator
 
     User->>API: POST /cases/{id}/analyze
-    API->>Embedder: Encode case description
+    API->>Filter: Layer 1: Blocklist check
+    alt Content blocked
+        Filter-->>User: 422 + Educational message
+    end
+    Filter->>Embedder: Encode case description
     Embedder->>ChromaDB: Vector similarity search (top-k)
     ChromaDB-->>API: Retrieved verses with scores
     API->>API: Enrich verses with translations
     API->>API: Construct prompt with context
     API->>LLM: Generate consulting brief
-    LLM-->>API: JSON response
-    API->>Validator: Validate structure
+    LLM-->>Filter: Layer 2: Refusal detection
+    alt LLM refused
+        Filter-->>API: Policy violation response
+    end
+    Filter->>Validator: Validate structure
     Validator-->>API: Validated output
     API->>User: Consulting brief with citations
 ```
@@ -463,6 +471,29 @@ async def create_case(
 ```
 
 This lowers friction for first-time users while allowing authenticated users to build persistent history.
+
+### Content Moderation
+
+A two-layer system handles inappropriate content while maintaining focus on genuine ethical dilemmas:
+
+```
+User Input → [Layer 1: Blocklist] → LLM → [Layer 2: Refusal Detection] → Response
+```
+
+**Layer 1 (Pre-submission):** Regex blocklist catches explicit content before database write. Returns HTTP 422 with educational message suggesting how to rephrase.
+
+**Layer 2 (Post-LLM):** Detects when Claude refuses to process content (pattern matching on "I can't assist...", "This request contains..."). Returns a policy violation response with guidance on rephrasing.
+
+Both layers use educational messaging—helping users understand what Geetanjali is designed for rather than punishing bad requests. No user content is logged; only violation types for monitoring.
+
+Configuration via environment:
+```bash
+CONTENT_FILTER_ENABLED=true              # Master switch
+CONTENT_FILTER_BLOCKLIST_ENABLED=true    # Layer 1
+CONTENT_FILTER_LLM_REFUSAL_DETECTION=true # Layer 2
+```
+
+See [Content Moderation](CONTENT-MODERATION.md) for pattern details and extending the blocklist.
 
 ### Graceful Degradation
 
