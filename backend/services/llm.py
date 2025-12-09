@@ -21,6 +21,7 @@ except ImportError:
 
 from config import settings
 from services.mock_llm import MockLLMService
+from utils.exceptions import LLMError
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +123,7 @@ class LLMService:
     ) -> Dict[str, Any]:
         """Generate response using Anthropic Claude."""
         if not self.anthropic_client:
-            raise Exception("Anthropic client not initialized")
+            raise LLMError("Anthropic client not initialized")
 
         max_tokens = max_tokens or settings.ANTHROPIC_MAX_TOKENS
 
@@ -155,10 +156,10 @@ class LLMService:
 
         except (APITimeoutError, APIConnectionError) as e:
             logger.error(f"Anthropic API error: {e}")
-            raise Exception(f"Anthropic request failed: {str(e)}")
+            raise LLMError(f"Anthropic request failed: {str(e)}")
         except AnthropicError as e:
             logger.error(f"Anthropic error: {e}")
-            raise Exception(f"Anthropic error: {str(e)}")
+            raise LLMError(f"Anthropic error: {str(e)}")
 
     @retry(
         stop=stop_after_attempt(settings.OLLAMA_MAX_RETRIES),
@@ -190,7 +191,7 @@ class LLMService:
             simplified: If True, use simplified prompt for faster response
         """
         if not self.ollama_enabled:
-            raise Exception("Ollama not enabled")
+            raise LLMError("Ollama not enabled")
 
         logger.debug(
             f"Calling Ollama ({self.ollama_model}) with {len(prompt)} char prompt"
@@ -233,7 +234,7 @@ class LLMService:
             logger.error(
                 f"Ollama timeout after {settings.OLLAMA_MAX_RETRIES} retries: {e}"
             )
-            raise Exception("Ollama request timed out")
+            raise LLMError("Ollama request timed out")
         except Exception as e:
             logger.error(f"Ollama error: {e}")
             raise
@@ -314,18 +315,18 @@ class LLMService:
                                 fb_prompt, fb_system, temperature, max_tokens
                             )
                         else:
-                            raise Exception("Anthropic fallback not available (no API key)")
+                            raise LLMError("Anthropic fallback not available (no API key)")
                     else:
-                        raise Exception(f"Unknown fallback provider: {self.fallback_provider}")
+                        raise LLMError(f"Unknown fallback provider: {self.fallback_provider}")
                 except Exception as fallback_error:
                     logger.error(f"Fallback provider also failed: {fallback_error}")
-                    raise Exception(
+                    raise LLMError(
                         f"All LLM providers failed. Primary: {e}, Fallback: {fallback_error}"
                     )
             else:
                 raise
 
-        raise Exception("No LLM provider succeeded")
+        raise LLMError("No LLM provider succeeded")
 
     def generate_json(
         self,
