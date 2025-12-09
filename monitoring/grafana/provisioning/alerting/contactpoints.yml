@@ -10,6 +10,6 @@ contactPoints:
       - uid: email-primary
         type: email
         settings:
-          addresses: viks@vnykmshr.com
+          addresses: PLACEHOLDER_ALERT_EMAIL
           singleEmail: true
         disableResolveMessage: false
