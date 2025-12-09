@@ -1,7 +1,7 @@
 services:
   # Ollama LLM (pre-built image, models persist in volume)
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.13.2
     container_name: geetanjali-ollama
     # No external port - only accessible within Docker network
     volumes:

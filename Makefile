@@ -29,10 +29,10 @@ restart: ## Restart all containers
 
 # Production
 prod-up: ## Start production environment
-	docker-compose -f docker-compose.prod.yml up -d
+	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 prod-down: ## Stop production environment
-	docker-compose -f docker-compose.prod.yml down
+	docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
 
 # Logs
 logs: ## Show logs for all services
