@@ -83,7 +83,7 @@ def init_sentry(service_name: str = "backend") -> bool:
         return False
 
 
-def _filter_event(event: Dict[str, Any], _hint: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def _filter_event(event: Any, _hint: Dict[str, Any]) -> Any:
     """Filter sensitive data from Sentry events before sending.
 
     This is the before_send hook that runs on every event.
