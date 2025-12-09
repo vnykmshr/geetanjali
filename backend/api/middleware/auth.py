@@ -1,5 +1,6 @@
 """Authentication middleware for protecting routes."""
 
+import re
 from typing import Optional
 from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -9,6 +10,9 @@ from db.connection import get_db
 from db.repositories.user_repository import UserRepository
 from models.user import User
 from utils.jwt import decode_access_token
+
+# UUID v4 format regex for session ID validation
+SESSION_ID_PATTERN = re.compile(r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", re.IGNORECASE)
 
 # HTTPBearer scheme for extracting Bearer tokens from Authorization header
 security = HTTPBearer()
@@ -133,14 +137,27 @@ async def get_session_id(
     x_session_id: Optional[str] = Header(None, alias="X-Session-ID")
 ) -> Optional[str]:
     """
-    Extract session ID from X-Session-ID header for anonymous users.
+    Extract and validate session ID from X-Session-ID header for anonymous users.
 
     Args:
-        x_session_id: Session ID from header
+        x_session_id: Session ID from header (must be valid UUID v4 format)
 
     Returns:
-        Session ID if present, None otherwise
+        Session ID if present and valid, None otherwise
+
+    Raises:
+        HTTPException: 400 if session ID format is invalid
     """
+    if x_session_id is None:
+        return None
+
+    # Validate UUID format to prevent injection attacks
+    if not SESSION_ID_PATTERN.match(x_session_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid session ID format (expected UUID)",
+        )
+
     return x_session_id
 
 

@@ -57,7 +57,7 @@ async def get_verses_count(
 @limiter.limit("60/minute")
 async def search_verses(
     request: Request,
-    q: Optional[str] = Query(None, description="Search by canonical ID or principle"),
+    q: Optional[str] = Query(None, max_length=200, description="Search by canonical ID or principle"),
     chapter: Optional[int] = Query(None, ge=1, le=18, description="Filter by chapter"),
     featured: Optional[bool] = Query(None, description="Filter by featured status"),
     principles: Optional[str] = Query(
