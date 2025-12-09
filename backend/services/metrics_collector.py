@@ -225,19 +225,19 @@ def _collect_chromadb_metrics() -> None:
         chroma_host = settings.CHROMA_HOST or "localhost"
         chroma_port = settings.CHROMA_PORT or 8000
 
-        # Check ChromaDB heartbeat
+        # Check ChromaDB heartbeat (using v2 API)
         response = httpx.get(
-            f"http://{chroma_host}:{chroma_port}/api/v1/heartbeat",
+            f"http://{chroma_host}:{chroma_port}/api/v2/heartbeat",
             timeout=5.0
         )
 
         if response.status_code == 200:
             chromadb_up.set(1)
 
-            # Get collection count
+            # Get collection count (using v2 API)
             try:
                 collections_response = httpx.get(
-                    f"http://{chroma_host}:{chroma_port}/api/v1/collections",
+                    f"http://{chroma_host}:{chroma_port}/api/v2/tenants/default_tenant/databases/default_database/collections",
                     timeout=5.0
                 )
                 if collections_response.status_code == 200:
@@ -248,7 +248,7 @@ def _collect_chromadb_metrics() -> None:
                             # Get collection count via API
                             coll_id = coll.get("id")
                             count_response = httpx.get(
-                                f"http://{chroma_host}:{chroma_port}/api/v1/collections/{coll_id}/count",
+                                f"http://{chroma_host}:{chroma_port}/api/v2/tenants/default_tenant/databases/default_database/collections/{coll_id}/count",
                                 timeout=5.0
                             )
                             if count_response.status_code == 200:
