@@ -75,7 +75,7 @@ describe('experiment utilities', () => {
         variants: ['control', 'variant'],
       }
 
-      const first = getVariant(testExperiment)
+      getVariant(testExperiment) // Assign initial variant
       clearExperiment('clear_test')
 
       // Could be same or different due to randomness
