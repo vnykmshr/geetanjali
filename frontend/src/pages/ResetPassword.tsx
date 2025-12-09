@@ -1,48 +1,48 @@
-import { useState, useEffect } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { authApi } from '../api/auth';
-import { Navbar } from '../components/Navbar';
-import { getErrorMessage } from '../lib/errorMessages';
-import { useSEO } from '../hooks';
+import { useState, useEffect } from "react";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { authApi } from "../api/auth";
+import { Navbar } from "../components/Navbar";
+import { getErrorMessage } from "../lib/errorMessages";
+import { useSEO } from "../hooks";
 
 export default function ResetPassword() {
   useSEO({
-    title: 'Set New Password',
-    description: 'Set a new password for your Geetanjali account.',
-    canonical: '/reset-password',
+    title: "Set New Password",
+    description: "Set a new password for your Geetanjali account.",
+    canonical: "/reset-password",
     noIndex: true,
   });
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = searchParams.get('token');
+  const token = searchParams.get("token");
 
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   // Redirect if no token provided
   useEffect(() => {
     if (!token) {
-      navigate('/forgot-password');
+      navigate("/forgot-password");
     }
   }, [token, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     // Validate passwords match
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     // Validate password length
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError("Password must be at least 8 characters");
       return;
     }
 
@@ -52,7 +52,7 @@ export default function ResetPassword() {
       await authApi.resetPassword(token!, password);
       setSuccess(true);
     } catch (err) {
-      setError(getErrorMessage(err, 'general'));
+      setError(getErrorMessage(err, "general"));
     } finally {
       setLoading(false);
     }
@@ -69,19 +69,38 @@ export default function ResetPassword() {
         <div className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
           <div className="max-w-md w-full space-y-6 sm:space-y-8 text-center">
             <div>
-              <Link to="/" className="inline-block mb-3 sm:mb-4 hover:opacity-80 transition-opacity">
-                <img src="/logo.svg" alt="Geetanjali" loading="lazy" className="h-12 w-12 sm:h-16 sm:w-16 mx-auto" />
+              <Link
+                to="/"
+                className="inline-block mb-3 sm:mb-4 hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src="/logo.svg"
+                  alt="Geetanjali"
+                  loading="lazy"
+                  className="h-12 w-12 sm:h-16 sm:w-16 mx-auto"
+                />
               </Link>
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-6 h-6 sm:w-8 sm:h-8 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
                 Password Reset
               </h2>
               <p className="mt-3 text-sm text-gray-600 max-w-sm mx-auto">
-                Your password has been reset successfully. You can now sign in with your new password.
+                Your password has been reset successfully. You can now sign in
+                with your new password.
               </p>
             </div>
 
@@ -105,8 +124,16 @@ export default function ResetPassword() {
       <div className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
         <div className="max-w-md w-full space-y-6 sm:space-y-8">
           <div className="text-center">
-            <Link to="/" className="inline-block mb-3 sm:mb-4 hover:opacity-80 transition-opacity">
-              <img src="/logo.svg" alt="Geetanjali" loading="lazy" className="h-12 w-12 sm:h-16 sm:w-16 mx-auto" />
+            <Link
+              to="/"
+              className="inline-block mb-3 sm:mb-4 hover:opacity-80 transition-opacity"
+            >
+              <img
+                src="/logo.svg"
+                alt="Geetanjali"
+                loading="lazy"
+                className="h-12 w-12 sm:h-16 sm:w-16 mx-auto"
+              />
             </Link>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
               Set New Password
@@ -125,7 +152,10 @@ export default function ResetPassword() {
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   New Password
                 </label>
                 <input
@@ -141,7 +171,10 @@ export default function ResetPassword() {
                 />
               </div>
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Confirm Password
                 </label>
                 <input
@@ -164,7 +197,7 @@ export default function ResetPassword() {
                 disabled={loading}
                 className="w-full flex justify-center py-2.5 sm:py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {loading ? 'Resetting...' : 'Reset Password'}
+                {loading ? "Resetting..." : "Reset Password"}
               </button>
             </div>
 

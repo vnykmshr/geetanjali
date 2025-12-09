@@ -1,12 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 // Wisdom quotes - reused from ConsultationWaiting for brand consistency
 const WISDOM_QUOTES = [
-  { text: "The mind is restless and difficult to restrain, but it is subdued by practice.", source: "BG 6.35" },
-  { text: "You have the right to work, but never to the fruit of work.", source: "BG 2.47" },
+  {
+    text: "The mind is restless and difficult to restrain, but it is subdued by practice.",
+    source: "BG 6.35",
+  },
+  {
+    text: "You have the right to work, but never to the fruit of work.",
+    source: "BG 2.47",
+  },
   { text: "The soul is neither born, and nor does it die.", source: "BG 2.20" },
-  { text: "When meditation is mastered, the mind is unwavering like the flame of a lamp in a windless place.", source: "BG 6.19" },
-  { text: "Set thy heart upon thy work, but never on its reward.", source: "BG 2.47" },
+  {
+    text: "When meditation is mastered, the mind is unwavering like the flame of a lamp in a windless place.",
+    source: "BG 6.19",
+  },
+  {
+    text: "Set thy heart upon thy work, but never on its reward.",
+    source: "BG 2.47",
+  },
 ];
 
 interface FollowUpThinkingProps {
@@ -14,8 +26,8 @@ interface FollowUpThinkingProps {
 }
 
 export function FollowUpThinking({ pendingMessage }: FollowUpThinkingProps) {
-  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(
-    () => Math.floor(Math.random() * WISDOM_QUOTES.length)
+  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(() =>
+    Math.floor(Math.random() * WISDOM_QUOTES.length),
   );
 
   // Rotate quotes every 6 seconds
@@ -60,11 +72,22 @@ export function FollowUpThinking({ pendingMessage }: FollowUpThinkingProps) {
           {/* Animated dots */}
           <div className="flex items-center gap-3 mb-4">
             <div className="flex space-x-1.5">
-              <span className="w-2.5 h-2.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-2.5 h-2.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-2.5 h-2.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <span
+                className="w-2.5 h-2.5 bg-orange-400 rounded-full animate-bounce"
+                style={{ animationDelay: "0ms" }}
+              />
+              <span
+                className="w-2.5 h-2.5 bg-orange-400 rounded-full animate-bounce"
+                style={{ animationDelay: "150ms" }}
+              />
+              <span
+                className="w-2.5 h-2.5 bg-orange-400 rounded-full animate-bounce"
+                style={{ animationDelay: "300ms" }}
+              />
             </div>
-            <span className="text-sm text-orange-700 font-medium">Finding wisdom for your follow-up</span>
+            <span className="text-sm text-orange-700 font-medium">
+              Finding wisdom for your follow-up
+            </span>
           </div>
 
           {/* Rotating quote */}
@@ -72,7 +95,9 @@ export function FollowUpThinking({ pendingMessage }: FollowUpThinkingProps) {
             <blockquote className="text-sm text-gray-600 italic">
               "{currentQuote.text}"
             </blockquote>
-            <cite className="text-xs text-gray-400 mt-1 block">— {currentQuote.source}</cite>
+            <cite className="text-xs text-gray-400 mt-1 block">
+              — {currentQuote.source}
+            </cite>
           </div>
 
           <p className="text-xs text-gray-500 mt-3 text-center">

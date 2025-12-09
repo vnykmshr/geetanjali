@@ -337,7 +337,9 @@ async def forgot_password(
     logger.info(f"Password reset requested for: {forgot_data.email}")
 
     # Always return same message to prevent email enumeration
-    success_message = "If an account exists with this email, you will receive a password reset link."
+    success_message = (
+        "If an account exists with this email, you will receive a password reset link."
+    )
 
     user_repo = UserRepository(db)
     user = user_repo.get_by_email(forgot_data.email)
@@ -353,10 +355,13 @@ async def forgot_password(
     reset_token_expires = datetime.utcnow() + timedelta(hours=RESET_TOKEN_EXPIRE_HOURS)
 
     # Store hashed token in database
-    user_repo.update(user.id, {
-        "reset_token_hash": reset_token_hash,
-        "reset_token_expires": reset_token_expires,
-    })
+    user_repo.update(
+        user.id,
+        {
+            "reset_token_hash": reset_token_hash,
+            "reset_token_expires": reset_token_expires,
+        },
+    )
 
     # Build reset URL
     reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
@@ -403,7 +408,9 @@ async def reset_password(
     # Iterate through users and verify token hash
     matching_user = None
     for user in users_with_tokens:
-        if user.reset_token_hash and verify_password(reset_data.token, user.reset_token_hash):
+        if user.reset_token_hash and verify_password(
+            reset_data.token, user.reset_token_hash
+        ):
             matching_user = user
             break
 
@@ -411,21 +418,26 @@ async def reset_password(
         logger.warning("Invalid or expired password reset token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired reset link. Please request a new one."
+            detail="Invalid or expired reset link. Please request a new one.",
         )
 
     user = matching_user
 
     # Update password and clear reset token
     new_password_hash = hash_password(reset_data.password)
-    user_repo.update(user.id, {
-        "password_hash": new_password_hash,
-        "reset_token_hash": None,
-        "reset_token_expires": None,
-    })
+    user_repo.update(
+        user.id,
+        {
+            "password_hash": new_password_hash,
+            "reset_token_hash": None,
+            "reset_token_expires": None,
+        },
+    )
 
     # Revoke all existing refresh tokens for security
     RefreshTokenRepository(db).revoke_all_for_user(user.id)
 
     logger.info(f"Password reset successful for user: {user.id}")
-    return MessageResponse(message="Your password has been reset successfully. Please sign in with your new password.")
+    return MessageResponse(
+        message="Your password has been reset successfully. Please sign in with your new password."
+    )

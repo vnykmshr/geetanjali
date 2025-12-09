@@ -127,7 +127,9 @@ async def get_experiment_stats(
         results = (
             db.query(
                 ExperimentEvent.variant,
-                func.count(distinct(ExperimentEvent.session_id)).label("unique_sessions"),
+                func.count(distinct(ExperimentEvent.session_id)).label(
+                    "unique_sessions"
+                ),
                 ExperimentEvent.event,
                 func.count(ExperimentEvent.id).label("event_count"),
             )

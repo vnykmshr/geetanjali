@@ -5,7 +5,7 @@
  * their cases and interactions across the session.
  */
 
-const SESSION_ID_KEY = 'geetanjali_session_id';
+const SESSION_ID_KEY = "geetanjali_session_id";
 
 /**
  * Generate a new session ID using crypto.randomUUID()

@@ -5,11 +5,11 @@
  * Variants are persisted in localStorage for consistency.
  */
 
-import { api } from './api';
+import { api } from "./api";
 
-const EXPERIMENT_PREFIX = 'exp_';
+const EXPERIMENT_PREFIX = "exp_";
 
-export type Variant = 'control' | 'variant';
+export type Variant = "control" | "variant";
 
 export interface ExperimentConfig {
   name: string;
@@ -34,7 +34,7 @@ export function getVariant(experiment: ExperimentConfig): Variant {
   localStorage.setItem(storageKey, variant);
 
   // Track assignment (fire and forget)
-  trackEvent(experiment.name, 'assigned', { variant });
+  trackEvent(experiment.name, "assigned", { variant });
 
   return variant;
 }
@@ -65,22 +65,24 @@ function assignVariant(experiment: ExperimentConfig): Variant {
 export function trackEvent(
   experiment: string,
   event: string,
-  properties?: Record<string, unknown>
+  properties?: Record<string, unknown>,
 ): void {
   // Don't track in development unless explicitly enabled
   if (import.meta.env.DEV && !import.meta.env.VITE_TRACK_EXPERIMENTS) {
-    console.debug('[Experiment]', experiment, event, properties);
+    console.debug("[Experiment]", experiment, event, properties);
     return;
   }
 
-  api.post('/experiments/events', {
-    experiment,
-    event,
-    properties,
-    timestamp: new Date().toISOString(),
-  }).catch(() => {
-    // Silent fail - analytics shouldn't break the app
-  });
+  api
+    .post("/experiments/events", {
+      experiment,
+      event,
+      properties,
+      timestamp: new Date().toISOString(),
+    })
+    .catch(() => {
+      // Silent fail - analytics shouldn't break the app
+    });
 }
 
 /**
@@ -105,8 +107,8 @@ export function getCurrentVariant(experimentName: string): Variant | null {
 
 export const EXPERIMENTS = {
   HOMEPAGE_CTA: {
-    name: 'homepage_cta_v1',
-    variants: ['control', 'variant'] as Variant[],
+    name: "homepage_cta_v1",
+    variants: ["control", "variant"] as Variant[],
     weights: [50, 50], // 50/50 split
   },
 } as const;
@@ -122,7 +124,7 @@ export function useHomepageCTAExperiment(): {
   const variant = getVariant(EXPERIMENTS.HOMEPAGE_CTA);
 
   const trackClick = () => {
-    const event = variant === 'control' ? 'cta_click' : 'teaser_submit';
+    const event = variant === "control" ? "cta_click" : "teaser_submit";
     trackEvent(EXPERIMENTS.HOMEPAGE_CTA.name, event, { variant });
   };
 

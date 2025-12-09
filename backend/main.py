@@ -24,7 +24,19 @@ from utils.exceptions import (
     validation_exception_handler,
     general_exception_handler,
 )
-from api import health, cases, verses, outputs, messages, auth, admin, contact, sitemap, feed, experiments
+from api import (
+    health,
+    cases,
+    verses,
+    outputs,
+    messages,
+    auth,
+    admin,
+    contact,
+    sitemap,
+    feed,
+    experiments,
+)
 from api.middleware.csrf import CSRFMiddleware
 
 logger = setup_logging()
@@ -58,7 +70,9 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
     if not settings.DEBUG:
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
         csp = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline'; "
@@ -82,6 +96,7 @@ async def add_correlation_id(request: Request, call_next):
     response = await call_next(request)
     response.headers["x-request-id"] = cid
     return response
+
 
 app.add_exception_handler(GeetanjaliException, geetanjali_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
@@ -114,12 +129,17 @@ async def startup_event():
     def load_vector_store_sync():
         """Load vector store synchronously in a thread."""
         try:
-            logger.info("Pre-loading vector store in background (loads embedding model)...")
+            logger.info(
+                "Pre-loading vector store in background (loads embedding model)..."
+            )
             from services.vector_store import get_vector_store
+
             get_vector_store()  # Initialize vector store
             logger.info("Vector store pre-loaded successfully")
         except Exception as e:
-            logger.error(f"Failed to pre-load vector store: {e} (will load on first request)")
+            logger.error(
+                f"Failed to pre-load vector store: {e} (will load on first request)"
+            )
 
     # Run blocking I/O in a thread pool to avoid blocking event loop
     loop = asyncio.get_event_loop()

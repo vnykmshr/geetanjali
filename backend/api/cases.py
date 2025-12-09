@@ -16,7 +16,13 @@ from db import get_db
 from db.repositories.case_repository import CaseRepository
 from db.repositories.message_repository import MessageRepository
 from db.repositories.output_repository import OutputRepository
-from api.schemas import CaseCreate, CaseResponse, CaseShareToggle, ChatMessageResponse, OutputResponse
+from api.schemas import (
+    CaseCreate,
+    CaseResponse,
+    CaseShareToggle,
+    ChatMessageResponse,
+    OutputResponse,
+)
 from api.middleware.auth import get_optional_user, get_session_id
 from api.dependencies import get_case_with_access
 from models.case import Case
@@ -41,7 +47,7 @@ T = TypeVar("T")
 def generate_public_slug(length: int = 10) -> str:
     """Generate a random URL-safe slug for public sharing."""
     alphabet = string.ascii_lowercase + string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 def get_public_case_or_404(slug: str, db: Session) -> Case:
@@ -100,7 +106,9 @@ def cached_public_response(
     # Try cache first
     cached = cache.get(cache_key)
     if cached is not None:
-        response.headers["Cache-Control"] = f"public, max-age={settings.CACHE_TTL_PUBLIC_CASE_HTTP}"
+        response.headers["Cache-Control"] = (
+            f"public, max-age={settings.CACHE_TTL_PUBLIC_CASE_HTTP}"
+        )
         response.headers["X-Cache"] = "HIT"
         return cached
 
@@ -109,7 +117,9 @@ def cached_public_response(
     serialized = serialize_fn(data)
     cache.set(cache_key, serialized, settings.CACHE_TTL_PUBLIC_CASE)
 
-    response.headers["Cache-Control"] = f"public, max-age={settings.CACHE_TTL_PUBLIC_CASE_HTTP}"
+    response.headers["Cache-Control"] = (
+        f"public, max-age={settings.CACHE_TTL_PUBLIC_CASE_HTTP}"
+    )
     response.headers["X-Cache"] = "MISS"
 
     return data
@@ -373,7 +383,9 @@ async def toggle_case_sharing(
         cache.delete(public_case_key(updated_case.public_slug))
         cache.delete(public_case_messages_key(updated_case.public_slug))
         cache.delete(public_case_outputs_key(updated_case.public_slug))
-        logger.debug(f"Invalidated cache for public case slug: {updated_case.public_slug}")
+        logger.debug(
+            f"Invalidated cache for public case slug: {updated_case.public_slug}"
+        )
 
     return updated_case
 
@@ -417,6 +429,7 @@ async def get_public_case_messages(
 
     No authentication required. Cached in Redis (1 hour) and HTTP (5 minutes).
     """
+
     def fetch_messages():
         case = get_public_case_or_404(slug, db)
         return MessageRepository(db).get_by_case(case.id)
@@ -425,7 +438,9 @@ async def get_public_case_messages(
         cache_key=public_case_messages_key(slug),
         response=response,
         fetch_fn=fetch_messages,
-        serialize_fn=lambda msgs: [ChatMessageResponse.model_validate(m).model_dump(mode="json") for m in msgs],
+        serialize_fn=lambda msgs: [
+            ChatMessageResponse.model_validate(m).model_dump(mode="json") for m in msgs
+        ],
     )
 
 
@@ -442,6 +457,7 @@ async def get_public_case_outputs(
 
     No authentication required. Cached in Redis (1 hour) and HTTP (5 minutes).
     """
+
     def fetch_outputs():
         case = get_public_case_or_404(slug, db)
         return OutputRepository(db).get_by_case_id(case.id)
@@ -450,5 +466,7 @@ async def get_public_case_outputs(
         cache_key=public_case_outputs_key(slug),
         response=response,
         fetch_fn=fetch_outputs,
-        serialize_fn=lambda outs: [OutputResponse.model_validate(o).model_dump(mode="json") for o in outs],
+        serialize_fn=lambda outs: [
+            OutputResponse.model_validate(o).model_dump(mode="json") for o in outs
+        ],
     )

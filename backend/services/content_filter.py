@@ -115,7 +115,10 @@ def check_blocklist(text: str) -> ContentCheckResult:
         ContentCheckResult indicating if content should be blocked
     """
     # Check if filtering is enabled
-    if not settings.CONTENT_FILTER_ENABLED or not settings.CONTENT_FILTER_BLOCKLIST_ENABLED:
+    if (
+        not settings.CONTENT_FILTER_ENABLED
+        or not settings.CONTENT_FILTER_BLOCKLIST_ENABLED
+    ):
         return ContentCheckResult(is_violation=False)
 
     # Check explicit sexual content
@@ -203,7 +206,10 @@ def detect_llm_refusal(response_text: str) -> Tuple[bool, Optional[str]]:
         Tuple of (is_refusal, matched_pattern)
     """
     # Check if detection is enabled
-    if not settings.CONTENT_FILTER_ENABLED or not settings.CONTENT_FILTER_LLM_REFUSAL_DETECTION:
+    if (
+        not settings.CONTENT_FILTER_ENABLED
+        or not settings.CONTENT_FILTER_LLM_REFUSAL_DETECTION
+    ):
         return False, None
 
     for pattern in _COMPILED_REFUSAL:
@@ -238,7 +244,10 @@ POLICY_VIOLATION_RESPONSE = {
                 "consider what values are truly in tension and what decision "
                 "you're actually facing."
             ),
-            "pros": ["Clarifies your real question", "Opens path to meaningful guidance"],
+            "pros": [
+                "Clarifies your real question",
+                "Opens path to meaningful guidance",
+            ],
             "cons": ["Requires honest self-reflection"],
             "sources": [],
         },

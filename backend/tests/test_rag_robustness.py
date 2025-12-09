@@ -83,9 +83,7 @@ class TestJSONExtraction:
             "options": [
                 {
                     "title": "Option 1",
-                    "sources": [
-                        {"id": "BG_2_47", "paraphrase": "Test"}
-                    ],
+                    "sources": [{"id": "BG_2_47", "paraphrase": "Test"}],
                 }
             ],
             "confidence": 0.92,
@@ -104,10 +102,7 @@ class TestJSONExtraction:
         """Test that malformed markdown blocks don't crash, try next strategy."""
         json_data = {"title": "Test"}
         # Malformed markdown followed by valid JSON
-        response = (
-            "```json\n{MALFORMED JSON}\n```\n\n"
-            f"{json.dumps(json_data)}"
-        )
+        response = "```json\n{MALFORMED JSON}\n```\n\n" f"{json.dumps(json_data)}"
         result = _extract_json_from_text(response)
         assert result == json_data
 
@@ -433,7 +428,11 @@ class TestValidationIntegration:
                             "sources": ["BG_2_47"],
                         },
                     ],
-                    "recommended_action": {"option": 1, "steps": ["Step 1"], "sources": ["BG_2_47"]},
+                    "recommended_action": {
+                        "option": 1,
+                        "steps": ["Step 1"],
+                        "sources": ["BG_2_47"],
+                    },
                     "reflection_prompts": ["Reflect"],
                     "sources": [
                         {

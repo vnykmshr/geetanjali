@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 interface UseApiRequestState<T> {
   data: T | null;
@@ -29,7 +29,10 @@ export function useApiRequest<T>(options: UseApiRequestOptions = {}) {
   });
 
   const request = useCallback(
-    async (apiCall: () => Promise<T>, errorFormatter?: (err: unknown) => string) => {
+    async (
+      apiCall: () => Promise<T>,
+      errorFormatter?: (err: unknown) => string,
+    ) => {
       try {
         setState({ data: null, loading: true, error: null });
         const result = await apiCall();
@@ -42,7 +45,7 @@ export function useApiRequest<T>(options: UseApiRequestOptions = {}) {
         options.onError?.(errorMessage);
       }
     },
-    [options]
+    [options],
   );
 
   return {

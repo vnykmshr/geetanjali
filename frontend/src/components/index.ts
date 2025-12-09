@@ -11,16 +11,16 @@
  */
 
 // Root-level components
-export { Navbar } from './Navbar';
-export { PageLayout } from './PageLayout';
-export { ErrorBoundary } from './ErrorBoundary';
-export { VerseCard } from './VerseCard';
-export { FeaturedVerse } from './FeaturedVerse';
-export { ConfirmModal } from './ConfirmModal';
-export { ConsultationWaiting } from './ConsultationWaiting';
-export { FloatingActionButton } from './FloatingActionButton';
-export { ContentNotFound } from './ContentNotFound';
-export { SkipLink } from './SkipLink';
+export { Navbar } from "./Navbar";
+export { PageLayout } from "./PageLayout";
+export { ErrorBoundary } from "./ErrorBoundary";
+export { VerseCard } from "./VerseCard";
+export { FeaturedVerse } from "./FeaturedVerse";
+export { ConfirmModal } from "./ConfirmModal";
+export { ConsultationWaiting } from "./ConsultationWaiting";
+export { FloatingActionButton } from "./FloatingActionButton";
+export { ContentNotFound } from "./ContentNotFound";
+export { SkipLink } from "./SkipLink";
 
 // Case-related components
 export {
@@ -32,4 +32,4 @@ export {
   FollowUpInput,
   CaseTimeline,
   CaseExchange,
-} from './case';
+} from "./case";

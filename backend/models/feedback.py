@@ -54,4 +54,6 @@ class Feedback(Base):
 
     def __repr__(self) -> str:
         rating_str = "thumbs_up" if self.rating else "thumbs_down"
-        return f"<Feedback(id={self.id}, output_id={self.output_id}, rating={rating_str})>"
+        return (
+            f"<Feedback(id={self.id}, output_id={self.output_id}, rating={rating_str})>"
+        )

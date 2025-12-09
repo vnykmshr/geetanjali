@@ -47,9 +47,7 @@ class OutputRepository(BaseRepository[Output]):  # type: ignore[type-var]
             .all()
         )
 
-    def get_flagged_for_review(
-        self, skip: int = 0, limit: int = 100
-    ) -> List[Output]:
+    def get_flagged_for_review(self, skip: int = 0, limit: int = 100) -> List[Output]:
         """
         Get outputs flagged for scholar review.
 
@@ -69,9 +67,7 @@ class OutputRepository(BaseRepository[Output]):  # type: ignore[type-var]
             .all()
         )
 
-    def get_unreviewed(
-        self, skip: int = 0, limit: int = 100
-    ) -> List[Output]:
+    def get_unreviewed(self, skip: int = 0, limit: int = 100) -> List[Output]:
         """
         Get outputs that are flagged but not yet reviewed.
 

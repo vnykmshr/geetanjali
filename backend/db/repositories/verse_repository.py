@@ -60,8 +60,7 @@ class VerseRepository(BaseRepository[Verse]):  # type: ignore[type-var]
         # Use PostgreSQL JSONB contains operator for efficient querying
         # Each principle check: consulting_principles @> '["principle"]'::jsonb
         conditions = [
-            cast(Verse.consulting_principles, JSONB).contains([p])
-            for p in principles
+            cast(Verse.consulting_principles, JSONB).contains([p]) for p in principles
         ]
 
         return (

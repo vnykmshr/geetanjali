@@ -1,5 +1,5 @@
-import type { Case, Message, Output } from '../../types';
-import { CaseExchange } from './CaseExchange';
+import type { Case, Message, Output } from "../../types";
+import { CaseExchange } from "./CaseExchange";
 
 interface MessageExchange {
   user: Message;
@@ -11,12 +11,12 @@ interface CaseTimelineProps {
   exchanges: MessageExchange[];
   caseData: Case;
   expandedSources: Set<string>;
-  feedbackGiven: Record<string, 'up' | 'down' | null>;
+  feedbackGiven: Record<string, "up" | "down" | null>;
   feedbackLoading: string | null;
   expandedFeedback: string | null;
   feedbackText: Record<string, string>;
   onToggleSources: (outputId: string) => void;
-  onFeedback: (outputId: string, type: 'up' | 'down') => void;
+  onFeedback: (outputId: string, type: "up" | "down") => void;
   onSubmitNegativeFeedback: (outputId: string) => void;
   onCancelFeedback: (outputId: string) => void;
   onFeedbackTextChange: (outputId: string, text: string) => void;

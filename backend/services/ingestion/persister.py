@@ -218,7 +218,9 @@ class Persister:
             logger.debug(f"Persisted verse {verse.canonical_id} to vector store")
 
         except Exception as e:
-            logger.error(f"Failed to persist to vector store for {verse.canonical_id}: {e}")
+            logger.error(
+                f"Failed to persist to vector store for {verse.canonical_id}: {e}"
+            )
             # Don't fail the whole operation if vector store fails
 
     def persist_translation(self, verse_id: str, translation_data: Dict) -> Translation:

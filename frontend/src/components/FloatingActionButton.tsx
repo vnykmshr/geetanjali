@@ -1,5 +1,5 @@
-import { Link, useLocation } from 'react-router-dom';
-import { trackEvent, EXPERIMENTS } from '../lib/experiment';
+import { Link, useLocation } from "react-router-dom";
+import { trackEvent, EXPERIMENTS } from "../lib/experiment";
 
 interface FloatingActionButtonProps {
   /** Override the default destination */
@@ -12,8 +12,8 @@ interface FloatingActionButtonProps {
  * Track FAB click for analytics
  */
 function handleFabClick() {
-  trackEvent(EXPERIMENTS.HOMEPAGE_CTA.name, 'fab_click', {
-    source: 'mobile_fab',
+  trackEvent(EXPERIMENTS.HOMEPAGE_CTA.name, "fab_click", {
+    source: "mobile_fab",
   });
 }
 
@@ -24,14 +24,14 @@ function handleFabClick() {
  * - Fixed position bottom-right with safe area padding
  */
 export function FloatingActionButton({
-  to = '/cases/new',
-  label = 'Ask'
+  to = "/cases/new",
+  label = "Ask",
 }: FloatingActionButtonProps) {
   const location = useLocation();
 
   // Hide FAB on certain pages where it's not appropriate
-  const hiddenPaths = ['/cases/new', '/login', '/signup'];
-  const shouldHide = hiddenPaths.some(path => location.pathname === path);
+  const hiddenPaths = ["/cases/new", "/login", "/signup"];
+  const shouldHide = hiddenPaths.some((path) => location.pathname === path);
 
   // Also hide if we're on a specific case view (to avoid clutter during reading)
   const isOnCaseView = location.pathname.match(/^\/cases\/[^/]+$/);

@@ -79,7 +79,9 @@ class TestLLMRefusalDetection:
 
     def test_detects_cant_assist_pattern(self):
         """Should detect 'I can't assist' refusal."""
-        response = "I can't assist with this request as it involves inappropriate content."
+        response = (
+            "I can't assist with this request as it involves inappropriate content."
+        )
         is_refusal, match = detect_llm_refusal(response)
         assert is_refusal is True
         assert match is not None
@@ -92,7 +94,9 @@ class TestLLMRefusalDetection:
 
     def test_detects_policy_violation_language(self):
         """Should detect policy violation language."""
-        response = "This request contains inappropriate content and violates my guidelines."
+        response = (
+            "This request contains inappropriate content and violates my guidelines."
+        )
         is_refusal, match = detect_llm_refusal(response)
         assert is_refusal is True
 
@@ -121,15 +125,14 @@ class TestValidateSubmissionContent:
         # Should not raise
         validate_submission_content(
             title="Workplace ethics dilemma",
-            description="My manager asked me to falsify a report."
+            description="My manager asked me to falsify a report.",
         )
 
     def test_raises_for_blocked_content(self):
         """Blocked content should raise ContentPolicyError."""
         with pytest.raises(ContentPolicyError) as exc_info:
             validate_submission_content(
-                title="Test",
-                description="I want to have sex act with someone"
+                title="Test", description="I want to have sex act with someone"
             )
         assert exc_info.value.violation_type == ViolationType.EXPLICIT_SEXUAL
 
@@ -137,8 +140,7 @@ class TestValidateSubmissionContent:
         """Both title and description should be checked."""
         with pytest.raises(ContentPolicyError):
             validate_submission_content(
-                title="sexual fantasy request",
-                description="normal description"
+                title="sexual fantasy request", description="normal description"
             )
 
 

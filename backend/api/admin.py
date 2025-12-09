@@ -362,10 +362,11 @@ def enrich_verses(
         if not request.force:
             # Mark for enrichment if either paraphrase is empty/null OR principles is empty/null
             from sqlalchemy import and_, or_
+
             query = query.filter(
                 or_(
                     and_(Verse.paraphrase_en.is_(None)),
-                    and_(Verse.paraphrase_en == ''),
+                    and_(Verse.paraphrase_en == ""),
                     and_(Verse.consulting_principles.is_(None)),
                 )
             )
@@ -430,10 +431,11 @@ def run_enrich_task(limit: int = 0, force: bool = False):
         if not force:
             # Mark for enrichment if either paraphrase is empty/null OR principles is empty/null
             from sqlalchemy import and_, or_
+
             query = query.filter(
                 or_(
                     and_(Verse.paraphrase_en.is_(None)),
-                    and_(Verse.paraphrase_en == ''),
+                    and_(Verse.paraphrase_en == ""),
                     and_(Verse.consulting_principles.is_(None)),
                 )
             )

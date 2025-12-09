@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { Navbar } from './Navbar';
+import type { ReactNode } from "react";
+import { Navbar } from "./Navbar";
 
 interface PageLayoutProps {
   children: ReactNode;

@@ -226,7 +226,9 @@ def send_password_reset_email(email: str, reset_url: str) -> bool:
             Geetanjali - Ethical Guidance from the Bhagavad Geeta
         </div>
     </div>
-    """.format(reset_url=reset_url)
+    """.format(
+        reset_url=reset_url
+    )
 
     # Plain text version
     text_body = f"""
@@ -253,7 +255,9 @@ Geetanjali - Ethical Guidance from the Bhagavad Geeta
         }
 
         response = resend.Emails.send(params)
-        logger.info(f"Password reset email sent to {email}: {response.get('id', 'unknown')}")
+        logger.info(
+            f"Password reset email sent to {email}: {response.get('id', 'unknown')}"
+        )
         return True
 
     except Exception as e:

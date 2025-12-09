@@ -1,13 +1,23 @@
-import axios from 'axios';
-import type { Case, Output, Verse, Translation, HealthResponse, ScholarReviewRequest, Feedback, FeedbackCreate, Message } from '../types';
-import { tokenStorage, authApi } from '../api/auth';
-import { getSessionId } from './session';
-import { API_BASE_URL, API_V1_PREFIX } from './config';
+import axios from "axios";
+import type {
+  Case,
+  Output,
+  Verse,
+  Translation,
+  HealthResponse,
+  ScholarReviewRequest,
+  Feedback,
+  FeedbackCreate,
+  Message,
+} from "../types";
+import { tokenStorage, authApi } from "../api/auth";
+import { getSessionId } from "./session";
+import { API_BASE_URL, API_V1_PREFIX } from "./config";
 
 export const api = axios.create({
   baseURL: `${API_BASE_URL}${API_V1_PREFIX}`,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   withCredentials: true, // Enable cookies for CSRF
 });
@@ -42,10 +52,14 @@ function getCsrfToken(): string | null {
 api.interceptors.request.use(
   async (config) => {
     // Skip token refresh for auth endpoints
-    const isAuthEndpoint = config.url?.includes('/auth/');
+    const isAuthEndpoint = config.url?.includes("/auth/");
 
     // Proactive token refresh: check if token needs refresh before request
-    if (!isAuthEndpoint && tokenStorage.getToken() && tokenStorage.needsRefresh()) {
+    if (
+      !isAuthEndpoint &&
+      tokenStorage.getToken() &&
+      tokenStorage.needsRefresh()
+    ) {
       if (!isRefreshing) {
         isRefreshing = true;
         try {
@@ -73,20 +87,20 @@ api.interceptors.request.use(
 
     // Always attach session ID for anonymous user tracking
     const sessionId = getSessionId();
-    config.headers['X-Session-ID'] = sessionId;
+    config.headers["X-Session-ID"] = sessionId;
 
     // Attach CSRF token for state-changing requests
     const method = config.method?.toLowerCase();
-    if (method && ['post', 'put', 'patch', 'delete'].includes(method)) {
+    if (method && ["post", "put", "patch", "delete"].includes(method)) {
       const csrfToken = getCsrfToken();
       if (csrfToken) {
-        config.headers['X-CSRF-Token'] = csrfToken;
+        config.headers["X-CSRF-Token"] = csrfToken;
       }
     }
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response interceptor for error handling
@@ -98,7 +112,7 @@ api.interceptors.response.use(
       error.message = error.response.data.detail;
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // Health check endpoint
@@ -109,8 +123,8 @@ export const checkHealth = async (): Promise<HealthResponse> => {
 
 // Cases API
 export const casesApi = {
-  create: async (caseData: Omit<Case, 'id' | 'created_at'>): Promise<Case> => {
-    const response = await api.post('/cases', caseData);
+  create: async (caseData: Omit<Case, "id" | "created_at">): Promise<Case> => {
+    const response = await api.post("/cases", caseData);
     return response.data;
   },
 
@@ -120,7 +134,7 @@ export const casesApi = {
   },
 
   list: async (skip = 0, limit = 100): Promise<Case[]> => {
-    const response = await api.get('/cases', { params: { skip, limit } });
+    const response = await api.get("/cases", { params: { skip, limit } });
     return response.data;
   },
 
@@ -137,7 +151,9 @@ export const casesApi = {
 
   // Toggle public sharing
   toggleShare: async (id: string, isPublic: boolean): Promise<Case> => {
-    const response = await api.post(`/cases/${id}/share`, { is_public: isPublic });
+    const response = await api.post(`/cases/${id}/share`, {
+      is_public: isPublic,
+    });
     return response.data;
   },
 
@@ -183,12 +199,21 @@ export const outputsApi = {
     return response.data;
   },
 
-  scholarReview: async (id: string, reviewData: ScholarReviewRequest): Promise<Output> => {
-    const response = await api.post(`/outputs/${id}/scholar-review`, reviewData);
+  scholarReview: async (
+    id: string,
+    reviewData: ScholarReviewRequest,
+  ): Promise<Output> => {
+    const response = await api.post(
+      `/outputs/${id}/scholar-review`,
+      reviewData,
+    );
     return response.data;
   },
 
-  submitFeedback: async (outputId: string, data: FeedbackCreate): Promise<Feedback> => {
+  submitFeedback: async (
+    outputId: string,
+    data: FeedbackCreate,
+  ): Promise<Feedback> => {
     const response = await api.post(`/outputs/${outputId}/feedback`, data);
     return response.data;
   },
@@ -201,7 +226,12 @@ export const versesApi = {
     return response.data;
   },
 
-  list: async (skip = 0, limit = 100, chapter?: number, featured?: boolean): Promise<Verse[]> => {
+  list: async (
+    skip = 0,
+    limit = 100,
+    chapter?: number,
+    featured?: boolean,
+  ): Promise<Verse[]> => {
     const params: Record<string, number | boolean> = { skip, limit };
     if (chapter) params.chapter = chapter;
     if (featured !== undefined) params.featured = featured;

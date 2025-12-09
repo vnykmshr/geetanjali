@@ -12,13 +12,12 @@ import logging
 
 # Set up logging
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 # Add backend to path
-sys.path.insert(0, '/Users/vmx/workspace/github/geetanjaliapp/geetanjali/backend')
+sys.path.insert(0, "/Users/vmx/workspace/github/geetanjaliapp/geetanjali/backend")
 
 from services.rag import _extract_json_from_text, RAGPipeline
 
@@ -72,9 +71,9 @@ PROD_OUTPUT_2_OPTIONS = """{
 
 def test_production_output():
     """Test that production output with 2 options is handled correctly."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("PRODUCTION DATA VALIDATION TEST")
-    print("="*80)
+    print("=" * 80)
 
     print("\n[1] Testing JSON Extraction on Production Output")
     print("-" * 80)
@@ -83,7 +82,9 @@ def test_production_output():
         parsed = _extract_json_from_text(PROD_OUTPUT_2_OPTIONS)
         print(f"✅ JSON extraction successful")
         print(f"   - Title: {parsed.get('suggested_title')}")
-        print(f"   - Options count (before validation): {len(parsed.get('options', []))}")
+        print(
+            f"   - Options count (before validation): {len(parsed.get('options', []))}"
+        )
         print(f"   - Confidence: {parsed.get('confidence')}")
         print(f"   - Scholar flag: {parsed.get('scholar_flag')}")
     except Exception as e:
@@ -101,12 +102,14 @@ def test_production_output():
 
         # The validate_output method modifies the output in place
         # Check if constraint was enforced
-        options_count = len(validated_output.get('options', []))
+        options_count = len(validated_output.get("options", []))
         print(f"\nConstraint Check:")
         print(f"  - Options count (after validation): {options_count}")
 
         if options_count < 3:
-            print(f"  ❌ Still has only {options_count} options (constraint NOT satisfied)")
+            print(
+                f"  ❌ Still has only {options_count} options (constraint NOT satisfied)"
+            )
             return False
         else:
             print(f"  ✅ Now has 3 options (constraint satisfied)")
@@ -114,6 +117,7 @@ def test_production_output():
     except Exception as e:
         print(f"❌ Validation failed with exception: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -122,12 +126,30 @@ def test_production_output():
 
     # Check critical fields
     checks = {
-        "executive_summary": ("non-empty string", lambda x: isinstance(x, str) and len(x) > 0),
-        "options": ("list with 3+ items", lambda x: isinstance(x, list) and len(x) >= 3),
-        "recommended_action": ("dict with option and steps", lambda x: isinstance(x, dict) and 'option' in x and 'steps' in x),
-        "reflection_prompts": ("non-empty list", lambda x: isinstance(x, list) and len(x) > 0),
-        "sources": ("list of source objects", lambda x: isinstance(x, list) and len(x) > 0),
-        "confidence": ("number between 0 and 1", lambda x: isinstance(x, (int, float)) and 0 <= x <= 1),
+        "executive_summary": (
+            "non-empty string",
+            lambda x: isinstance(x, str) and len(x) > 0,
+        ),
+        "options": (
+            "list with 3+ items",
+            lambda x: isinstance(x, list) and len(x) >= 3,
+        ),
+        "recommended_action": (
+            "dict with option and steps",
+            lambda x: isinstance(x, dict) and "option" in x and "steps" in x,
+        ),
+        "reflection_prompts": (
+            "non-empty list",
+            lambda x: isinstance(x, list) and len(x) > 0,
+        ),
+        "sources": (
+            "list of source objects",
+            lambda x: isinstance(x, list) and len(x) > 0,
+        ),
+        "confidence": (
+            "number between 0 and 1",
+            lambda x: isinstance(x, (int, float)) and 0 <= x <= 1,
+        ),
         "scholar_flag": ("boolean", lambda x: isinstance(x, bool)),
     }
 
@@ -144,28 +166,32 @@ def test_production_output():
     print("\n[4] Detailed Options Check")
     print("-" * 80)
 
-    for i, option in enumerate(validated_output.get('options', []), 1):
+    for i, option in enumerate(validated_output.get("options", []), 1):
         print(f"Option {i}: {option.get('title', 'MISSING TITLE')}")
         required = {
             "title": "string",
             "description": "string",
             "pros": "list",
             "cons": "list",
-            "sources": "list of strings"
+            "sources": "list of strings",
         }
         for field, expected_type in required.items():
             value = option.get(field)
             is_valid = value is not None and (
-                (expected_type == "string" and isinstance(value, str)) or
-                (expected_type == "list" and isinstance(value, list)) or
-                (expected_type == "list of strings" and isinstance(value, list) and all(isinstance(s, str) for s in value))
+                (expected_type == "string" and isinstance(value, str))
+                or (expected_type == "list" and isinstance(value, list))
+                or (
+                    expected_type == "list of strings"
+                    and isinstance(value, list)
+                    and all(isinstance(s, str) for s in value)
+                )
             )
             status = "  ✅" if is_valid else "  ❌"
             print(f"{status} {field}: {type(value).__name__}")
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("RESULT")
-    print("="*80)
+    print("=" * 80)
 
     if all_passed and is_valid:
         print("✅ PRODUCTION OUTPUT VALIDATION PASSED")
@@ -179,6 +205,6 @@ def test_production_output():
         return False
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     success = test_production_output()
     sys.exit(0 if success else 1)

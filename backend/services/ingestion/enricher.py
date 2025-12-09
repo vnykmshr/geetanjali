@@ -52,22 +52,22 @@ class Enricher:
         import re
 
         # Remove markdown headers
-        text = re.sub(r'^#+\s+', '', text, flags=re.MULTILINE)
+        text = re.sub(r"^#+\s+", "", text, flags=re.MULTILINE)
 
         # Remove bold markers (**)
-        text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+        text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
 
         # Remove italic markers (*)
-        text = re.sub(r'\*([^*]+)\*', r'\1', text)
+        text = re.sub(r"\*([^*]+)\*", r"\1", text)
 
         # Remove metadata labels (lines ending with colon and bold markers)
-        text = re.sub(r'\*\*[^:]+:\*\*\s*', '', text)
+        text = re.sub(r"\*\*[^:]+:\*\*\s*", "", text)
 
         # Replace multiple newlines with single space
-        text = re.sub(r'\n+', ' ', text)
+        text = re.sub(r"\n+", " ", text)
 
         # Remove extra whitespace
-        text = re.sub(r'\s+', ' ', text).strip()
+        text = re.sub(r"\s+", " ", text).strip()
 
         return text
 

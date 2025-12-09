@@ -1,10 +1,10 @@
-import { Link } from 'react-router-dom';
-import { formatSanskritLines, isSpeakerIntro } from '../lib/sanskritFormatter';
-import type { Verse } from '../types';
+import { Link } from "react-router-dom";
+import { formatSanskritLines, isSpeakerIntro } from "../lib/sanskritFormatter";
+import type { Verse } from "../types";
 
 export interface VerseCardProps {
   verse: Verse;
-  displayMode?: 'detail' | 'compact';
+  displayMode?: "detail" | "compact";
   showSpeaker?: boolean;
   showCitation?: boolean;
   showTranslation?: boolean;
@@ -20,17 +20,17 @@ function getVerseLink(verse: Verse): string {
 
 export function VerseCard({
   verse,
-  displayMode = 'detail',
+  displayMode = "detail",
   showSpeaker = true,
   showCitation = true,
   showTranslation = true,
 }: VerseCardProps) {
-  const isCompact = displayMode === 'compact';
+  const isCompact = displayMode === "compact";
 
   // For compact mode: no speaker intros, compact formatting
   // For detail mode: respect showSpeaker prop
-  const sanskritLines = formatSanskritLines(verse.sanskrit_devanagari || '', {
-    mode: isCompact ? 'compact' : 'detail',
+  const sanskritLines = formatSanskritLines(verse.sanskrit_devanagari || "", {
+    mode: isCompact ? "compact" : "detail",
     includeSpeakerIntro: isCompact ? false : showSpeaker,
   });
 
@@ -46,7 +46,9 @@ export function VerseCard({
         {/* Full Sanskrit Verse */}
         <div className="text-amber-900 font-serif text-sm sm:text-base leading-relaxed text-center">
           {sanskritLines.map((line, idx) => (
-            <p key={idx} className="mb-0.5">{line}</p>
+            <p key={idx} className="mb-0.5">
+              {line}
+            </p>
           ))}
         </div>
       </div>
@@ -54,7 +56,9 @@ export function VerseCard({
   }
 
   // Detail mode: keep speaker intro filtering logic
-  const displayLines = showSpeaker ? sanskritLines : sanskritLines.filter(line => !isSpeakerIntro(line));
+  const displayLines = showSpeaker
+    ? sanskritLines
+    : sanskritLines.filter((line) => !isSpeakerIntro(line));
 
   // Detail mode: original layout
   return (
@@ -73,7 +77,11 @@ export function VerseCard({
               {displayLines.map((line, idx) => (
                 <p
                   key={idx}
-                  className={isSpeakerIntro(line) ? 'text-lg text-amber-600/60 mb-2' : 'mb-1'}
+                  className={
+                    isSpeakerIntro(line)
+                      ? "text-lg text-amber-600/60 mb-2"
+                      : "mb-1"
+                  }
                 >
                   {line}
                 </p>

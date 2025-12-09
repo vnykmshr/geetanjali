@@ -7,20 +7,20 @@
  * - Share tracking via analytics
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useState } from "react";
 
 interface ShareData {
-  title: string
-  text?: string
-  url: string
+  title: string;
+  text?: string;
+  url: string;
 }
 
 interface UseShareReturn {
-  share: (data: ShareData) => Promise<boolean>
-  copyToClipboard: (text: string) => Promise<boolean>
-  canShare: boolean
-  isSharing: boolean
-  lastError: string | null
+  share: (data: ShareData) => Promise<boolean>;
+  copyToClipboard: (text: string) => Promise<boolean>;
+  canShare: boolean;
+  isSharing: boolean;
+  lastError: string | null;
 }
 
 /**
@@ -43,93 +43,100 @@ interface UseShareReturn {
  * ```
  */
 export function useShare(): UseShareReturn {
-  const [isSharing, setIsSharing] = useState(false)
-  const [lastError, setLastError] = useState<string | null>(null)
+  const [isSharing, setIsSharing] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   // Check if Web Share API is supported
-  const canShare = typeof navigator !== 'undefined' && !!navigator.share
+  const canShare = typeof navigator !== "undefined" && !!navigator.share;
 
   /**
    * Copy text to clipboard
    */
-  const copyToClipboard = useCallback(async (text: string): Promise<boolean> => {
-    setIsSharing(true)
-    setLastError(null)
+  const copyToClipboard = useCallback(
+    async (text: string): Promise<boolean> => {
+      setIsSharing(true);
+      setLastError(null);
 
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text)
-      } else {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea')
-        textArea.value = text
-        textArea.style.position = 'fixed'
-        textArea.style.left = '-999999px'
-        textArea.style.top = '-999999px'
-        document.body.appendChild(textArea)
-        textArea.focus()
-        textArea.select()
-        document.execCommand('copy')
-        document.body.removeChild(textArea)
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          // Fallback for older browsers
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          textArea.style.position = "fixed";
+          textArea.style.left = "-999999px";
+          textArea.style.top = "-999999px";
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textArea);
+        }
+
+        // Track copy event
+        if (window.umami) {
+          window.umami.track("share", { method: "clipboard" });
+        }
+
+        setIsSharing(false);
+        return true;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to copy";
+        setLastError(message);
+        console.error("[Share] Clipboard error:", error);
+        setIsSharing(false);
+        return false;
       }
-
-      // Track copy event
-      if (window.umami) {
-        window.umami.track('share', { method: 'clipboard' })
-      }
-
-      setIsSharing(false)
-      return true
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to copy'
-      setLastError(message)
-      console.error('[Share] Clipboard error:', error)
-      setIsSharing(false)
-      return false
-    }
-  }, [])
+    },
+    [],
+  );
 
   /**
    * Share content using Web Share API
    * Falls back to clipboard if not supported
    */
-  const share = useCallback(async (data: ShareData): Promise<boolean> => {
-    setIsSharing(true)
-    setLastError(null)
+  const share = useCallback(
+    async (data: ShareData): Promise<boolean> => {
+      setIsSharing(true);
+      setLastError(null);
 
-    try {
-      if (canShare) {
-        await navigator.share({
-          title: data.title,
-          text: data.text,
-          url: data.url,
-        })
+      try {
+        if (canShare) {
+          await navigator.share({
+            title: data.title,
+            text: data.text,
+            url: data.url,
+          });
 
-        // Track share event
-        if (window.umami) {
-          window.umami.track('share', { method: 'native', url: data.url })
+          // Track share event
+          if (window.umami) {
+            window.umami.track("share", { method: "native", url: data.url });
+          }
+
+          setIsSharing(false);
+          return true;
+        } else {
+          // Fallback to clipboard
+          const shareText = data.text
+            ? `${data.title}\n\n${data.text}\n\n${data.url}`
+            : `${data.title}\n${data.url}`;
+
+          return await copyToClipboard(shareText);
         }
-
-        setIsSharing(false)
-        return true
-      } else {
-        // Fallback to clipboard
-        const shareText = data.text
-          ? `${data.title}\n\n${data.text}\n\n${data.url}`
-          : `${data.title}\n${data.url}`
-
-        return await copyToClipboard(shareText)
+      } catch (error) {
+        // User cancelled share or error occurred
+        if (error instanceof Error && error.name !== "AbortError") {
+          setLastError(error.message);
+          console.error("[Share] Error:", error);
+        }
+        setIsSharing(false);
+        return false;
       }
-    } catch (error) {
-      // User cancelled share or error occurred
-      if (error instanceof Error && error.name !== 'AbortError') {
-        setLastError(error.message)
-        console.error('[Share] Error:', error)
-      }
-      setIsSharing(false)
-      return false
-    }
-  }, [canShare, copyToClipboard])
+    },
+    [canShare, copyToClipboard],
+  );
 
   return {
     share,
@@ -137,7 +144,7 @@ export function useShare(): UseShareReturn {
     canShare,
     isSharing,
     lastError,
-  }
+  };
 }
 
 /**
@@ -161,4 +168,4 @@ export const shareUrls = {
 
   email: (subject: string, body: string, url: string) =>
     `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`${body}\n\n${url}`)}`,
-}
+};

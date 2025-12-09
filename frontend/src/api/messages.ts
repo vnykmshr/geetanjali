@@ -1,5 +1,5 @@
-import { api } from '../lib/api';
-import type { Message, MessageCreate } from '../types';
+import { api } from "../lib/api";
+import type { Message, MessageCreate } from "../types";
 
 export const messagesApi = {
   /**

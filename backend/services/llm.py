@@ -292,7 +292,9 @@ class LLMService:
 
             # Try fallback if enabled
             if self.fallback_enabled:
-                logger.info(f"Attempting fallback provider: {self.fallback_provider.value}")
+                logger.info(
+                    f"Attempting fallback provider: {self.fallback_provider.value}"
+                )
                 try:
                     # Use simplified prompts for fallback if provided
                     fb_prompt = fallback_prompt or prompt
@@ -301,13 +303,21 @@ class LLMService:
                     if self.fallback_provider == LLMProvider.MOCK:
                         return dict(
                             self.mock_service.generate(
-                                fb_prompt, fb_system, temperature, max_tokens,
-                                fallback_prompt, fallback_system,
+                                fb_prompt,
+                                fb_system,
+                                temperature,
+                                max_tokens,
+                                fallback_prompt,
+                                fallback_system,
                             )
                         )
                     elif self.fallback_provider == LLMProvider.OLLAMA:
                         return self._generate_ollama(
-                            fb_prompt, fb_system, temperature, max_tokens, simplified=True,
+                            fb_prompt,
+                            fb_system,
+                            temperature,
+                            max_tokens,
+                            simplified=True,
                         )
                     elif self.fallback_provider == LLMProvider.ANTHROPIC:
                         if self.anthropic_client:
@@ -315,9 +325,13 @@ class LLMService:
                                 fb_prompt, fb_system, temperature, max_tokens
                             )
                         else:
-                            raise LLMError("Anthropic fallback not available (no API key)")
+                            raise LLMError(
+                                "Anthropic fallback not available (no API key)"
+                            )
                     else:
-                        raise LLMError(f"Unknown fallback provider: {self.fallback_provider}")
+                        raise LLMError(
+                            f"Unknown fallback provider: {self.fallback_provider}"
+                        )
                 except Exception as fallback_error:
                     logger.error(f"Fallback provider also failed: {fallback_error}")
                     raise LLMError(

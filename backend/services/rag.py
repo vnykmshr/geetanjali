@@ -52,7 +52,7 @@ def _extract_json_from_text(response_text: str) -> dict:
 
     # Strategy 2: Extract from markdown code block
     # Try ```json variant first, then generic ```
-    for pattern in [r'```(?:json)?\s*\n(.*?)\n```', r'```(.*?)```']:
+    for pattern in [r"```(?:json)?\s*\n(.*?)\n```", r"```(.*?)```"]:
         matches = re.finditer(pattern, response_text, re.DOTALL)
         for match in matches:
             json_text = match.group(1).strip()
@@ -69,7 +69,7 @@ def _extract_json_from_text(response_text: str) -> dict:
     # This handles: "analysis: {... proper json ...}" pattern
     # Use json.JSONDecoder.raw_decode() to find the complete object
     for start_idx in range(len(response_text)):
-        if response_text[start_idx] == '{':
+        if response_text[start_idx] == "{":
             try:
                 decoder = json.JSONDecoder()
                 parsed, end_idx = decoder.raw_decode(response_text, start_idx)
@@ -98,7 +98,7 @@ def _validate_canonical_id(canonical_id: str) -> bool:
     if not isinstance(canonical_id, str):
         return False
     # Valid format: BG_<chapter>_<verse> where chapter and verse are integers
-    return bool(re.match(r'^BG_\d+_\d+$', canonical_id))
+    return bool(re.match(r"^BG_\d+_\d+$", canonical_id))
 
 
 def _validate_relevance(relevance: Any) -> bool:
@@ -116,7 +116,9 @@ def _validate_relevance(relevance: Any) -> bool:
     return 0.0 <= relevance <= 1.0
 
 
-def _validate_source_reference(source_id: str, available_sources: List[Dict[str, Any]]) -> bool:
+def _validate_source_reference(
+    source_id: str, available_sources: List[Dict[str, Any]]
+) -> bool:
     """
     Validate that a source reference (in options) cites a verse that exists in sources.
 
@@ -147,10 +149,16 @@ def _validate_option_structure(option: Dict[str, Any]) -> tuple[bool, str]:
         return False, "Option is not a dict"
 
     # Check required fields exist and have correct types
-    if not isinstance(option.get("title"), str) or len(str(option.get("title", "")).strip()) == 0:
+    if (
+        not isinstance(option.get("title"), str)
+        or len(str(option.get("title", "")).strip()) == 0
+    ):
         return False, "Option missing or empty title"
 
-    if not isinstance(option.get("description"), str) or len(str(option.get("description", "")).strip()) == 0:
+    if (
+        not isinstance(option.get("description"), str)
+        or len(str(option.get("description", "")).strip()) == 0
+    ):
         return False, "Option missing or empty description"
 
     if not isinstance(option.get("pros"), list):
@@ -192,7 +200,10 @@ def _validate_source_object_structure(source: Dict[str, Any]) -> tuple[bool, str
         return False, f"Source canonical_id invalid format: {canonical_id}"
 
     # Check paraphrase
-    if not isinstance(source.get("paraphrase"), str) or len(str(source.get("paraphrase", "")).strip()) == 0:
+    if (
+        not isinstance(source.get("paraphrase"), str)
+        or len(str(source.get("paraphrase", "")).strip()) == 0
+    ):
         return False, "Source missing or empty paraphrase"
 
     # Check relevance
@@ -310,7 +321,9 @@ class RAGPipeline:
                             }
                             for t in db_verse.translations
                             if t.translator != "Swami Gambirananda"
-                        ][:3]  # Limit to 3 translations after filtering
+                        ][
+                            :3
+                        ]  # Limit to 3 translations after filtering
                         if other_translations:
                             verse["metadata"]["translations"] = other_translations
 
@@ -427,7 +440,9 @@ class RAGPipeline:
                         f"LLM returned invalid JSON and post-processing failed: {pp_error}"
                     )
 
-            raise Exception("LLM returned invalid JSON and no verses available for fallback")
+            raise Exception(
+                "LLM returned invalid JSON and no verses available for fallback"
+            )
 
     def validate_output(self, output: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -464,11 +479,17 @@ class RAGPipeline:
                 elif field == "scholar_flag":
                     output["scholar_flag"] = True
                 elif field == "executive_summary":
-                    output["executive_summary"] = "Ethical analysis based on Bhagavad Geeta principles."
+                    output["executive_summary"] = (
+                        "Ethical analysis based on Bhagavad Geeta principles."
+                    )
                 elif field == "recommended_action":
                     output["recommended_action"] = {
                         "option": 1,
-                        "steps": ["Reflect on the situation", "Consider all perspectives", "Act with clarity and integrity"],
+                        "steps": [
+                            "Reflect on the situation",
+                            "Consider all perspectives",
+                            "Act with clarity and integrity",
+                        ],
                         "sources": [],
                     }
                 elif field == "reflection_prompts":
@@ -491,7 +512,9 @@ class RAGPipeline:
 
             # Flag for scholar review since LLM didn't follow constraint
             output["scholar_flag"] = True
-            output["confidence"] = max(output.get("confidence", 0.5) - 0.15, 0.3)  # Penalize confidence
+            output["confidence"] = max(
+                output.get("confidence", 0.5) - 0.15, 0.3
+            )  # Penalize confidence
 
             # Get source verses for use in option generation
             base_verses = output.get("sources", [])
@@ -508,15 +531,24 @@ class RAGPipeline:
                         option["pros"] = []
                     if "cons" not in option or not isinstance(option["cons"], list):
                         option["cons"] = []
-                    if "sources" not in option or not isinstance(option["sources"], list):
+                    if "sources" not in option or not isinstance(
+                        option["sources"], list
+                    ):
                         option["sources"] = []
 
                 # Generate missing options using available context
-                verse_ids = [v.get("canonical_id", f"BG_{i}_{i}") for i, v in enumerate(base_verses[:3], 1)]
+                verse_ids = [
+                    v.get("canonical_id", f"BG_{i}_{i}")
+                    for i, v in enumerate(base_verses[:3], 1)
+                ]
 
                 while len(options) < 3:
                     idx = len(options) + 1
-                    verse_id = verse_ids[idx - 1] if idx - 1 < len(verse_ids) else f"BG_{idx}_{idx}"
+                    verse_id = (
+                        verse_ids[idx - 1]
+                        if idx - 1 < len(verse_ids)
+                        else f"BG_{idx}_{idx}"
+                    )
 
                     missing_option = {
                         "title": f"Option {idx}: Alternative Perspective",
@@ -536,12 +568,16 @@ class RAGPipeline:
                         "sources": [verse_id],
                     }
                     options.append(missing_option)
-                    logger.info(f"Generated missing Option {idx} to meet requirement of 3 options")
+                    logger.info(
+                        f"Generated missing Option {idx} to meet requirement of 3 options"
+                    )
 
                 output["options"] = options
             elif num_options == 0:
                 # Complete failure - generate all 3 default options
-                logger.warning("No options found in LLM response. Generating default options.")
+                logger.warning(
+                    "No options found in LLM response. Generating default options."
+                )
                 output["options"] = [
                     {
                         "title": "Option 1: Path of Duty and Dharma",
@@ -558,7 +594,9 @@ class RAGPipeline:
                             "May require immediate sacrifice",
                             "Outcomes uncertain",
                         ],
-                        "sources": [v.get("canonical_id", "BG_2_47") for v in base_verses[:1]],
+                        "sources": [
+                            v.get("canonical_id", "BG_2_47") for v in base_verses[:1]
+                        ],
                     },
                     {
                         "title": "Option 2: Balanced Approach with Flexibility",
@@ -575,7 +613,9 @@ class RAGPipeline:
                             "Requires ongoing reflection",
                             "May appear uncertain",
                         ],
-                        "sources": [v.get("canonical_id", "BG_3_35") for v in base_verses[1:2]],
+                        "sources": [
+                            v.get("canonical_id", "BG_3_35") for v in base_verses[1:2]
+                        ],
                     },
                     {
                         "title": "Option 3: Seek Deeper Understanding",
@@ -592,20 +632,32 @@ class RAGPipeline:
                             "Delays decision-making",
                             "May require more effort",
                         ],
-                        "sources": [v.get("canonical_id", "BG_18_63") for v in base_verses[2:3]],
+                        "sources": [
+                            v.get("canonical_id", "BG_18_63") for v in base_verses[2:3]
+                        ],
                     },
                 ]
                 output["scholar_flag"] = True
-                output["confidence"] = 0.4  # Very low confidence for completely generated options
+                output["confidence"] = (
+                    0.4  # Very low confidence for completely generated options
+                )
 
         # Comprehensive field type validation
         # Validate executive_summary is a non-empty string
-        if not isinstance(output.get("executive_summary"), str) or len(str(output.get("executive_summary", "")).strip()) == 0:
+        if (
+            not isinstance(output.get("executive_summary"), str)
+            or len(str(output.get("executive_summary", "")).strip()) == 0
+        ):
             logger.warning("Invalid or missing executive_summary, using default")
-            output["executive_summary"] = "Ethical analysis based on Bhagavad Geeta principles."
+            output["executive_summary"] = (
+                "Ethical analysis based on Bhagavad Geeta principles."
+            )
 
         # Validate reflection_prompts is a non-empty list
-        if not isinstance(output.get("reflection_prompts"), list) or len(output.get("reflection_prompts", [])) == 0:
+        if (
+            not isinstance(output.get("reflection_prompts"), list)
+            or len(output.get("reflection_prompts", [])) == 0
+        ):
             logger.warning("Invalid or missing reflection_prompts, using defaults")
             output["reflection_prompts"] = [
                 "What is my duty in this situation?",
@@ -618,23 +670,40 @@ class RAGPipeline:
             logger.warning("Invalid recommended_action structure, using default")
             recommended_action = {
                 "option": 1,
-                "steps": ["Reflect on the situation", "Consider all perspectives", "Act with clarity"],
+                "steps": [
+                    "Reflect on the situation",
+                    "Consider all perspectives",
+                    "Act with clarity",
+                ],
                 "sources": [],
             }
         else:
             # Validate option field is valid integer
-            if not isinstance(recommended_action.get("option"), int) or recommended_action.get("option") not in [1, 2, 3]:
-                logger.warning(f"Invalid recommended_action.option: {recommended_action.get('option')}, defaulting to 1")
+            if not isinstance(
+                recommended_action.get("option"), int
+            ) or recommended_action.get("option") not in [1, 2, 3]:
+                logger.warning(
+                    f"Invalid recommended_action.option: {recommended_action.get('option')}, defaulting to 1"
+                )
                 recommended_action["option"] = 1
 
             # Validate steps is a non-empty list
-            if not isinstance(recommended_action.get("steps"), list) or len(recommended_action.get("steps", [])) == 0:
+            if (
+                not isinstance(recommended_action.get("steps"), list)
+                or len(recommended_action.get("steps", [])) == 0
+            ):
                 logger.warning("Invalid or missing recommended_action.steps")
-                recommended_action["steps"] = ["Reflect on the situation", "Consider all perspectives", "Act with clarity"]
+                recommended_action["steps"] = [
+                    "Reflect on the situation",
+                    "Consider all perspectives",
+                    "Act with clarity",
+                ]
 
             # Validate sources is a list (can be empty)
             if not isinstance(recommended_action.get("sources"), list):
-                logger.warning("Invalid recommended_action.sources, setting to empty list")
+                logger.warning(
+                    "Invalid recommended_action.sources, setting to empty list"
+                )
                 recommended_action["sources"] = []
 
         output["recommended_action"] = recommended_action
@@ -647,13 +716,17 @@ class RAGPipeline:
                 # Minimum fix to keep option viable
                 if "title" not in option or not isinstance(option.get("title"), str):
                     option["title"] = f"Option {i + 1}"
-                if "description" not in option or not isinstance(option.get("description"), str):
+                if "description" not in option or not isinstance(
+                    option.get("description"), str
+                ):
                     option["description"] = "An alternative approach"
                 if "pros" not in option or not isinstance(option.get("pros"), list):
                     option["pros"] = []
                 if "cons" not in option or not isinstance(option.get("cons"), list):
                     option["cons"] = []
-                if "sources" not in option or not isinstance(option.get("sources"), list):
+                if "sources" not in option or not isinstance(
+                    option.get("sources"), list
+                ):
                     option["sources"] = []
 
         # Validate sources array
@@ -668,7 +741,9 @@ class RAGPipeline:
             for i, source in enumerate(sources_array):
                 is_valid, error_msg = _validate_source_object_structure(source)
                 if not is_valid:
-                    logger.warning(f"Source {i} validation failed: {error_msg}, skipping")
+                    logger.warning(
+                        f"Source {i} validation failed: {error_msg}, skipping"
+                    )
                     continue
                 valid_sources.append(source)
 
@@ -681,11 +756,12 @@ class RAGPipeline:
 
         # Validate and filter source references in options
         if sources_array:
-            valid_canonical_ids = {s.get('canonical_id') for s in sources_array if s}
+            valid_canonical_ids = {s.get("canonical_id") for s in sources_array if s}
             for option_idx, option in enumerate(output.get("options", [])):
                 original_sources = option.get("sources", [])
                 valid_sources_for_option = [
-                    src for src in original_sources
+                    src
+                    for src in original_sources
                     if _validate_source_reference(src, sources_array)
                 ]
                 invalid_sources = set(original_sources) - set(valid_sources_for_option)
@@ -701,7 +777,8 @@ class RAGPipeline:
             if rec_action and "sources" in rec_action:
                 original_rec_sources = rec_action.get("sources", [])
                 valid_rec_sources = [
-                    src for src in original_rec_sources
+                    src
+                    for src in original_rec_sources
                     if _validate_source_reference(src, sources_array)
                 ]
                 invalid_rec = set(original_rec_sources) - set(valid_rec_sources)
@@ -846,9 +923,10 @@ class RAGPipeline:
             fallback_prompt = build_ollama_prompt(case_data, retrieved_verses)
         except Exception as e:
             logger.error(f"Context construction failed: {e}")
-            return self._create_fallback_response(
-                case_data, "Failed to construct prompt"
-            ), False
+            return (
+                self._create_fallback_response(case_data, "Failed to construct prompt"),
+                False,
+            )
 
         # Step 3: Generate brief with LLM (with fallback)
         try:

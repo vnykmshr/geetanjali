@@ -9,7 +9,7 @@
  *   import { useCaseData } from './hooks/useCaseData';
  */
 
-export { useApiRequest } from './useApiRequest';
-export { useCaseData } from './useCaseData';
-export { useSEO } from './useSEO';
-export { useShare, shareUrls } from './useShare';
+export { useApiRequest } from "./useApiRequest";
+export { useCaseData } from "./useCaseData";
+export { useSEO } from "./useSEO";
+export { useShare, shareUrls } from "./useShare";

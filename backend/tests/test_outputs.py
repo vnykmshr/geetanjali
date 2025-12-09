@@ -25,9 +25,9 @@ def case_for_analysis(client):
     if response.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
         pytest.skip("Rate limited during fixture setup")
     # Ensure case creation succeeded before returning
-    assert response.status_code == status.HTTP_201_CREATED, (
-        f"Case creation failed: {response.status_code} - {response.text}"
-    )
+    assert (
+        response.status_code == status.HTTP_201_CREATED
+    ), f"Case creation failed: {response.status_code} - {response.text}"
     return {"case": response.json(), "session_id": session_id}
 
 

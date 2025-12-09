@@ -1,5 +1,5 @@
-import { Component } from 'react';
-import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from "react";
+import type { ErrorInfo, ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -18,8 +18,15 @@ function ErrorNavbar() {
     <nav className="bg-white shadow-sm border-b border-gray-200 h-14 sm:h-16 flex-shrink-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
         <div className="flex justify-between items-center h-full">
-          <a href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
-            <img src="/logo.svg" alt="Geetanjali" className="h-8 w-8 sm:h-10 sm:w-10" />
+          <a
+            href="/"
+            className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity"
+          >
+            <img
+              src="/logo.svg"
+              alt="Geetanjali"
+              className="h-8 w-8 sm:h-10 sm:w-10"
+            />
             <span className="text-xl sm:text-2xl font-serif font-bold text-orange-600">
               Geetanjali
             </span>
@@ -46,7 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error details for debugging
-    console.error('Error caught by boundary:', error, errorInfo);
+    console.error("Error caught by boundary:", error, errorInfo);
   }
 
   reset = () => {
@@ -65,9 +72,10 @@ export class ErrorBoundary extends Component<Props, State> {
                   Oops, something went wrong
                 </h1>
                 <p className="text-red-700 mb-4">
-                  We encountered an unexpected error. The page will be reloaded automatically.
+                  We encountered an unexpected error. The page will be reloaded
+                  automatically.
                 </p>
-                {process.env.NODE_ENV === 'development' && this.state.error && (
+                {process.env.NODE_ENV === "development" && this.state.error && (
                   <details className="mt-4 text-left">
                     <summary className="cursor-pointer text-sm font-semibold text-red-700 hover:text-red-800">
                       Error details (development only)

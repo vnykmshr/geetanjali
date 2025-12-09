@@ -38,7 +38,9 @@ def upgrade() -> None:
         sa.Column("name", sa.String(255), nullable=False),
         # Authentication
         sa.Column("password_hash", sa.String(255), nullable=True),
-        sa.Column("email_verified", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column(
+            "email_verified", sa.Boolean(), nullable=False, server_default="false"
+        ),
         sa.Column("last_login", sa.DateTime(), nullable=True),
         # Authorization
         sa.Column("role", sa.String(100), server_default="user"),
@@ -58,7 +60,12 @@ def upgrade() -> None:
         "refresh_tokens",
         # Identity
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("user_id", sa.String(36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "user_id",
+            sa.String(36),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         # Token data
         sa.Column("token_hash", sa.String(255), nullable=False, unique=True),
         sa.Column("expires_at", sa.DateTime(), nullable=False),
@@ -95,7 +102,9 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         # Constraints
-        sa.CheckConstraint("chapter >= 1 AND chapter <= 18", name="check_chapter_range"),
+        sa.CheckConstraint(
+            "chapter >= 1 AND chapter <= 18", name="check_chapter_range"
+        ),
         sa.CheckConstraint("verse >= 1", name="check_verse_positive"),
     )
     op.create_index("ix_verses_canonical_id", "verses", ["canonical_id"])
@@ -109,7 +118,12 @@ def upgrade() -> None:
         "commentaries",
         # Identity
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("verse_id", sa.String(36), sa.ForeignKey("verses.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "verse_id",
+            sa.String(36),
+            sa.ForeignKey("verses.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         # Content
         sa.Column("text", sa.Text(), nullable=False),
         sa.Column("language", sa.String(10), server_default="en"),
@@ -134,7 +148,12 @@ def upgrade() -> None:
         "translations",
         # Identity
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("verse_id", sa.String(36), sa.ForeignKey("verses.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "verse_id",
+            sa.String(36),
+            sa.ForeignKey("verses.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         # Content
         sa.Column("text", sa.Text(), nullable=False),
         sa.Column("language", sa.String(10), server_default="en"),
@@ -159,7 +178,12 @@ def upgrade() -> None:
         "cases",
         # Identity
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("user_id", sa.String(36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=True),
+        sa.Column(
+            "user_id",
+            sa.String(36),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=True,
+        ),
         sa.Column("session_id", sa.String(255), nullable=True),
         # Content
         sa.Column("title", sa.String(500), nullable=False),
@@ -196,14 +220,21 @@ def upgrade() -> None:
         "outputs",
         # Identity
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("case_id", sa.String(36), sa.ForeignKey("cases.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "case_id",
+            sa.String(36),
+            sa.ForeignKey("cases.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         # Content
         sa.Column("result_json", sa.JSON(), nullable=False),
         sa.Column("executive_summary", sa.Text(), nullable=True),
         sa.Column("confidence", sa.Float(), nullable=True),
         # Review
         sa.Column("scholar_flag", sa.Boolean(), server_default="false"),
-        sa.Column("reviewed_by", sa.String(36), sa.ForeignKey("users.id"), nullable=True),
+        sa.Column(
+            "reviewed_by", sa.String(36), sa.ForeignKey("users.id"), nullable=True
+        ),
         sa.Column("reviewed_at", sa.DateTime(), nullable=True),
         # Timestamps
         sa.Column("created_at", sa.DateTime(), nullable=False),
@@ -223,11 +254,25 @@ def upgrade() -> None:
         "messages",
         # Identity
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("case_id", sa.String(36), sa.ForeignKey("cases.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "case_id",
+            sa.String(36),
+            sa.ForeignKey("cases.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         # Content
-        sa.Column("role", sa.Enum("user", "assistant", name="messagerole", create_type=False), nullable=False),
+        sa.Column(
+            "role",
+            sa.Enum("user", "assistant", name="messagerole", create_type=False),
+            nullable=False,
+        ),
         sa.Column("content", sa.Text(), nullable=False),
-        sa.Column("output_id", sa.String(36), sa.ForeignKey("outputs.id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "output_id",
+            sa.String(36),
+            sa.ForeignKey("outputs.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
         # Timestamps
         sa.Column("created_at", sa.DateTime(), nullable=False),
     )
@@ -242,8 +287,18 @@ def upgrade() -> None:
         "feedback",
         # Identity
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("output_id", sa.String(36), sa.ForeignKey("outputs.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("user_id", sa.String(36), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "output_id",
+            sa.String(36),
+            sa.ForeignKey("outputs.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "user_id",
+            sa.String(36),
+            sa.ForeignKey("users.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
         sa.Column("session_id", sa.String(36), nullable=True),
         # Content
         sa.Column("rating", sa.Boolean(), nullable=False),
@@ -260,7 +315,9 @@ def upgrade() -> None:
     # CONTACT_MESSAGES - Contact form submissions
     # =========================================================================
     # Create contacttype enum if it doesn't exist
-    op.execute("CREATE TYPE IF NOT EXISTS contacttype AS ENUM ('feedback', 'question', 'bug_report', 'feature_request', 'other')")
+    op.execute(
+        "CREATE TYPE IF NOT EXISTS contacttype AS ENUM ('feedback', 'question', 'bug_report', 'feature_request', 'other')"
+    )
 
     op.create_table(
         "contact_messages",
@@ -270,7 +327,19 @@ def upgrade() -> None:
         sa.Column("name", sa.String(100), nullable=False),
         sa.Column("email", sa.String(255), nullable=False),
         # Content
-        sa.Column("message_type", sa.Enum("feedback", "question", "bug_report", "feature_request", "other", name="contacttype", create_type=False), nullable=False),
+        sa.Column(
+            "message_type",
+            sa.Enum(
+                "feedback",
+                "question",
+                "bug_report",
+                "feature_request",
+                "other",
+                name="contacttype",
+                create_type=False,
+            ),
+            nullable=False,
+        ),
         sa.Column("subject", sa.String(200), nullable=True),
         sa.Column("message", sa.Text(), nullable=False),
         # Status
@@ -278,7 +347,9 @@ def upgrade() -> None:
         # Timestamps
         sa.Column("created_at", sa.DateTime(), nullable=False),
     )
-    op.create_index("ix_contact_messages_created_at", "contact_messages", ["created_at"])
+    op.create_index(
+        "ix_contact_messages_created_at", "contact_messages", ["created_at"]
+    )
 
 
 def downgrade() -> None:

@@ -12,7 +12,9 @@ from models.user import User
 from utils.jwt import decode_access_token
 
 # UUID v4 format regex for session ID validation
-SESSION_ID_PATTERN = re.compile(r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", re.IGNORECASE)
+SESSION_ID_PATTERN = re.compile(
+    r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", re.IGNORECASE
+)
 
 # HTTPBearer scheme for extracting Bearer tokens from Authorization header
 security = HTTPBearer()

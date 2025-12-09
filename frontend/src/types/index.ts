@@ -1,6 +1,12 @@
 // API Response Types based on project-description.md
 
-export type CaseStatus = 'draft' | 'pending' | 'processing' | 'completed' | 'failed' | 'policy_violation';
+export type CaseStatus =
+  | "draft"
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "policy_violation";
 
 export interface Case {
   id: string;
@@ -10,8 +16,8 @@ export interface Case {
   role: string;
   stakeholders: string[];
   constraints: string[];
-  horizon: 'short' | 'medium' | 'long';
-  sensitivity?: 'low' | 'medium' | 'high';
+  horizon: "short" | "medium" | "long";
+  sensitivity?: "low" | "medium" | "high";
   status?: CaseStatus;
   is_public?: boolean;
   public_slug?: string | null;
@@ -49,11 +55,13 @@ export interface Output {
   result_json: {
     executive_summary: string;
     options: Option[];
-    recommended_action: string | {
-      option?: number;
-      steps?: string[];
-      sources?: string[];
-    };
+    recommended_action:
+      | string
+      | {
+          option?: number;
+          steps?: string[];
+          sources?: string[];
+        };
     reflection_prompts: string[];
     sources: {
       canonical_id: string;
@@ -74,7 +82,7 @@ export interface ScholarReviewRequest {
 export interface Message {
   id: string;
   case_id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   output_id?: string;
   created_at: string;

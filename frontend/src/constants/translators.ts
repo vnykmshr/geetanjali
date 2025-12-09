@@ -4,11 +4,11 @@
  */
 
 export const TRANSLATOR_PRIORITY: Record<string, number> = {
-  'Swami Gambirananda': 1,
-  'Swami Adidevananda': 2,
-  'Swami Sivananda': 3,
-  'Dr. S. Sankaranarayan': 4,
-  'Shri Purohit Swami': 5,
+  "Swami Gambirananda": 1,
+  "Swami Adidevananda": 2,
+  "Swami Sivananda": 3,
+  "Dr. S. Sankaranarayan": 4,
+  "Shri Purohit Swami": 5,
 };
 
 /**

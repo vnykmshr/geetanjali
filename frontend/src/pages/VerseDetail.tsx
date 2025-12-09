@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { versesApi } from '../lib/api';
-import { formatSanskritLines, isSpeakerIntro } from '../lib/sanskritFormatter';
-import { PRINCIPLE_TAXONOMY } from '../constants/principles';
-import { getTranslatorPriority } from '../constants/translators';
-import type { Verse, Translation } from '../types';
-import { Navbar, ContentNotFound } from '../components';
-import { errorMessages } from '../lib/errorMessages';
-import { useSEO } from '../hooks';
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { versesApi } from "../lib/api";
+import { formatSanskritLines, isSpeakerIntro } from "../lib/sanskritFormatter";
+import { PRINCIPLE_TAXONOMY } from "../constants/principles";
+import { getTranslatorPriority } from "../constants/translators";
+import type { Verse, Translation } from "../types";
+import { Navbar, ContentNotFound } from "../components";
+import { errorMessages } from "../lib/errorMessages";
+import { useSEO } from "../hooks";
 
 // Sort translations by priority
 function sortTranslations(translations: Translation[]): Translation[] {
@@ -17,7 +17,6 @@ function sortTranslations(translations: Translation[]): Translation[] {
     return priorityA - priorityB;
   });
 }
-
 
 export default function VerseDetail() {
   const { canonicalId } = useParams<{ canonicalId: string }>();
@@ -38,12 +37,12 @@ export default function VerseDetail() {
 
   // Dynamic SEO based on verse data
   useSEO({
-    title: verse ? `Bhagavad Geeta ${verse.chapter}.${verse.verse}` : 'Verse',
+    title: verse ? `Bhagavad Geeta ${verse.chapter}.${verse.verse}` : "Verse",
     description: verse?.paraphrase_en
       ? `${verse.paraphrase_en.slice(0, 150)}...`
-      : 'Explore this verse from the Bhagavad Geeta with multiple translations and leadership insights.',
-    canonical: canonicalUppercase ? `/verses/${canonicalUppercase}` : '/verses',
-    ogType: 'article',
+      : "Explore this verse from the Bhagavad Geeta with multiple translations and leadership insights.",
+    canonical: canonicalUppercase ? `/verses/${canonicalUppercase}` : "/verses",
+    ogType: "article",
   });
 
   useEffect(() => {
@@ -96,13 +95,18 @@ export default function VerseDetail() {
 
   // Separate Hindi and English translations
   const hindiTranslations = translations.filter(
-    t => t.language === 'hindi' || t.translator === 'Swami Tejomayananda'
+    (t) => t.language === "hindi" || t.translator === "Swami Tejomayananda",
   );
   const englishTranslations = translations.filter(
-    t => t.language === 'en' || t.language === 'english' || (t.language && !t.language.includes('hindi'))
+    (t) =>
+      t.language === "en" ||
+      t.language === "english" ||
+      (t.language && !t.language.includes("hindi")),
   );
   const primaryHindi = hindiTranslations[0];
-  const primaryEnglish =englishTranslations.find(t => t.translator === 'Swami Gambirananda') || englishTranslations[0];
+  const primaryEnglish =
+    englishTranslations.find((t) => t.translator === "Swami Gambirananda") ||
+    englishTranslations[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
@@ -124,15 +128,24 @@ export default function VerseDetail() {
             {/* Sanskrit Spotlight */}
             {verse.sanskrit_devanagari && (
               <div className="mb-4 sm:mb-6 lg:mb-8 text-center pt-2 sm:pt-4">
-                <div className="text-3xl sm:text-4xl text-amber-400/50 mb-3 sm:mb-4 lg:mb-6 font-light">ॐ</div>
-                <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-serif text-amber-900/70 leading-relaxed tracking-wide mb-3 sm:mb-4 lg:mb-6">
-                  {formatSanskritLines(verse.sanskrit_devanagari).map((line, idx) => (
-                    <p key={idx} className={`${isSpeakerIntro(line) ? 'text-lg sm:text-xl lg:text-2xl text-amber-700/60 mb-2 sm:mb-4' : 'mb-1 sm:mb-2'}`}>
-                      {line}
-                    </p>
-                  ))}
+                <div className="text-3xl sm:text-4xl text-amber-400/50 mb-3 sm:mb-4 lg:mb-6 font-light">
+                  ॐ
                 </div>
-                <div className="text-amber-600/70 text-base sm:text-lg font-serif">॥ {verse.chapter}.{verse.verse} ॥</div>
+                <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-serif text-amber-900/70 leading-relaxed tracking-wide mb-3 sm:mb-4 lg:mb-6">
+                  {formatSanskritLines(verse.sanskrit_devanagari).map(
+                    (line, idx) => (
+                      <p
+                        key={idx}
+                        className={`${isSpeakerIntro(line) ? "text-lg sm:text-xl lg:text-2xl text-amber-700/60 mb-2 sm:mb-4" : "mb-1 sm:mb-2"}`}
+                      >
+                        {line}
+                      </p>
+                    ),
+                  )}
+                </div>
+                <div className="text-amber-600/70 text-base sm:text-lg font-serif">
+                  ॥ {verse.chapter}.{verse.verse} ॥
+                </div>
               </div>
             )}
 
@@ -149,33 +162,37 @@ export default function VerseDetail() {
             )}
 
             {/* Consulting Principles - Prominent */}
-            {verse.consulting_principles && verse.consulting_principles.length > 0 && (
-              <div className="mb-4 sm:mb-6 lg:mb-8">
-                <p className="text-xs font-semibold text-amber-700/70 uppercase tracking-widest mb-3 sm:mb-4">
-                  Consulting Principles
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                  {verse.consulting_principles.map((principleId) => {
-                    const principle = PRINCIPLE_TAXONOMY[principleId as keyof typeof PRINCIPLE_TAXONOMY];
-                    return (
-                      <div
-                        key={principleId}
-                        className="bg-white/70 backdrop-blur-sm rounded-lg p-3 sm:p-4 lg:p-5 border border-orange-100/50 hover:border-orange-200 hover:bg-white/90 transition-all shadow-sm"
-                      >
-                        <h3 className="font-semibold text-orange-800 text-sm sm:text-base mb-1 sm:mb-2">
-                          {principle?.label || principleId}
-                        </h3>
-                        {principle?.description && (
-                          <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
-                            {principle.description}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
+            {verse.consulting_principles &&
+              verse.consulting_principles.length > 0 && (
+                <div className="mb-4 sm:mb-6 lg:mb-8">
+                  <p className="text-xs font-semibold text-amber-700/70 uppercase tracking-widest mb-3 sm:mb-4">
+                    Consulting Principles
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    {verse.consulting_principles.map((principleId) => {
+                      const principle =
+                        PRINCIPLE_TAXONOMY[
+                          principleId as keyof typeof PRINCIPLE_TAXONOMY
+                        ];
+                      return (
+                        <div
+                          key={principleId}
+                          className="bg-white/70 backdrop-blur-sm rounded-lg p-3 sm:p-4 lg:p-5 border border-orange-100/50 hover:border-orange-200 hover:bg-white/90 transition-all shadow-sm"
+                        >
+                          <h3 className="font-semibold text-orange-800 text-sm sm:text-base mb-1 sm:mb-2">
+                            {principle?.label || principleId}
+                          </h3>
+                          {principle?.description && (
+                            <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
+                              {principle.description}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Divider */}
             <div className="my-4 sm:my-6 h-px bg-gradient-to-r from-transparent via-amber-300/50 to-transparent" />
@@ -222,16 +239,20 @@ export default function VerseDetail() {
           {translations.length > 0 && (
             <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Translations</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                  Translations
+                </h2>
                 <button
                   onClick={() => setShowAllTranslations(!showAllTranslations)}
                   className={`relative inline-flex h-7 sm:h-8 w-12 sm:w-14 items-center rounded-full transition-colors ${
-                    showAllTranslations ? 'bg-amber-600' : 'bg-gray-300'
+                    showAllTranslations ? "bg-amber-600" : "bg-gray-300"
                   }`}
                 >
                   <span
                     className={`inline-block h-5 sm:h-6 w-5 sm:w-6 transform rounded-full bg-white transition-transform ${
-                      showAllTranslations ? 'translate-x-6 sm:translate-x-7' : 'translate-x-1'
+                      showAllTranslations
+                        ? "translate-x-6 sm:translate-x-7"
+                        : "translate-x-1"
                     }`}
                   />
                 </button>
@@ -247,7 +268,9 @@ export default function VerseDetail() {
                         </p>
                         <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-600">
                           {translation.translator && (
-                            <span className="font-medium">— {translation.translator}</span>
+                            <span className="font-medium">
+                              — {translation.translator}
+                            </span>
                           )}
                           {translation.school && (
                             <span>{translation.school}</span>
@@ -271,14 +294,16 @@ export default function VerseDetail() {
                 to={`/verses/BG_${verse.chapter}_${verse.verse - 1}`}
                 className="text-red-600 hover:text-red-700 font-medium"
               >
-                ← <span className="hidden sm:inline">Previous Verse</span><span className="sm:hidden">Prev</span>
+                ← <span className="hidden sm:inline">Previous Verse</span>
+                <span className="sm:hidden">Prev</span>
               </Link>
             ) : verse.chapter > 1 ? (
               <Link
                 to={`/verses?chapter=${verse.chapter - 1}`}
                 className="text-red-600 hover:text-red-700 font-medium"
               >
-                ← <span className="hidden sm:inline">Previous Chapter</span><span className="sm:hidden">Prev Ch.</span>
+                ← <span className="hidden sm:inline">Previous Chapter</span>
+                <span className="sm:hidden">Prev Ch.</span>
               </Link>
             ) : (
               <div />
@@ -288,7 +313,8 @@ export default function VerseDetail() {
                 to={`/verses/BG_${verse.chapter}_${verse.verse + 1}`}
                 className="text-red-600 hover:text-red-700 font-medium"
               >
-                <span className="hidden sm:inline">Next Verse</span><span className="sm:hidden">Next</span> →
+                <span className="hidden sm:inline">Next Verse</span>
+                <span className="sm:hidden">Next</span> →
               </Link>
             ) : (
               <div />

@@ -1,11 +1,11 @@
-import { Link, useSearchParams } from 'react-router-dom';
-import { useEffect, useState, useCallback } from 'react';
-import { versesApi } from '../lib/api';
-import type { Verse } from '../types';
-import { Navbar } from '../components/Navbar';
-import { VerseCard } from '../components/VerseCard';
-import { errorMessages } from '../lib/errorMessages';
-import { useSEO } from '../hooks';
+import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
+import { versesApi } from "../lib/api";
+import type { Verse } from "../types";
+import { Navbar } from "../components/Navbar";
+import { VerseCard } from "../components/VerseCard";
+import { errorMessages } from "../lib/errorMessages";
+import { useSEO } from "../hooks";
 
 const VERSES_PER_PAGE = 20;
 
@@ -17,12 +17,12 @@ function BackToTopButton() {
     const handleScroll = () => {
       setVisible(window.scrollY > 400);
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (!visible) return null;
@@ -33,21 +33,32 @@ function BackToTopButton() {
       className="fixed bottom-6 right-6 z-40 w-12 h-12 bg-white border border-gray-300 rounded-full shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all flex items-center justify-center"
       aria-label="Back to top"
     >
-      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+      <svg
+        className="w-5 h-5 text-gray-600"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M5 10l7-7m0 0l7 7m-7-7v18"
+        />
       </svg>
     </button>
   );
 }
 
 // Filter modes: 'featured' shows curated verses, 'all' shows all 701 verses
-type FilterMode = 'featured' | 'all' | number; // number = specific chapter
+type FilterMode = "featured" | "all" | number; // number = specific chapter
 
 export default function Verses() {
   useSEO({
-    title: 'Browse Verses',
-    description: 'Explore all 701 verses of the Bhagavad Geeta. Search by chapter, browse featured verses, and discover timeless wisdom.',
-    canonical: '/verses',
+    title: "Browse Verses",
+    description:
+      "Explore all 701 verses of the Bhagavad Geeta. Search by chapter, browse featured verses, and discover timeless wisdom.",
+    canonical: "/verses",
   });
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -60,26 +71,26 @@ export default function Verses() {
 
   // Parse initial filter from URL
   const getInitialFilter = (): FilterMode => {
-    const chapter = searchParams.get('chapter');
+    const chapter = searchParams.get("chapter");
     if (chapter) return parseInt(chapter);
-    const showAll = searchParams.get('all');
-    if (showAll === 'true') return 'all';
-    return 'featured';
+    const showAll = searchParams.get("all");
+    if (showAll === "true") return "all";
+    return "featured";
   };
 
   const [filterMode, setFilterMode] = useState<FilterMode>(getInitialFilter);
   const [showChapterDropdown, setShowChapterDropdown] = useState(false);
 
   // Derived state
-  const selectedChapter = typeof filterMode === 'number' ? filterMode : null;
-  const showFeatured = filterMode === 'featured';
-  const showAll = filterMode === 'all';
+  const selectedChapter = typeof filterMode === "number" ? filterMode : null;
+  const showFeatured = filterMode === "featured";
+  const showAll = filterMode === "all";
 
   // Memoized load functions
   const loadCount = useCallback(async () => {
     try {
-      const chapter = typeof filterMode === 'number' ? filterMode : undefined;
-      const featured = filterMode === 'featured' ? true : undefined;
+      const chapter = typeof filterMode === "number" ? filterMode : undefined;
+      const featured = filterMode === "featured" ? true : undefined;
       const count = await versesApi.count(chapter, featured);
       setTotalCount(count);
     } catch {
@@ -87,37 +98,45 @@ export default function Verses() {
     }
   }, [filterMode]);
 
-  const loadVerses = useCallback(async (reset: boolean = false) => {
-    try {
-      if (reset) {
-        setLoading(true);
-        setVerses([]);
-        setHasMore(true);
-      } else {
-        setLoadingMore(true);
+  const loadVerses = useCallback(
+    async (reset: boolean = false) => {
+      try {
+        if (reset) {
+          setLoading(true);
+          setVerses([]);
+          setHasMore(true);
+        } else {
+          setLoadingMore(true);
+        }
+        setError(null);
+
+        const chapter = typeof filterMode === "number" ? filterMode : undefined;
+        const featured = filterMode === "featured" ? true : undefined;
+        const skip = reset ? 0 : undefined;
+
+        const data = await versesApi.list(
+          skip ?? 0,
+          VERSES_PER_PAGE,
+          chapter,
+          featured,
+        );
+
+        if (reset) {
+          setVerses(data);
+        } else {
+          setVerses((prev) => [...prev, ...data]);
+        }
+
+        setHasMore(data.length === VERSES_PER_PAGE);
+      } catch (err) {
+        setError(errorMessages.verseLoad(err));
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-      setError(null);
-
-      const chapter = typeof filterMode === 'number' ? filterMode : undefined;
-      const featured = filterMode === 'featured' ? true : undefined;
-      const skip = reset ? 0 : undefined;
-
-      const data = await versesApi.list(skip ?? 0, VERSES_PER_PAGE, chapter, featured);
-
-      if (reset) {
-        setVerses(data);
-      } else {
-        setVerses(prev => [...prev, ...data]);
-      }
-
-      setHasMore(data.length === VERSES_PER_PAGE);
-    } catch (err) {
-      setError(errorMessages.verseLoad(err));
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [filterMode]);
+    },
+    [filterMode],
+  );
 
   useEffect(() => {
     loadVerses(true);
@@ -130,15 +149,20 @@ export default function Verses() {
     setError(null);
 
     try {
-      const chapter = typeof filterMode === 'number' ? filterMode : undefined;
-      const featured = filterMode === 'featured' ? true : undefined;
+      const chapter = typeof filterMode === "number" ? filterMode : undefined;
+      const featured = filterMode === "featured" ? true : undefined;
 
-      const data = await versesApi.list(verses.length, VERSES_PER_PAGE, chapter, featured);
+      const data = await versesApi.list(
+        verses.length,
+        VERSES_PER_PAGE,
+        chapter,
+        featured,
+      );
 
       // Deduplicate when adding new verses
-      setVerses(prev => {
-        const existingIds = new Set(prev.map(v => v.id));
-        const newVerses = data.filter(v => !existingIds.has(v.id));
+      setVerses((prev) => {
+        const existingIds = new Set(prev.map((v) => v.id));
+        const newVerses = data.filter((v) => !existingIds.has(v.id));
         return [...prev, ...newVerses];
       });
       setHasMore(data.length === VERSES_PER_PAGE);
@@ -152,19 +176,19 @@ export default function Verses() {
   const handleFilterSelect = (filter: FilterMode) => {
     setFilterMode(filter);
 
-    if (typeof filter === 'number') {
+    if (typeof filter === "number") {
       setSearchParams({ chapter: filter.toString() });
-    } else if (filter === 'all') {
-      setSearchParams({ all: 'true' });
+    } else if (filter === "all") {
+      setSearchParams({ all: "true" });
     } else {
       setSearchParams({});
     }
   };
 
   const getFilterDescription = () => {
-    if (showFeatured) return 'featured ';
+    if (showFeatured) return "featured ";
     if (selectedChapter) return `from Chapter ${selectedChapter} `;
-    return '';
+    return "";
   };
 
   return (
@@ -178,22 +202,22 @@ export default function Verses() {
           <div className="flex gap-1.5 sm:gap-2 items-center">
             {/* Featured */}
             <button
-              onClick={() => handleFilterSelect('featured')}
+              onClick={() => handleFilterSelect("featured")}
               className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 showFeatured
-                  ? 'bg-red-600 text-white shadow-md'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  ? "bg-red-600 text-white shadow-md"
+                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
               }`}
             >
               Featured
             </button>
             {/* All */}
             <button
-              onClick={() => handleFilterSelect('all')}
+              onClick={() => handleFilterSelect("all")}
               className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 showAll
-                  ? 'bg-red-600 text-white shadow-md'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  ? "bg-red-600 text-white shadow-md"
+                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
               }`}
             >
               All
@@ -208,18 +232,23 @@ export default function Verses() {
                 onClick={() => setShowChapterDropdown(!showChapterDropdown)}
                 className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 ${
                   selectedChapter
-                    ? 'bg-red-600 text-white shadow-md'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                    ? "bg-red-600 text-white shadow-md"
+                    : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
                 }`}
               >
-                {selectedChapter ? `Chapter ${selectedChapter}` : 'Chapter'}
+                {selectedChapter ? `Chapter ${selectedChapter}` : "Chapter"}
                 <svg
-                  className={`w-4 h-4 transition-transform ${showChapterDropdown ? 'rotate-180' : ''}`}
+                  className={`w-4 h-4 transition-transform ${showChapterDropdown ? "rotate-180" : ""}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
 
@@ -234,22 +263,24 @@ export default function Verses() {
                   {/* Panel */}
                   <div className="absolute right-0 mt-2 p-3 bg-white rounded-xl shadow-xl border border-gray-200 z-20 w-64 sm:w-72">
                     <div className="grid grid-cols-6 gap-2">
-                      {Array.from({ length: 18 }, (_, i) => i + 1).map((chapter) => (
-                        <button
-                          key={chapter}
-                          onClick={() => {
-                            handleFilterSelect(chapter);
-                            setShowChapterDropdown(false);
-                          }}
-                          className={`h-10 rounded-lg text-sm font-medium transition-all ${
-                            selectedChapter === chapter
-                              ? 'bg-red-600 text-white shadow-md'
-                              : 'bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-700 border border-gray-200'
-                          }`}
-                        >
-                          {chapter}
-                        </button>
-                      ))}
+                      {Array.from({ length: 18 }, (_, i) => i + 1).map(
+                        (chapter) => (
+                          <button
+                            key={chapter}
+                            onClick={() => {
+                              handleFilterSelect(chapter);
+                              setShowChapterDropdown(false);
+                            }}
+                            className={`h-10 rounded-lg text-sm font-medium transition-all ${
+                              selectedChapter === chapter
+                                ? "bg-red-600 text-white shadow-md"
+                                : "bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-700 border border-gray-200"
+                            }`}
+                          >
+                            {chapter}
+                          </button>
+                        ),
+                      )}
                     </div>
                   </div>
                 </>
@@ -265,7 +296,9 @@ export default function Verses() {
           {/* Error State */}
           {error && (
             <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-              <p className="font-semibold text-sm sm:text-base">Error loading verses</p>
+              <p className="font-semibold text-sm sm:text-base">
+                Error loading verses
+              </p>
               <p className="text-xs sm:text-sm">{error}</p>
             </div>
           )}
@@ -273,17 +306,23 @@ export default function Verses() {
           {/* Loading State */}
           {loading && verses.length === 0 ? (
             <div className="flex justify-center items-center py-16 sm:py-20">
-              <div className="text-gray-500 text-base sm:text-lg">Loading verses...</div>
+              <div className="text-gray-500 text-base sm:text-lg">
+                Loading verses...
+              </div>
             </div>
           ) : verses.length === 0 ? (
             <div className="text-center py-16 sm:py-20">
-              <p className="text-gray-500 text-base sm:text-lg">No verses found</p>
+              <p className="text-gray-500 text-base sm:text-lg">
+                No verses found
+              </p>
             </div>
           ) : (
             <>
               {/* Results Count */}
               <div className="mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600">
-                Showing {verses.length}{totalCount ? ` of ${totalCount}` : ''} {getFilterDescription()}verse{(totalCount || verses.length) !== 1 ? 's' : ''}
+                Showing {verses.length}
+                {totalCount ? ` of ${totalCount}` : ""} {getFilterDescription()}
+                verse{(totalCount || verses.length) !== 1 ? "s" : ""}
               </div>
 
               {/* Verse Grid */}
@@ -315,14 +354,29 @@ export default function Verses() {
                   >
                     {loadingMore ? (
                       <span className="flex items-center gap-2">
-                        <svg className="animate-spin h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        <svg
+                          className="animate-spin h-4 w-4 text-gray-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
                         </svg>
                         Loading...
                       </span>
                     ) : (
-                      'Load More'
+                      "Load More"
                     )}
                   </button>
                 </div>

@@ -57,14 +57,18 @@ async def get_verses_count(
 @limiter.limit("60/minute")
 async def search_verses(
     request: Request,
-    q: Optional[str] = Query(None, max_length=200, description="Search by canonical ID or principle"),
+    q: Optional[str] = Query(
+        None, max_length=200, description="Search by canonical ID or principle"
+    ),
     chapter: Optional[int] = Query(None, ge=1, le=18, description="Filter by chapter"),
     featured: Optional[bool] = Query(None, description="Filter by featured status"),
     principles: Optional[str] = Query(
         None, description="Comma-separated principle tags"
     ),
     skip: int = Query(default=0, ge=0, description="Number of records to skip"),
-    limit: int = Query(default=20, ge=1, le=50, description="Maximum number of records (1-50)"),
+    limit: int = Query(
+        default=20, ge=1, le=50, description="Maximum number of records (1-50)"
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -271,7 +275,9 @@ async def get_verse(request: Request, canonical_id: str, db: Session = Depends(g
 
 @router.get("/{canonical_id}/translations", response_model=List[TranslationResponse])
 @limiter.limit("60/minute")
-async def get_verse_translations(request: Request, canonical_id: str, db: Session = Depends(get_db)):
+async def get_verse_translations(
+    request: Request, canonical_id: str, db: Session = Depends(get_db)
+):
     """
     Get all translations for a verse by canonical ID.
 

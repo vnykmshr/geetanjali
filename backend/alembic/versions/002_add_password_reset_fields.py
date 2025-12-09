@@ -20,13 +20,9 @@ depends_on = None
 
 def upgrade() -> None:
     # Add password reset columns to users table
+    op.add_column("users", sa.Column("reset_token_hash", sa.String(255), nullable=True))
     op.add_column(
-        "users",
-        sa.Column("reset_token_hash", sa.String(255), nullable=True)
-    )
-    op.add_column(
-        "users",
-        sa.Column("reset_token_expires", sa.DateTime(), nullable=True)
+        "users", sa.Column("reset_token_expires", sa.DateTime(), nullable=True)
     )
 
 

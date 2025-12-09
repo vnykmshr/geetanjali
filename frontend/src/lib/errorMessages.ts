@@ -4,83 +4,91 @@
  * Converts technical API errors into human-friendly messages
  */
 
-import { AxiosError } from 'axios';
+import { AxiosError } from "axios";
 
 // Context-specific error messages
 type ErrorContext =
-  | 'login'
-  | 'signup'
-  | 'logout'
-  | 'refresh'
-  | 'case_create'
-  | 'case_load'
-  | 'case_analyze'
-  | 'verse_load'
-  | 'search'
-  | 'general';
+  | "login"
+  | "signup"
+  | "logout"
+  | "refresh"
+  | "case_create"
+  | "case_load"
+  | "case_analyze"
+  | "verse_load"
+  | "search"
+  | "general";
 
 // Shared messages for common patterns
 const SHARED = {
-  serverUnavailable: 'Our servers are temporarily unavailable. Please try again later.',
-  somethingWrong: 'Something went wrong. Please try again later.',
-  checkConnection: 'Unable to connect. Please check your internet connection.',
-  tooManyRequests: 'Too many requests. Please wait a moment and try again.',
-  requestTooLong: 'The request took too long. Please try again.',
-  sessionExpired: 'Your session has expired. Please sign in again.',
-  noPermission: 'You do not have permission to perform this action.',
+  serverUnavailable:
+    "Our servers are temporarily unavailable. Please try again later.",
+  somethingWrong: "Something went wrong. Please try again later.",
+  checkConnection: "Unable to connect. Please check your internet connection.",
+  tooManyRequests: "Too many requests. Please wait a moment and try again.",
+  requestTooLong: "The request took too long. Please try again.",
+  sessionExpired: "Your session has expired. Please sign in again.",
+  noPermission: "You do not have permission to perform this action.",
 };
 
 // HTTP status code to friendly message mapping
-const HTTP_STATUS_MESSAGES: Record<number, Partial<Record<ErrorContext, string>>> = {
+const HTTP_STATUS_MESSAGES: Record<
+  number,
+  Partial<Record<ErrorContext, string>>
+> = {
   400: {
-    login: 'Please check your email and password format.',
-    signup: 'Please check your information and try again.',
-    case_create: 'Please check your input and try again.',
-    search: 'Please try a different search term.',
-    general: 'Please check your input and try again.',
+    login: "Please check your email and password format.",
+    signup: "Please check your information and try again.",
+    case_create: "Please check your input and try again.",
+    search: "Please try a different search term.",
+    general: "Please check your input and try again.",
   },
   401: {
-    login: 'Invalid email or password. Please try again.',
+    login: "Invalid email or password. Please try again.",
     refresh: SHARED.sessionExpired,
-    case_create: 'Please sign in to submit a consultation.',
-    case_load: 'Please sign in to view this consultation.',
-    general: 'Please sign in to continue.',
+    case_create: "Please sign in to submit a consultation.",
+    case_load: "Please sign in to view this consultation.",
+    general: "Please sign in to continue.",
   },
   403: {
-    login: 'Access denied. Please contact support if this continues.',
-    signup: 'Account creation is currently unavailable.',
-    case_load: 'You do not have permission to view this consultation.',
+    login: "Access denied. Please contact support if this continues.",
+    signup: "Account creation is currently unavailable.",
+    case_load: "You do not have permission to view this consultation.",
     general: SHARED.noPermission,
   },
   404: {
-    login: 'Account not found. Please check your email or sign up.',
-    case_load: 'Consultation not found.',
-    case_analyze: 'Case not found.',
-    verse_load: 'Verse not found.',
-    search: 'No results found.',
-    general: 'The requested item was not found.',
+    login: "Account not found. Please check your email or sign up.",
+    case_load: "Consultation not found.",
+    case_analyze: "Case not found.",
+    verse_load: "Verse not found.",
+    search: "No results found.",
+    general: "The requested item was not found.",
   },
   409: {
-    signup: 'An account with this email already exists. Please sign in instead.',
-    case_analyze: 'Analysis already in progress.',
-    general: 'A conflict occurred. Please try again.',
+    signup:
+      "An account with this email already exists. Please sign in instead.",
+    case_analyze: "Analysis already in progress.",
+    general: "A conflict occurred. Please try again.",
   },
   422: {
-    login: 'Invalid email or password format.',
-    signup: 'Please check your information. Make sure your password meets the requirements.',
-    case_create: 'Please provide more details in your question.',
-    general: 'Please check your input and try again.',
+    login: "Invalid email or password format.",
+    signup:
+      "Please check your information. Make sure your password meets the requirements.",
+    case_create: "Please provide more details in your question.",
+    general: "Please check your input and try again.",
   },
   429: {
     login: SHARED.tooManyRequests,
-    case_create: 'You have submitted too many consultations. Please wait a moment.',
-    case_analyze: 'Analysis rate limit reached. Please wait a moment.',
+    case_create:
+      "You have submitted too many consultations. Please wait a moment.",
+    case_analyze: "Analysis rate limit reached. Please wait a moment.",
     general: SHARED.tooManyRequests,
   },
   500: {
-    logout: 'Something went wrong. You have been signed out locally.',
-    case_create: 'Unable to submit your question right now. Please try again later.',
-    case_analyze: 'Analysis temporarily unavailable. Please try again later.',
+    logout: "Something went wrong. You have been signed out locally.",
+    case_create:
+      "Unable to submit your question right now. Please try again later.",
+    case_analyze: "Analysis temporarily unavailable. Please try again later.",
     general: SHARED.somethingWrong,
   },
   // 502 and 503 share the same message
@@ -90,16 +98,16 @@ const HTTP_STATUS_MESSAGES: Record<number, Partial<Record<ErrorContext, string>>
 
 // Default fallback messages per context
 const DEFAULT_ERROR_MESSAGES: Record<ErrorContext, string> = {
-  login: 'Unable to sign in. Please try again.',
-  signup: 'Unable to create account. Please try again.',
-  logout: 'Unable to sign out. Please try again.',
-  refresh: 'Session error. Please sign in again.',
-  case_create: 'Unable to submit your question. Please try again.',
-  case_load: 'Unable to load consultation. Please try again.',
-  case_analyze: 'Unable to analyze case. Please try again.',
-  verse_load: 'Unable to load verse. Please try again.',
-  search: 'Search failed. Please try again.',
-  general: 'Something went wrong. Please try again.',
+  login: "Unable to sign in. Please try again.",
+  signup: "Unable to create account. Please try again.",
+  logout: "Unable to sign out. Please try again.",
+  refresh: "Session error. Please sign in again.",
+  case_create: "Unable to submit your question. Please try again.",
+  case_load: "Unable to load consultation. Please try again.",
+  case_analyze: "Unable to analyze case. Please try again.",
+  verse_load: "Unable to load verse. Please try again.",
+  search: "Search failed. Please try again.",
+  general: "Something went wrong. Please try again.",
 };
 
 /**
@@ -119,7 +127,7 @@ function isAlreadyFriendly(message: string): boolean {
     /(LLM unavailable|Anthropic|Ollama|OpenAI|API key|rate limit|token limit|context length|JSON parse|database error|connection refused|pipeline failed)/i,
   ];
 
-  return !technicalPatterns.some(pattern => pattern.test(message.trim()));
+  return !technicalPatterns.some((pattern) => pattern.test(message.trim()));
 }
 
 /**
@@ -149,11 +157,13 @@ function getStatusMessage(status: number, context: ErrorContext): string {
 /**
  * Type guard for Axios errors
  */
-function isAxiosError(error: unknown): error is AxiosError<{ detail?: string | Array<{ msg: string }> }> {
+function isAxiosError(
+  error: unknown,
+): error is AxiosError<{ detail?: string | Array<{ msg: string }> }> {
   return (
-    typeof error === 'object' &&
+    typeof error === "object" &&
     error !== null &&
-    'isAxiosError' in error &&
+    "isAxiosError" in error &&
     (error as AxiosError).isAxiosError === true
   );
 }
@@ -161,7 +171,10 @@ function isAxiosError(error: unknown): error is AxiosError<{ detail?: string | A
 /**
  * Get a user-friendly error message from any error
  */
-export function getErrorMessage(error: unknown, context: ErrorContext = 'general'): string {
+export function getErrorMessage(
+  error: unknown,
+  context: ErrorContext = "general",
+): string {
   if (!error) {
     return DEFAULT_ERROR_MESSAGES[context];
   }
@@ -169,7 +182,11 @@ export function getErrorMessage(error: unknown, context: ErrorContext = 'general
   if (isAxiosError(error)) {
     // Check for backend-provided detail message first
     const backendMessage = error.response?.data?.detail;
-    if (backendMessage && typeof backendMessage === 'string' && isAlreadyFriendly(backendMessage)) {
+    if (
+      backendMessage &&
+      typeof backendMessage === "string" &&
+      isAlreadyFriendly(backendMessage)
+    ) {
       return backendMessage;
     }
 
@@ -183,7 +200,7 @@ export function getErrorMessage(error: unknown, context: ErrorContext = 'general
 
     // Network error (no response received)
     if (!error.response) {
-      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      if (error.code === "ECONNABORTED" || error.message.includes("timeout")) {
         return SHARED.requestTooLong;
       }
       return SHARED.checkConnection;
@@ -198,7 +215,7 @@ export function getErrorMessage(error: unknown, context: ErrorContext = 'general
   }
 
   // Handle string errors
-  if (typeof error === 'string' && isAlreadyFriendly(error)) {
+  if (typeof error === "string" && isAlreadyFriendly(error)) {
     return error;
   }
 
@@ -209,15 +226,15 @@ export function getErrorMessage(error: unknown, context: ErrorContext = 'general
  * Convenience functions for specific contexts
  */
 export const errorMessages = {
-  login: (error: unknown) => getErrorMessage(error, 'login'),
-  signup: (error: unknown) => getErrorMessage(error, 'signup'),
-  logout: (error: unknown) => getErrorMessage(error, 'logout'),
-  caseCreate: (error: unknown) => getErrorMessage(error, 'case_create'),
-  caseLoad: (error: unknown) => getErrorMessage(error, 'case_load'),
-  caseAnalyze: (error: unknown) => getErrorMessage(error, 'case_analyze'),
-  verseLoad: (error: unknown) => getErrorMessage(error, 'verse_load'),
-  search: (error: unknown) => getErrorMessage(error, 'search'),
-  general: (error: unknown) => getErrorMessage(error, 'general'),
+  login: (error: unknown) => getErrorMessage(error, "login"),
+  signup: (error: unknown) => getErrorMessage(error, "signup"),
+  logout: (error: unknown) => getErrorMessage(error, "logout"),
+  caseCreate: (error: unknown) => getErrorMessage(error, "case_create"),
+  caseLoad: (error: unknown) => getErrorMessage(error, "case_load"),
+  caseAnalyze: (error: unknown) => getErrorMessage(error, "case_analyze"),
+  verseLoad: (error: unknown) => getErrorMessage(error, "verse_load"),
+  search: (error: unknown) => getErrorMessage(error, "search"),
+  general: (error: unknown) => getErrorMessage(error, "general"),
 };
 
 export default errorMessages;

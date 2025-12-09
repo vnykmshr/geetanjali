@@ -76,7 +76,10 @@ MOCK_LLM_RESPONSE = {
         "What does righteousness look like in this situation?",
     ],
     "sources": [
-        {"canonical_id": "ch02_v47", "paraphrase": "Focus on your duty, not the results."},
+        {
+            "canonical_id": "ch02_v47",
+            "paraphrase": "Focus on your duty, not the results.",
+        },
         {"canonical_id": "ch03_v35", "paraphrase": "Your own dharma is best."},
         {"canonical_id": "ch18_v66", "paraphrase": "Surrender attachment to outcomes."},
     ],
@@ -94,7 +97,9 @@ class MockVectorStore:
 class MockLLMService:
     """Mock LLM service for testing."""
 
-    def generate(self, prompt: str, system_prompt: str, temperature: float = 0.7, **kwargs):
+    def generate(
+        self, prompt: str, system_prompt: str, temperature: float = 0.7, **kwargs
+    ):
         return {
             "response": json.dumps(MOCK_LLM_RESPONSE),
             "provider": "mock",
@@ -193,7 +198,9 @@ class TestRAGPipelineUnit:
         assert "executive_summary" in result
         assert result["confidence"] == 0.82
 
-    def test_validate_output_sets_scholar_flag(self, mock_vector_store, mock_llm_service):
+    def test_validate_output_sets_scholar_flag(
+        self, mock_vector_store, mock_llm_service
+    ):
         """Test scholar flag is set for low confidence outputs."""
         from services.rag import RAGPipeline
 
@@ -273,7 +280,10 @@ class TestRAGPipelineIntegration:
         assert is_policy_violation is False
         assert "executive_summary" in result
         # Should be flagged as degraded
-        assert result.get("scholar_flag", False) is True or result.get("confidence", 1.0) <= 0.5
+        assert (
+            result.get("scholar_flag", False) is True
+            or result.get("confidence", 1.0) <= 0.5
+        )
 
     def test_pipeline_fallback_on_llm_failure(self, mock_vector_store):
         """Test fallback response when LLM fails."""
@@ -314,7 +324,10 @@ class TestRAGPipelineIntegration:
         assert is_policy_violation is False
         assert "executive_summary" in result
         # Should flag low confidence
-        assert result.get("warning") == "Generated without verse retrieval" or result["confidence"] <= 0.5
+        assert (
+            result.get("warning") == "Generated without verse retrieval"
+            or result["confidence"] <= 0.5
+        )
 
 
 class TestLLMRefusalDetection:
@@ -344,7 +357,9 @@ class TestLLMRefusalDetection:
         assert result["confidence"] == 0.0
         assert "executive_summary" in result
 
-    def test_normal_response_not_flagged_as_refusal(self, mock_vector_store, mock_llm_service):
+    def test_normal_response_not_flagged_as_refusal(
+        self, mock_vector_store, mock_llm_service
+    ):
         """Test that normal responses are not flagged as refusals."""
         from services.rag import RAGPipeline
 

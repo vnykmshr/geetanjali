@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { SITE_URL } from '../lib/config';
+import { useEffect } from "react";
+import { SITE_URL } from "../lib/config";
 
 interface SEOProps {
   title?: string;
@@ -8,13 +8,14 @@ interface SEOProps {
   ogTitle?: string;
   ogDescription?: string;
   ogImage?: string;
-  ogType?: 'website' | 'article';
-  twitterCard?: 'summary' | 'summary_large_image';
+  ogType?: "website" | "article";
+  twitterCard?: "summary" | "summary_large_image";
   noIndex?: boolean;
 }
 
-const DEFAULT_TITLE = 'Geetanjali - Ethical Guidance from the Bhagavad Geeta';
-const DEFAULT_DESCRIPTION = 'Ethical leadership guidance and wisdom from the Bhagavad Geeta for life\'s difficult decisions. Free consultations with timeless wisdom.';
+const DEFAULT_TITLE = "Geetanjali - Ethical Guidance from the Bhagavad Geeta";
+const DEFAULT_DESCRIPTION =
+  "Ethical leadership guidance and wisdom from the Bhagavad Geeta for life's difficult decisions. Free consultations with timeless wisdom.";
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
 /**
@@ -28,8 +29,8 @@ export function useSEO({
   ogTitle,
   ogDescription,
   ogImage,
-  ogType = 'website',
-  twitterCard = 'summary_large_image',
+  ogType = "website",
+  twitterCard = "summary_large_image",
   noIndex = false,
 }: SEOProps = {}) {
   useEffect(() => {
@@ -38,25 +39,32 @@ export function useSEO({
     const originalMetas: Map<string, string | null> = new Map();
 
     // Helper to update or create meta tag
-    const setMeta = (selector: string, content: string, attribute = 'content') => {
-      let element = document.querySelector(selector) as HTMLMetaElement | HTMLLinkElement | null;
+    const setMeta = (
+      selector: string,
+      content: string,
+      attribute = "content",
+    ) => {
+      let element = document.querySelector(selector) as
+        | HTMLMetaElement
+        | HTMLLinkElement
+        | null;
 
       if (element) {
         originalMetas.set(selector, element.getAttribute(attribute));
         element.setAttribute(attribute, content);
       } else {
         // Create new element if it doesn't exist
-        if (selector.startsWith('link')) {
-          element = document.createElement('link');
+        if (selector.startsWith("link")) {
+          element = document.createElement("link");
           const [, relValue] = selector.match(/rel="([^"]+)"/) || [];
-          if (relValue) element.setAttribute('rel', relValue);
+          if (relValue) element.setAttribute("rel", relValue);
         } else {
-          element = document.createElement('meta');
+          element = document.createElement("meta");
           // Parse selector to set attributes
           const nameMatch = selector.match(/name="([^"]+)"/);
           const propertyMatch = selector.match(/property="([^"]+)"/);
-          if (nameMatch) element.setAttribute('name', nameMatch[1]);
-          if (propertyMatch) element.setAttribute('property', propertyMatch[1]);
+          if (nameMatch) element.setAttribute("name", nameMatch[1]);
+          if (propertyMatch) element.setAttribute("property", propertyMatch[1]);
         }
         element.setAttribute(attribute, content);
         document.head.appendChild(element);
@@ -71,16 +79,19 @@ export function useSEO({
     // Update meta tags
     const finalDescription = description || DEFAULT_DESCRIPTION;
     const finalOgTitle = ogTitle || title || DEFAULT_TITLE;
-    const finalOgDescription = ogDescription || description || DEFAULT_DESCRIPTION;
+    const finalOgDescription =
+      ogDescription || description || DEFAULT_DESCRIPTION;
     const finalOgImage = ogImage || DEFAULT_IMAGE;
-    const finalCanonical = canonical ? `${SITE_URL}${canonical}` : `${SITE_URL}/`;
+    const finalCanonical = canonical
+      ? `${SITE_URL}${canonical}`
+      : `${SITE_URL}/`;
 
     // Primary meta tags
     setMeta('meta[name="description"]', finalDescription);
     setMeta('meta[name="title"]', fullTitle);
 
     // Canonical URL
-    setMeta('link[rel="canonical"]', finalCanonical, 'href');
+    setMeta('link[rel="canonical"]', finalCanonical, "href");
 
     // Open Graph
     setMeta('meta[property="og:title"]', finalOgTitle);
@@ -97,7 +108,7 @@ export function useSEO({
 
     // Robots
     if (noIndex) {
-      setMeta('meta[name="robots"]', 'noindex, nofollow');
+      setMeta('meta[name="robots"]', "noindex, nofollow");
     }
 
     // Cleanup: restore original values
@@ -112,11 +123,21 @@ export function useSEO({
             element.remove();
           } else {
             // Restore original value
-            const attribute = selector.startsWith('link') ? 'href' : 'content';
+            const attribute = selector.startsWith("link") ? "href" : "content";
             element.setAttribute(attribute, originalValue);
           }
         }
       });
     };
-  }, [title, description, canonical, ogTitle, ogDescription, ogImage, ogType, twitterCard, noIndex]);
+  }, [
+    title,
+    description,
+    canonical,
+    ogTitle,
+    ogDescription,
+    ogImage,
+    ogType,
+    twitterCard,
+    noIndex,
+  ]);
 }

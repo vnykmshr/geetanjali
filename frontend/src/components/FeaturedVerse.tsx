@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
-import { formatSanskritLines } from '../lib/sanskritFormatter';
-import type { Verse } from '../types';
+import { Link } from "react-router-dom";
+import { formatSanskritLines } from "../lib/sanskritFormatter";
+import type { Verse } from "../types";
 
 interface FeaturedVerseProps {
   verse: Verse;
@@ -26,8 +26,8 @@ export function FeaturedVerse({ verse, loading = false }: FeaturedVerseProps) {
   }
 
   const verseRef = `${verse.chapter}.${verse.verse}`;
-  const sanskritLines = formatSanskritLines(verse.sanskrit_devanagari || '', {
-    mode: 'compact',
+  const sanskritLines = formatSanskritLines(verse.sanskrit_devanagari || "", {
+    mode: "compact",
   });
 
   return (
@@ -40,7 +40,9 @@ export function FeaturedVerse({ verse, loading = false }: FeaturedVerseProps) {
         {/* Sanskrit Devanagari - Spotlight */}
         {verse.sanskrit_devanagari && (
           <div className="text-center mb-4 sm:mb-6 lg:mb-8">
-            <div className="text-3xl sm:text-4xl text-amber-400/50 mb-3 sm:mb-4 lg:mb-6 font-light">ॐ</div>
+            <div className="text-3xl sm:text-4xl text-amber-400/50 mb-3 sm:mb-4 lg:mb-6 font-light">
+              ॐ
+            </div>
             <div className="text-lg sm:text-2xl md:text-3xl font-serif text-amber-900 leading-relaxed tracking-wide mb-3 sm:mb-4 lg:mb-6 space-y-1">
               {sanskritLines.map((line, idx) => (
                 <p key={idx} className="mb-0">
@@ -53,7 +55,6 @@ export function FeaturedVerse({ verse, loading = false }: FeaturedVerseProps) {
             </span>
           </div>
         )}
-
       </div>
     </Link>
   );

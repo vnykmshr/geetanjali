@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import type { CaseStatus, Verse } from '../types';
-import { versesApi } from '../lib/api';
+import { useState, useEffect } from "react";
+import type { CaseStatus, Verse } from "../types";
+import { versesApi } from "../lib/api";
 
 interface ConsultationWaitingProps {
   status: CaseStatus;
@@ -9,22 +9,37 @@ interface ConsultationWaitingProps {
 
 // Wisdom quotes to display while waiting
 const WISDOM_QUOTES = [
-  { text: "The mind is restless and difficult to restrain, but it is subdued by practice.", source: "BG 6.35" },
-  { text: "You have the right to work, but never to the fruit of work.", source: "BG 2.47" },
+  {
+    text: "The mind is restless and difficult to restrain, but it is subdued by practice.",
+    source: "BG 6.35",
+  },
+  {
+    text: "You have the right to work, but never to the fruit of work.",
+    source: "BG 2.47",
+  },
   { text: "The soul is neither born, and nor does it die.", source: "BG 2.20" },
-  { text: "When meditation is mastered, the mind is unwavering like the flame of a lamp in a windless place.", source: "BG 6.19" },
-  { text: "Set thy heart upon thy work, but never on its reward.", source: "BG 2.47" },
+  {
+    text: "When meditation is mastered, the mind is unwavering like the flame of a lamp in a windless place.",
+    source: "BG 6.19",
+  },
+  {
+    text: "Set thy heart upon thy work, but never on its reward.",
+    source: "BG 2.47",
+  },
 ];
 
 // Processing stages for progress indicator
 const PROCESSING_STAGES = [
-  { id: 'pending', label: 'Preparing your consultation', icon: '📋' },
-  { id: 'retrieving', label: 'Finding relevant wisdom', icon: '📚' },
-  { id: 'contemplating', label: 'Contemplating guidance', icon: '🧘' },
-  { id: 'composing', label: 'Composing your brief', icon: '✍️' },
+  { id: "pending", label: "Preparing your consultation", icon: "📋" },
+  { id: "retrieving", label: "Finding relevant wisdom", icon: "📚" },
+  { id: "contemplating", label: "Contemplating guidance", icon: "🧘" },
+  { id: "composing", label: "Composing your brief", icon: "✍️" },
 ];
 
-export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProps) {
+export function ConsultationWaiting({
+  status,
+  onRetry,
+}: ConsultationWaitingProps) {
   const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
   const [dailyVerse, setDailyVerse] = useState<Verse | null>(null);
   const [breathCount, setBreathCount] = useState(0);
@@ -41,9 +56,11 @@ export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProp
 
   // Simulate progress stages
   useEffect(() => {
-    if (status === 'processing') {
+    if (status === "processing") {
       const interval = setInterval(() => {
-        setCurrentStage((prev) => Math.min(prev + 1, PROCESSING_STAGES.length - 1));
+        setCurrentStage((prev) =>
+          Math.min(prev + 1, PROCESSING_STAGES.length - 1),
+        );
       }, 5000);
       return () => clearInterval(interval);
     }
@@ -51,11 +68,15 @@ export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProp
 
   // Fetch daily verse for display
   useEffect(() => {
-    versesApi.getDaily()
+    versesApi
+      .getDaily()
       .then(setDailyVerse)
       .catch(() => {
         // Fallback to random if daily fails
-        versesApi.getRandom().then(setDailyVerse).catch(() => {});
+        versesApi
+          .getRandom()
+          .then(setDailyVerse)
+          .catch(() => {});
       });
   }, []);
 
@@ -71,17 +92,22 @@ export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProp
 
   const currentQuote = WISDOM_QUOTES[currentQuoteIndex];
 
-  if (status === 'failed') {
+  if (status === "failed") {
     return (
       <div
         className="bg-red-50 border border-red-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-center"
         role="alert"
         aria-live="assertive"
       >
-        <div className="text-3xl sm:text-4xl mb-3 sm:mb-4" aria-hidden="true">😔</div>
-        <h3 className="text-lg sm:text-xl font-semibold text-red-800 mb-1.5 sm:mb-2">Analysis Could Not Complete</h3>
+        <div className="text-3xl sm:text-4xl mb-3 sm:mb-4" aria-hidden="true">
+          😔
+        </div>
+        <h3 className="text-lg sm:text-xl font-semibold text-red-800 mb-1.5 sm:mb-2">
+          Analysis Could Not Complete
+        </h3>
         <p className="text-sm sm:text-base text-red-600 mb-4 sm:mb-6">
-          We encountered an issue while preparing your consultation. This can happen during high demand.
+          We encountered an issue while preparing your consultation. This can
+          happen during high demand.
         </p>
         {onRetry && (
           <button
@@ -95,7 +121,7 @@ export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProp
     );
   }
 
-  if (status === 'completed') {
+  if (status === "completed") {
     return null; // Don't render anything when complete
   }
 
@@ -108,13 +134,21 @@ export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProp
     >
       {/* Header with animated indicator */}
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-white rounded-full shadow-lg mb-3 sm:mb-4 animate-pulse" aria-hidden="true">
-          <span className="text-2xl sm:text-3xl">{PROCESSING_STAGES[currentStage].icon}</span>
+        <div
+          className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-white rounded-full shadow-lg mb-3 sm:mb-4 animate-pulse"
+          aria-hidden="true"
+        >
+          <span className="text-2xl sm:text-3xl">
+            {PROCESSING_STAGES[currentStage].icon}
+          </span>
         </div>
         <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-1.5 sm:mb-2">
           Consulting Ancient Wisdom
         </h2>
-        <p className="text-sm sm:text-base text-gray-600" aria-label={`Processing status: ${PROCESSING_STAGES[currentStage].label}`}>
+        <p
+          className="text-sm sm:text-base text-gray-600"
+          aria-label={`Processing status: ${PROCESSING_STAGES[currentStage].label}`}
+        >
           {PROCESSING_STAGES[currentStage].label}...
         </p>
       </div>
@@ -126,8 +160,8 @@ export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProp
             key={stage.id}
             className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 ${
               index <= currentStage
-                ? 'bg-red-500 w-6 sm:w-8'
-                : 'bg-gray-200 w-3 sm:w-4'
+                ? "bg-red-500 w-6 sm:w-8"
+                : "bg-gray-200 w-3 sm:w-4"
             }`}
           />
         ))}
@@ -138,7 +172,9 @@ export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProp
         <blockquote className="text-sm sm:text-base lg:text-lg text-gray-700 italic mb-1.5 sm:mb-2">
           "{currentQuote.text}"
         </blockquote>
-        <cite className="text-xs sm:text-sm text-gray-500">— {currentQuote.source}</cite>
+        <cite className="text-xs sm:text-sm text-gray-500">
+          — {currentQuote.source}
+        </cite>
       </div>
 
       {/* Activity options */}
@@ -160,17 +196,22 @@ export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProp
               <div className="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3">
                 <div
                   className="absolute inset-0 rounded-full bg-red-100 animate-ping"
-                  style={{ animationDuration: '4s' }}
+                  style={{ animationDuration: "4s" }}
                 />
                 <div className="absolute inset-1.5 sm:inset-2 rounded-full bg-red-200 flex items-center justify-center">
-                  <span className="text-xl sm:text-2xl font-bold text-red-600">{breathCount}</span>
+                  <span className="text-xl sm:text-2xl font-bold text-red-600">
+                    {breathCount}
+                  </span>
                 </div>
               </div>
               <p className="text-xs sm:text-sm text-gray-500">
                 Breathe in... hold... breathe out...
               </p>
               <button
-                onClick={() => { setShowBreathing(false); setBreathCount(0); }}
+                onClick={() => {
+                  setShowBreathing(false);
+                  setBreathCount(0);
+                }}
                 className="mt-2 text-xs text-gray-400 hover:text-gray-600"
               >
                 Stop
@@ -190,7 +231,7 @@ export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProp
                 {dailyVerse.paraphrase_en || dailyVerse.translation_en}
               </p>
               <p className="text-xs text-gray-400">
-                {dailyVerse.canonical_id?.replace(/_/g, ' ')}
+                {dailyVerse.canonical_id?.replace(/_/g, " ")}
               </p>
             </div>
           ) : (
@@ -204,7 +245,8 @@ export function ConsultationWaiting({ status, onRetry }: ConsultationWaitingProp
 
       {/* Footer message */}
       <p className="text-center text-xs sm:text-sm text-gray-500">
-        Your consultation typically takes 1-3 minutes. Feel free to explore or wait here.
+        Your consultation typically takes 1-3 minutes. Feel free to explore or
+        wait here.
       </p>
     </div>
   );

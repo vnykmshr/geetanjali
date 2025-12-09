@@ -1,24 +1,24 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
-import { FloatingActionButton, SkipLink } from './components';
+import { lazy, Suspense } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext";
+import { FloatingActionButton, SkipLink } from "./components";
 
 // Eagerly loaded (critical path)
-import Home from './pages/Home';
-import NotFound from './pages/NotFound';
+import Home from "./pages/Home";
+import NotFound from "./pages/NotFound";
 
 // Lazy loaded pages (code splitting)
-const NewCase = lazy(() => import('./pages/NewCase'));
-const CaseView = lazy(() => import('./pages/CaseView'));
-const Consultations = lazy(() => import('./pages/Consultations'));
-const Verses = lazy(() => import('./pages/Verses'));
-const VerseDetail = lazy(() => import('./pages/VerseDetail'));
-const Login = lazy(() => import('./pages/Login'));
-const Signup = lazy(() => import('./pages/Signup'));
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
-const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const About = lazy(() => import('./pages/About'));
-const PublicCaseView = lazy(() => import('./pages/PublicCaseView'));
+const NewCase = lazy(() => import("./pages/NewCase"));
+const CaseView = lazy(() => import("./pages/CaseView"));
+const Consultations = lazy(() => import("./pages/Consultations"));
+const Verses = lazy(() => import("./pages/Verses"));
+const VerseDetail = lazy(() => import("./pages/VerseDetail"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const About = lazy(() => import("./pages/About"));
+const PublicCaseView = lazy(() => import("./pages/PublicCaseView"));
 
 // Loading fallback component
 function PageLoader() {
@@ -30,7 +30,10 @@ function PageLoader() {
       aria-label="Loading page content"
     >
       <div className="text-center">
-        <div className="w-8 h-8 border-2 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" aria-hidden="true"></div>
+        <div
+          className="w-8 h-8 border-2 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"
+          aria-hidden="true"
+        ></div>
         <div className="text-gray-600 text-sm">Loading...</div>
       </div>
     </div>

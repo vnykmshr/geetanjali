@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { casesApi } from '../lib/api';
-import type { Case } from '../types';
-import { Navbar } from '../components/Navbar';
-import { errorMessages } from '../lib/errorMessages';
-import { useSEO } from '../hooks';
-import { trackEvent, EXPERIMENTS, getCurrentVariant } from '../lib/experiment';
+import { useState } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
+import { casesApi } from "../lib/api";
+import type { Case } from "../types";
+import { Navbar } from "../components/Navbar";
+import { errorMessages } from "../lib/errorMessages";
+import { useSEO } from "../hooks";
+import { trackEvent, EXPERIMENTS, getCurrentVariant } from "../lib/experiment";
 
 interface LocationState {
   prefill?: string;
@@ -13,13 +13,14 @@ interface LocationState {
 
 export default function NewCase() {
   useSEO({
-    title: 'Ask a Question',
-    description: 'Seek ethical guidance grounded in the Bhagavad Geeta. Describe your situation and receive wisdom for difficult decisions.',
-    canonical: '/cases/new',
+    title: "Ask a Question",
+    description:
+      "Seek ethical guidance grounded in the Bhagavad Geeta. Describe your situation and receive wisdom for difficult decisions.",
+    canonical: "/cases/new",
   });
   const navigate = useNavigate();
   const location = useLocation();
-  const prefill = (location.state as LocationState)?.prefill || '';
+  const prefill = (location.state as LocationState)?.prefill || "";
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,32 +28,34 @@ export default function NewCase() {
 
   const [formData, setFormData] = useState({
     question: prefill,
-    context: '',
-    role: 'individual' as string,
-    horizon: 'medium' as 'short' | 'medium' | 'long',
+    context: "",
+    role: "individual" as string,
+    horizon: "medium" as "short" | "medium" | "long",
   });
 
-  const [selectedStakeholders, setSelectedStakeholders] = useState<Set<string>>(new Set(['self']));
+  const [selectedStakeholders, setSelectedStakeholders] = useState<Set<string>>(
+    new Set(["self"]),
+  );
 
   const ROLE_OPTIONS = [
-    { value: 'individual', label: 'Individual' },
-    { value: 'parent', label: 'Parent' },
-    { value: 'manager', label: 'Manager / Leader' },
-    { value: 'employee', label: 'Employee' },
-    { value: 'student', label: 'Student' },
-    { value: 'entrepreneur', label: 'Entrepreneur' },
+    { value: "individual", label: "Individual" },
+    { value: "parent", label: "Parent" },
+    { value: "manager", label: "Manager / Leader" },
+    { value: "employee", label: "Employee" },
+    { value: "student", label: "Student" },
+    { value: "entrepreneur", label: "Entrepreneur" },
   ];
 
   const STAKEHOLDER_OPTIONS = [
-    { value: 'self', label: 'Self' },
-    { value: 'family', label: 'Family' },
-    { value: 'team', label: 'Team' },
-    { value: 'organization', label: 'Organization' },
-    { value: 'community', label: 'Community' },
+    { value: "self", label: "Self" },
+    { value: "family", label: "Family" },
+    { value: "team", label: "Team" },
+    { value: "organization", label: "Organization" },
+    { value: "community", label: "Community" },
   ];
 
   const toggleStakeholder = (value: string) => {
-    setSelectedStakeholders(prev => {
+    setSelectedStakeholders((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(value)) {
         newSet.delete(value);
@@ -69,9 +72,10 @@ export default function NewCase() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.question.trim()) {
-      newErrors.question = 'Please describe your situation';
+      newErrors.question = "Please describe your situation";
     } else if (formData.question.length < 10) {
-      newErrors.question = 'Please provide more detail (at least 10 characters)';
+      newErrors.question =
+        "Please provide more detail (at least 10 characters)";
     }
 
     setErrors(newErrors);
@@ -91,7 +95,7 @@ export default function NewCase() {
     try {
       let description = formData.question.trim();
       if (formData.context.trim()) {
-        description += '\n\n' + formData.context.trim();
+        description += "\n\n" + formData.context.trim();
       }
 
       const generateSimpleTitle = (text: string): string => {
@@ -102,8 +106,10 @@ export default function NewCase() {
         return text.slice(0, 100).trim();
       };
 
-      const roleLabel = ROLE_OPTIONS.find(r => r.value === formData.role)?.label || 'Individual';
-      const caseData: Omit<Case, 'id' | 'created_at'> = {
+      const roleLabel =
+        ROLE_OPTIONS.find((r) => r.value === formData.role)?.label ||
+        "Individual";
+      const caseData: Omit<Case, "id" | "created_at"> = {
         title: generateSimpleTitle(formData.question),
         description: description,
         role: roleLabel,
@@ -116,7 +122,7 @@ export default function NewCase() {
 
       // Track conversion for A/B experiment
       const variant = getCurrentVariant(EXPERIMENTS.HOMEPAGE_CTA.name);
-      trackEvent(EXPERIMENTS.HOMEPAGE_CTA.name, 'case_created', {
+      trackEvent(EXPERIMENTS.HOMEPAGE_CTA.name, "case_created", {
         variant,
         case_id: createdCase.id,
         had_prefill: !!prefill,
@@ -137,12 +143,14 @@ export default function NewCase() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -169,10 +177,16 @@ export default function NewCase() {
           )}
 
           {/* Main Form */}
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6"
+          >
             {/* Main Question */}
             <div>
-              <label htmlFor="question" className="block text-base sm:text-lg font-medium text-gray-900 mb-2 sm:mb-3">
+              <label
+                htmlFor="question"
+                className="block text-base sm:text-lg font-medium text-gray-900 mb-2 sm:mb-3"
+              >
                 What situation are you facing?
               </label>
               <textarea
@@ -182,12 +196,16 @@ export default function NewCase() {
                 onChange={handleChange}
                 rows={4}
                 className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-lg border rounded-lg sm:rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent ${
-                  errors.question ? 'border-red-500' : 'border-gray-300'
+                  errors.question ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="e.g., I'm torn between pursuing a promotion that requires relocating, or staying in my current role to care for aging parents..."
                 autoFocus
               />
-              {errors.question && <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600">{errors.question}</p>}
+              {errors.question && (
+                <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600">
+                  {errors.question}
+                </p>
+              )}
             </div>
 
             {/* Optional Context */}
@@ -210,7 +228,7 @@ export default function NewCase() {
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center"
               >
-                {showAdvanced ? '− Hide' : '+ Show'} advanced options
+                {showAdvanced ? "− Hide" : "+ Show"} advanced options
               </button>
             </div>
 
@@ -220,7 +238,10 @@ export default function NewCase() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {/* Role */}
                   <div>
-                    <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label
+                      htmlFor="role"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
                       Your role
                     </label>
                     <select
@@ -230,15 +251,20 @@ export default function NewCase() {
                       onChange={handleChange}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     >
-                      {ROLE_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      {ROLE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   {/* Time Horizon */}
                   <div>
-                    <label htmlFor="horizon" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label
+                      htmlFor="horizon"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
                       Time frame
                     </label>
                     <select
@@ -261,18 +287,20 @@ export default function NewCase() {
                     Who's affected?
                   </label>
                   <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                    {STAKEHOLDER_OPTIONS.map(opt => (
+                    {STAKEHOLDER_OPTIONS.map((opt) => (
                       <button
                         key={opt.value}
                         type="button"
                         onClick={() => toggleStakeholder(opt.value)}
                         className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-full border transition-colors ${
                           selectedStakeholders.has(opt.value)
-                            ? 'bg-red-100 border-red-300 text-red-700'
-                            : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                            ? "bg-red-100 border-red-300 text-red-700"
+                            : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
                         }`}
                       >
-                        {selectedStakeholders.has(opt.value) && <span className="mr-1">✓</span>}
+                        {selectedStakeholders.has(opt.value) && (
+                          <span className="mr-1">✓</span>
+                        )}
                         {opt.label}
                       </button>
                     ))}
@@ -294,14 +322,15 @@ export default function NewCase() {
                 disabled={loading}
                 className="px-6 sm:px-8 py-2.5 sm:py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium shadow-lg hover:shadow-xl text-sm sm:text-base"
               >
-                {loading ? 'Seeking guidance...' : 'Get Guidance'}
+                {loading ? "Seeking guidance..." : "Get Guidance"}
               </button>
             </div>
           </form>
 
           {/* Helper Text */}
           <p className="text-center text-xs sm:text-sm text-gray-500 mt-4 sm:mt-6">
-            Your question will be analyzed using wisdom from the Bhagavad Geeta to provide thoughtful guidance.
+            Your question will be analyzed using wisdom from the Bhagavad Geeta
+            to provide thoughtful guidance.
           </p>
         </div>
       </div>

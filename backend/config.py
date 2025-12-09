@@ -125,7 +125,9 @@ class Settings(BaseSettings):
     CACHE_TTL_DAILY_VERSE: int = 0  # Calculated dynamically to midnight
     CACHE_TTL_USER_PROFILE: int = 900  # 15 minutes
     CACHE_TTL_PUBLIC_CASE: int = 3600  # 1 hour Redis TTL for public cases
-    CACHE_TTL_PUBLIC_CASE_HTTP: int = 60  # 1 minute browser cache (short for fast revocation)
+    CACHE_TTL_PUBLIC_CASE_HTTP: int = (
+        60  # 1 minute browser cache (short for fast revocation)
+    )
 
     # Public case sharing
     PUBLIC_CASE_EXPIRY_DAYS: int = 90  # Days until public case links expire (0 = never)
@@ -141,8 +143,12 @@ class Settings(BaseSettings):
 
     # Email (Resend)
     RESEND_API_KEY: Optional[str] = None  # Set in .env to enable email
-    CONTACT_EMAIL_TO: Optional[str] = None  # Recipient for contact form - MUST set in .env
-    CONTACT_EMAIL_FROM: Optional[str] = None  # Sender address - MUST set in .env (use verified domain)
+    CONTACT_EMAIL_TO: Optional[str] = (
+        None  # Recipient for contact form - MUST set in .env
+    )
+    CONTACT_EMAIL_FROM: Optional[str] = (
+        None  # Sender address - MUST set in .env (use verified domain)
+    )
 
     # Monitoring (Sentry)
     SENTRY_DSN: Optional[str] = None  # Set in .env to enable error tracking
@@ -275,7 +281,11 @@ class Settings(BaseSettings):
 
         # Warn if Anthropic is fallback but key is missing (degraded fallback)
         is_anthropic_fallback = self.LLM_FALLBACK_PROVIDER == "anthropic"
-        if is_anthropic_fallback and self.LLM_FALLBACK_ENABLED and not self.ANTHROPIC_API_KEY:
+        if (
+            is_anthropic_fallback
+            and self.LLM_FALLBACK_ENABLED
+            and not self.ANTHROPIC_API_KEY
+        ):
             logger.warning(
                 "PRODUCTION: LLM_FALLBACK_PROVIDER=anthropic but ANTHROPIC_API_KEY not set. "
                 "Fallback to Anthropic will not work."
@@ -309,8 +319,7 @@ class Settings(BaseSettings):
         # SECURITY: CORS origins validation
         # ========================================
         localhost_origins = [
-            o for o in self.CORS_ORIGINS
-            if "localhost" in o or "127.0.0.1" in o
+            o for o in self.CORS_ORIGINS if "localhost" in o or "127.0.0.1" in o
         ]
         if localhost_origins and len(self.CORS_ORIGINS) == len(localhost_origins):
             errors.append(

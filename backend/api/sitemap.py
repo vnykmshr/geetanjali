@@ -91,18 +91,14 @@ async def get_sitemap(request: Request, db: Session = Depends(get_db)):
         return Response(
             content=cached_sitemap,
             media_type="application/xml",
-            headers={"X-Cache": "HIT"}
+            headers={"X-Cache": "HIT"},
         )
 
     # Generate fresh sitemap
     logger.info("Generating fresh sitemap")
 
     # Query all verses ordered by chapter and verse number
-    verses = (
-        db.query(Verse)
-        .order_by(Verse.chapter, Verse.verse)
-        .all()
-    )
+    verses = db.query(Verse).order_by(Verse.chapter, Verse.verse).all()
 
     # Build XML
     sitemap_xml = build_sitemap_xml(verses)
@@ -112,9 +108,7 @@ async def get_sitemap(request: Request, db: Session = Depends(get_db)):
     logger.info(f"Sitemap generated: {len(verses)} verses")
 
     return Response(
-        content=sitemap_xml,
-        media_type="application/xml",
-        headers={"X-Cache": "MISS"}
+        content=sitemap_xml, media_type="application/xml", headers={"X-Cache": "MISS"}
     )
 
 

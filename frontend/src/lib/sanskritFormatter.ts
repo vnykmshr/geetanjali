@@ -9,7 +9,7 @@ export interface SanskritFormatterOptions {
    * - 'compact': Compact formatting skipping speaker intros, using | for internal separators (for VerseCard, FeaturedVerse)
    * @default 'detail'
    */
-  mode?: 'detail' | 'compact';
+  mode?: "detail" | "compact";
 
   /**
    * Whether to include speaker intro lines
@@ -40,20 +40,23 @@ export interface SanskritFormatterOptions {
  */
 export function formatSanskritLines(
   text: string,
-  options: SanskritFormatterOptions = {}
+  options: SanskritFormatterOptions = {},
 ): string[] {
   if (!text) return [];
 
-  const { mode = 'detail', includeSpeakerIntro } = options;
+  const { mode = "detail", includeSpeakerIntro } = options;
 
   // Determine if we include speaker intros
-  const shouldIncludeSpeaker = includeSpeakerIntro ?? (mode === 'detail');
+  const shouldIncludeSpeaker = includeSpeakerIntro ?? mode === "detail";
 
   // Remove the verse number at the end (e.g., ।।2.52।। or ॥2.52॥)
-  const withoutVerseNum = text.replace(/[।॥]+\d+\.\d+[।॥]+\s*$/, '');
+  const withoutVerseNum = text.replace(/[।॥]+\d+\.\d+[।॥]+\s*$/, "");
 
   // Split by newlines to detect speaker intro lines
-  const lines = withoutVerseNum.split('\n').map(l => l.trim()).filter(l => l);
+  const lines = withoutVerseNum
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l);
 
   const result: string[] = [];
   let verseLineIndex = 0;
@@ -61,7 +64,7 @@ export function formatSanskritLines(
   // Process each line
   for (const line of lines) {
     // Check if this line contains speaker intro (contains वाच - said/spoke)
-    if (line.includes('वाच')) {
+    if (line.includes("वाच")) {
       if (shouldIncludeSpeaker) {
         // Include speaker intro as-is
         result.push(line);
@@ -70,25 +73,27 @@ export function formatSanskritLines(
       continue;
     }
 
-    if (mode === 'detail') {
+    if (mode === "detail") {
       // Detail mode: full formatting with alternating दण्ड
       const parts = line.split(/।(?=[^।])/);
       const isEvenLine = (verseLineIndex + 1) % 2 === 0;
-      const endDanda = isEvenLine ? ' ॥' : ' ।';
+      const endDanda = isEvenLine ? " ॥" : " ।";
 
       if (parts.length >= 2) {
         // Multiple clauses in this line
         for (let i = 0; i < parts.length - 1; i++) {
-          result.push(parts[i].trim() + ' ।');
+          result.push(parts[i].trim() + " ।");
         }
-        result.push(parts[parts.length - 1].replace(/।+\s*$/, '').trim() + endDanda);
+        result.push(
+          parts[parts.length - 1].replace(/।+\s*$/, "").trim() + endDanda,
+        );
       } else {
         // Single clause
-        result.push(line.replace(/।+\s*$/, '').trim() + endDanda);
+        result.push(line.replace(/।+\s*$/, "").trim() + endDanda);
       }
     } else {
       // Compact mode: split on danda, use | for internal separators
-      const parts = line.split(/।/).filter(p => p.trim());
+      const parts = line.split(/।/).filter((p) => p.trim());
 
       if (parts.length === 0) continue;
 
@@ -99,9 +104,9 @@ export function formatSanskritLines(
 
         // Add appropriate danda
         if (i < parts.length - 1) {
-          formattedPart += ' |';
+          formattedPart += " |";
         } else {
-          formattedPart += isEvenLine ? ' ॥' : ' ।';
+          formattedPart += isEvenLine ? " ॥" : " ।";
         }
 
         result.push(formattedPart);
@@ -120,5 +125,5 @@ export function formatSanskritLines(
  * @returns True if line contains speaker introduction (contains वाच)
  */
 export function isSpeakerIntro(line: string): boolean {
-  return line.includes('वाच');
+  return line.includes("वाच");
 }

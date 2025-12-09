@@ -219,8 +219,7 @@ def test_forgot_password_existing_email(client):
 
     # Request password reset
     response = client.post(
-        "/api/v1/auth/forgot-password",
-        json={"email": "forgot@example.com"}
+        "/api/v1/auth/forgot-password", json={"email": "forgot@example.com"}
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -234,8 +233,7 @@ def test_forgot_password_nonexistent_email(client):
     """Test forgot password with non-existent email returns same message."""
     # Request password reset for non-existent email
     response = client.post(
-        "/api/v1/auth/forgot-password",
-        json={"email": "nonexistent@example.com"}
+        "/api/v1/auth/forgot-password", json={"email": "nonexistent@example.com"}
     )
 
     # Should still return 200 to prevent email enumeration
@@ -248,8 +246,7 @@ def test_forgot_password_nonexistent_email(client):
 def test_forgot_password_invalid_email_format(client):
     """Test forgot password with invalid email format."""
     response = client.post(
-        "/api/v1/auth/forgot-password",
-        json={"email": "not-an-email"}
+        "/api/v1/auth/forgot-password", json={"email": "not-an-email"}
     )
 
     # May return 400 or 422 depending on validation layer
@@ -263,7 +260,7 @@ def test_reset_password_invalid_token(client):
     """Test reset password with invalid token."""
     response = client.post(
         "/api/v1/auth/reset-password",
-        json={"token": "invalid-token", "password": "NewSecurePass123!"}
+        json={"token": "invalid-token", "password": "NewSecurePass123!"},
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -274,8 +271,7 @@ def test_reset_password_invalid_token(client):
 def test_reset_password_weak_password(client):
     """Test reset password with weak password."""
     response = client.post(
-        "/api/v1/auth/reset-password",
-        json={"token": "some-token", "password": "weak"}
+        "/api/v1/auth/reset-password", json={"token": "some-token", "password": "weak"}
     )
 
     # Should reject weak password before even checking token
@@ -288,15 +284,11 @@ def test_reset_password_weak_password(client):
 def test_reset_password_missing_fields(client):
     """Test reset password with missing fields."""
     # Missing password
-    response1 = client.post(
-        "/api/v1/auth/reset-password",
-        json={"token": "some-token"}
-    )
+    response1 = client.post("/api/v1/auth/reset-password", json={"token": "some-token"})
     assert response1.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     # Missing token
     response2 = client.post(
-        "/api/v1/auth/reset-password",
-        json={"password": "NewSecurePass123!"}
+        "/api/v1/auth/reset-password", json={"password": "NewSecurePass123!"}
     )
     assert response2.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY

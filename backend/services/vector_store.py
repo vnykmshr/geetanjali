@@ -25,8 +25,10 @@ class VectorStore:
         """Initialize ChromaDB client and collection with built-in embeddings."""
         # Create embedding function - ChromaDB will handle embeddings internally
         # Using the same model as before: all-MiniLM-L6-v2
-        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name=settings.EMBEDDING_MODEL
+        self.embedding_function = (
+            embedding_functions.SentenceTransformerEmbeddingFunction(
+                model_name=settings.EMBEDDING_MODEL
+            )
         )
 
         # Use HTTP client if CHROMA_HOST is set (for Docker/remote), otherwise local
@@ -55,7 +57,9 @@ class VectorStore:
             embedding_function=self.embedding_function,
         )
 
-        logger.info(f"ChromaDB collection '{settings.CHROMA_COLLECTION_NAME}' ready with built-in embeddings")
+        logger.info(
+            f"ChromaDB collection '{settings.CHROMA_COLLECTION_NAME}' ready with built-in embeddings"
+        )
 
     def add_verse(
         self,

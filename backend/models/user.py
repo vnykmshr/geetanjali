@@ -25,14 +25,14 @@ class User(Base, TimestampMixin):
 
     # Authentication
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    email_verified: Mapped[bool] = mapped_column(
-        Boolean, default=False, nullable=False
-    )
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     last_login: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Password Reset
     reset_token_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    reset_token_expires: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    reset_token_expires: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
 
     # Authorization
     role: Mapped[str] = mapped_column(String(100), default="user")

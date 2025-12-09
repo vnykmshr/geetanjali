@@ -33,9 +33,7 @@ FEED_DAYS = 30  # Number of past days to include
 
 
 def get_daily_verse_for_date(
-    target_date: date,
-    featured_verses: list,
-    all_verses: list
+    target_date: date, featured_verses: list, all_verses: list
 ) -> tuple:
     """
     Calculate which verse was/will be the daily verse for a given date.
@@ -65,9 +63,21 @@ def get_daily_verse_for_date(
 def format_rfc822_date(d: date) -> str:
     """Format date as RFC 822 for RSS pubDate."""
     # RSS requires RFC 822 format: "Wed, 02 Oct 2002 13:00:00 GMT"
-    days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ]
 
     weekday = days[d.weekday()]
     month = months[d.month - 1]
@@ -142,10 +152,14 @@ def build_rss_xml(daily_verses: list) -> str:
         description_parts = []
 
         if verse.paraphrase_en:
-            description_parts.append(f"<p><strong>Insight:</strong> {verse.paraphrase_en}</p>")
+            description_parts.append(
+                f"<p><strong>Insight:</strong> {verse.paraphrase_en}</p>"
+            )
 
         if verse.translation_en:
-            description_parts.append(f"<p><strong>Translation:</strong> {verse.translation_en}</p>")
+            description_parts.append(
+                f"<p><strong>Translation:</strong> {verse.translation_en}</p>"
+            )
 
         if verse.sanskrit_iast:
             description_parts.append(f"<p><em>{verse.sanskrit_iast}</em></p>")
@@ -180,7 +194,7 @@ async def get_rss_feed(request: Request, db: Session = Depends(get_db)):
         return Response(
             content=cached_feed,
             media_type="application/rss+xml",
-            headers={"X-Cache": "HIT"}
+            headers={"X-Cache": "HIT"},
         )
 
     # Generate fresh feed
@@ -197,11 +211,7 @@ async def get_rss_feed(request: Request, db: Session = Depends(get_db)):
     # Fallback to all verses if no featured
     all_verses = []
     if not featured_verses:
-        all_verses = (
-            db.query(Verse)
-            .order_by(Verse.chapter, Verse.verse)
-            .all()
-        )
+        all_verses = db.query(Verse).order_by(Verse.chapter, Verse.verse).all()
 
     # Calculate daily verses for the past N days
     today = date.today()
@@ -223,9 +233,7 @@ async def get_rss_feed(request: Request, db: Session = Depends(get_db)):
     logger.info(f"RSS feed generated with {len(daily_verses)} items")
 
     return Response(
-        content=feed_xml,
-        media_type="application/rss+xml",
-        headers={"X-Cache": "MISS"}
+        content=feed_xml, media_type="application/rss+xml", headers={"X-Cache": "MISS"}
     )
 
 

@@ -1,96 +1,108 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { PathsSection } from './PathsSection'
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { PathsSection } from "./PathsSection";
 
 const mockOptions = [
   {
-    title: 'Direct Approach',
-    pros: ['Clear communication', 'Quick resolution'],
-    cons: ['May cause tension'],
+    title: "Direct Approach",
+    pros: ["Clear communication", "Quick resolution"],
+    cons: ["May cause tension"],
   },
   {
-    title: 'Gradual Approach',
-    pros: ['Less confrontational', 'Builds trust'],
-    cons: ['Takes more time', 'Uncertain outcome'],
+    title: "Gradual Approach",
+    pros: ["Less confrontational", "Builds trust"],
+    cons: ["Takes more time", "Uncertain outcome"],
   },
   {
-    title: 'Delegate Approach',
-    pros: ['Removes direct conflict'],
-    cons: ['Less control', 'May not resolve issue'],
+    title: "Delegate Approach",
+    pros: ["Removes direct conflict"],
+    cons: ["Less control", "May not resolve issue"],
   },
-]
+];
 
-describe('PathsSection', () => {
+describe("PathsSection", () => {
   const defaultProps = {
     options: mockOptions,
     selectedOption: 0,
     showPaths: false,
     onToggle: vi.fn(),
     onSelectOption: vi.fn(),
-  }
+  };
 
-  it('should render nothing when options are empty', () => {
-    const { container } = render(<PathsSection {...defaultProps} options={[]} />)
+  it("should render nothing when options are empty", () => {
+    const { container } = render(
+      <PathsSection {...defaultProps} options={[]} />,
+    );
 
-    expect(container.firstChild).toBeNull()
-  })
+    expect(container.firstChild).toBeNull();
+  });
 
-  it('should render collapsed state by default', () => {
-    render(<PathsSection {...defaultProps} />)
+  it("should render collapsed state by default", () => {
+    render(<PathsSection {...defaultProps} />);
 
-    expect(screen.getByText('Paths Before You')).toBeInTheDocument()
-    expect(screen.getByText('3 approaches to consider')).toBeInTheDocument()
-  })
+    expect(screen.getByText("Paths Before You")).toBeInTheDocument();
+    expect(screen.getByText("3 approaches to consider")).toBeInTheDocument();
+  });
 
-  it('should call onToggle when header is clicked', () => {
-    const onToggle = vi.fn()
-    render(<PathsSection {...defaultProps} onToggle={onToggle} />)
+  it("should call onToggle when header is clicked", () => {
+    const onToggle = vi.fn();
+    render(<PathsSection {...defaultProps} onToggle={onToggle} />);
 
-    fireEvent.click(screen.getByText('Paths Before You'))
-    expect(onToggle).toHaveBeenCalledTimes(1)
-  })
+    fireEvent.click(screen.getByText("Paths Before You"));
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
 
-  describe('expanded state', () => {
-    it('should show all path options when expanded', () => {
-      render(<PathsSection {...defaultProps} showPaths={true} />)
+  describe("expanded state", () => {
+    it("should show all path options when expanded", () => {
+      render(<PathsSection {...defaultProps} showPaths={true} />);
 
-      expect(screen.getByText('Path 1')).toBeInTheDocument()
-      expect(screen.getByText('Path 2')).toBeInTheDocument()
-      expect(screen.getByText('Path 3')).toBeInTheDocument()
-    })
+      expect(screen.getByText("Path 1")).toBeInTheDocument();
+      expect(screen.getByText("Path 2")).toBeInTheDocument();
+      expect(screen.getByText("Path 3")).toBeInTheDocument();
+    });
 
-    it('should show selected option details', () => {
-      render(<PathsSection {...defaultProps} showPaths={true} selectedOption={0} />)
+    it("should show selected option details", () => {
+      render(
+        <PathsSection {...defaultProps} showPaths={true} selectedOption={0} />,
+      );
 
-      expect(screen.getByText('Direct Approach')).toBeInTheDocument()
-      expect(screen.getByText('Clear communication')).toBeInTheDocument()
-      expect(screen.getByText('May cause tension')).toBeInTheDocument()
-    })
+      expect(screen.getByText("Direct Approach")).toBeInTheDocument();
+      expect(screen.getByText("Clear communication")).toBeInTheDocument();
+      expect(screen.getByText("May cause tension")).toBeInTheDocument();
+    });
 
-    it('should call onSelectOption when path is clicked', () => {
-      const onSelectOption = vi.fn()
-      render(<PathsSection {...defaultProps} showPaths={true} onSelectOption={onSelectOption} />)
+    it("should call onSelectOption when path is clicked", () => {
+      const onSelectOption = vi.fn();
+      render(
+        <PathsSection
+          {...defaultProps}
+          showPaths={true}
+          onSelectOption={onSelectOption}
+        />,
+      );
 
-      fireEvent.click(screen.getByText('Path 2'))
-      expect(onSelectOption).toHaveBeenCalledWith(1)
-    })
+      fireEvent.click(screen.getByText("Path 2"));
+      expect(onSelectOption).toHaveBeenCalledWith(1);
+    });
 
-    it('should display pros and cons for selected option', () => {
-      render(<PathsSection {...defaultProps} showPaths={true} selectedOption={1} />)
+    it("should display pros and cons for selected option", () => {
+      render(
+        <PathsSection {...defaultProps} showPaths={true} selectedOption={1} />,
+      );
 
       // Selected option: Gradual Approach
-      expect(screen.getByText('Gradual Approach')).toBeInTheDocument()
-      expect(screen.getByText('Less confrontational')).toBeInTheDocument()
-      expect(screen.getByText('Builds trust')).toBeInTheDocument()
-      expect(screen.getByText('Takes more time')).toBeInTheDocument()
-      expect(screen.getByText('Uncertain outcome')).toBeInTheDocument()
-    })
+      expect(screen.getByText("Gradual Approach")).toBeInTheDocument();
+      expect(screen.getByText("Less confrontational")).toBeInTheDocument();
+      expect(screen.getByText("Builds trust")).toBeInTheDocument();
+      expect(screen.getByText("Takes more time")).toBeInTheDocument();
+      expect(screen.getByText("Uncertain outcome")).toBeInTheDocument();
+    });
 
-    it('should show Benefits and Consider sections', () => {
-      render(<PathsSection {...defaultProps} showPaths={true} />)
+    it("should show Benefits and Consider sections", () => {
+      render(<PathsSection {...defaultProps} showPaths={true} />);
 
-      expect(screen.getByText('Benefits')).toBeInTheDocument()
-      expect(screen.getByText('Consider')).toBeInTheDocument()
-    })
-  })
-})
+      expect(screen.getByText("Benefits")).toBeInTheDocument();
+      expect(screen.getByText("Consider")).toBeInTheDocument();
+    });
+  });
+});

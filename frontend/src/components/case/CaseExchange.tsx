@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
-import type { Case, Message, Output } from '../../types';
-import { OutputFeedback } from './OutputFeedback';
+import { Link } from "react-router-dom";
+import type { Case, Message, Output } from "../../types";
+import { OutputFeedback } from "./OutputFeedback";
 
 interface CaseExchangeProps {
   userMessage: Message;
@@ -9,12 +9,12 @@ interface CaseExchangeProps {
   caseData: Case;
   isFirst: boolean;
   expandedSources: Set<string>;
-  feedbackGiven: Record<string, 'up' | 'down' | null>;
+  feedbackGiven: Record<string, "up" | "down" | null>;
   feedbackLoading: string | null;
   expandedFeedback: string | null;
   feedbackText: Record<string, string>;
   onToggleSources: (outputId: string) => void;
-  onFeedback: (outputId: string, type: 'up' | 'down') => void;
+  onFeedback: (outputId: string, type: "up" | "down") => void;
   onSubmitNegativeFeedback: (outputId: string) => void;
   onCancelFeedback: (outputId: string) => void;
   onFeedbackTextChange: (outputId: string, text: string) => void;
@@ -50,11 +50,18 @@ export function CaseExchange({
       <div className="relative pl-10 pb-4">
         <div
           className={`absolute left-0 w-7 h-7 rounded-full flex items-center justify-center ${
-            isFirst ? 'bg-amber-500 text-white' : 'bg-blue-100 border-2 border-blue-400'
+            isFirst
+              ? "bg-amber-500 text-white"
+              : "bg-blue-100 border-2 border-blue-400"
           }`}
         >
           {isFirst ? (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -68,33 +75,46 @@ export function CaseExchange({
         </div>
         <div
           className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
-            isFirst ? 'text-amber-700' : 'text-blue-600'
+            isFirst ? "text-amber-700" : "text-blue-600"
           }`}
         >
-          {isFirst ? 'Your Question' : 'Follow-up'}
+          {isFirst ? "Your Question" : "Follow-up"}
         </div>
         <div
           className={`rounded-xl p-4 ${
-            isFirst ? 'bg-white shadow-lg border-2 border-amber-200' : 'bg-blue-50 border border-blue-100'
+            isFirst
+              ? "bg-white shadow-lg border-2 border-amber-200"
+              : "bg-blue-50 border border-blue-100"
           }`}
         >
-          <p className={`leading-relaxed whitespace-pre-wrap ${isFirst ? 'text-gray-900 text-base' : 'text-gray-700 text-sm'}`}>
+          <p
+            className={`leading-relaxed whitespace-pre-wrap ${isFirst ? "text-gray-900 text-base" : "text-gray-700 text-sm"}`}
+          >
             {userMessage.content}
           </p>
-          {isFirst && (caseData.stakeholders.length > 1 || caseData.stakeholders[0] !== 'self' || caseData.constraints.length > 0 || caseData.role !== 'Individual') && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {caseData.role !== 'Individual' && (
-                <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium">
-                  {caseData.role}
-                </span>
-              )}
-              {caseData.stakeholders.filter(s => s !== 'self').map((s, i) => (
-                <span key={i} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                  {s}
-                </span>
-              ))}
-            </div>
-          )}
+          {isFirst &&
+            (caseData.stakeholders.length > 1 ||
+              caseData.stakeholders[0] !== "self" ||
+              caseData.constraints.length > 0 ||
+              caseData.role !== "Individual") && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {caseData.role !== "Individual" && (
+                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium">
+                    {caseData.role}
+                  </span>
+                )}
+                {caseData.stakeholders
+                  .filter((s) => s !== "self")
+                  .map((s, i) => (
+                    <span
+                      key={i}
+                      className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
+                    >
+                      {s}
+                    </span>
+                  ))}
+              </div>
+            )}
         </div>
       </div>
 
@@ -102,11 +122,18 @@ export function CaseExchange({
       <div className="relative pl-10 pb-6">
         <div
           className={`absolute left-0 w-7 h-7 rounded-full flex items-center justify-center ${
-            isFirst ? 'bg-orange-500 text-white' : 'bg-orange-100 border-2 border-orange-300'
+            isFirst
+              ? "bg-orange-500 text-white"
+              : "bg-orange-100 border-2 border-orange-300"
           }`}
         >
           {isFirst ? (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -120,18 +147,22 @@ export function CaseExchange({
         </div>
         <div
           className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
-            isFirst ? 'text-orange-700' : 'text-orange-600'
+            isFirst ? "text-orange-700" : "text-orange-600"
           }`}
         >
-          {isFirst ? 'Wisdom from the Geeta' : 'Guidance'}
+          {isFirst ? "Wisdom from the Geeta" : "Guidance"}
         </div>
 
         <div
           className={`rounded-xl p-4 border ${
-            isFirst ? 'bg-white shadow-lg border-orange-200' : 'bg-white shadow-md border-orange-100'
+            isFirst
+              ? "bg-white shadow-lg border-orange-200"
+              : "bg-white shadow-md border-orange-100"
           }`}
         >
-          <p className={`leading-relaxed whitespace-pre-wrap ${isFirst ? 'text-gray-900' : 'text-gray-800 text-sm'}`}>
+          <p
+            className={`leading-relaxed whitespace-pre-wrap ${isFirst ? "text-gray-900" : "text-gray-800 text-sm"}`}
+          >
             {assistantMessage.content}
           </p>
 
@@ -151,26 +182,40 @@ export function CaseExchange({
                 className="text-xs font-medium text-orange-600 hover:text-orange-700 flex items-center gap-1"
               >
                 <svg
-                  className={`w-3 h-3 transition-transform ${isSourcesExpanded ? 'rotate-90' : ''}`}
+                  className={`w-3 h-3 transition-transform ${isSourcesExpanded ? "rotate-90" : ""}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
-                {output.result_json.sources.length} verse reference{output.result_json.sources.length > 1 ? 's' : ''}
+                {output.result_json.sources.length} verse reference
+                {output.result_json.sources.length > 1 ? "s" : ""}
               </button>
 
               {isSourcesExpanded && (
                 <div className="mt-3 space-y-2">
                   {output.result_json.sources.map((source) => (
-                    <div key={source.canonical_id} className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg p-3 border border-orange-100">
+                    <div
+                      key={source.canonical_id}
+                      className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg p-3 border border-orange-100"
+                    >
                       <div className="flex items-center justify-between">
-                        <Link to={`/verses/${source.canonical_id}`} className="font-mono text-orange-700 font-semibold text-sm hover:underline">
-                          {source.canonical_id.replace(/_/g, ' ')}
+                        <Link
+                          to={`/verses/${source.canonical_id}`}
+                          className="font-mono text-orange-700 font-semibold text-sm hover:underline"
+                        >
+                          {source.canonical_id.replace(/_/g, " ")}
                         </Link>
                       </div>
-                      <p className="mt-1.5 text-gray-700 italic text-sm">"{source.paraphrase}"</p>
+                      <p className="mt-1.5 text-gray-700 italic text-sm">
+                        "{source.paraphrase}"
+                      </p>
                     </div>
                   ))}
                 </div>

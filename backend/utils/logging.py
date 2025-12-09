@@ -6,7 +6,7 @@ import contextvars
 from config import settings
 
 # Correlation ID context variable for tracing requests
-correlation_id = contextvars.ContextVar('correlation_id', default='unknown')
+correlation_id = contextvars.ContextVar("correlation_id", default="unknown")
 
 
 class CorrelationIDFilter(logging.Filter):
@@ -31,7 +31,7 @@ def setup_logging():
     # Create formatter with correlation ID
     formatter = logging.Formatter(
         "%(asctime)s - [%(correlation_id)s] - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # Configure root logger

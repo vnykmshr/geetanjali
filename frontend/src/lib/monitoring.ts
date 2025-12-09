@@ -21,31 +21,33 @@
  */
 export function initSentry(): void {
   // Only run in production
-  if (!import.meta.env.PROD) return
+  if (!import.meta.env.PROD) return;
 
-  const dsn = import.meta.env.VITE_SENTRY_DSN
-  if (!dsn) return // Silent skip if not configured
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (!dsn) return; // Silent skip if not configured
 
   // Dynamically import Sentry to keep initial bundle small
-  import('@sentry/react').then((Sentry) => {
-    Sentry.init({
-      dsn,
-      environment: import.meta.env.MODE,
-      enabled: true,
-      // Sample rate for performance monitoring (0.1 = 10%)
-      tracesSampleRate: 0.1,
-      // Don't send PII
-      beforeSend(event) {
-        if (event.user) {
-          delete event.user.email
-          delete event.user.ip_address
-        }
-        return event
-      },
+  import("@sentry/react")
+    .then((Sentry) => {
+      Sentry.init({
+        dsn,
+        environment: import.meta.env.MODE,
+        enabled: true,
+        // Sample rate for performance monitoring (0.1 = 10%)
+        tracesSampleRate: 0.1,
+        // Don't send PII
+        beforeSend(event) {
+          if (event.user) {
+            delete event.user.email;
+            delete event.user.ip_address;
+          }
+          return event;
+        },
+      });
     })
-  }).catch(() => {
-    // Silent fail - don't pollute console
-  })
+    .catch(() => {
+      // Silent fail - don't pollute console
+    });
 }
 
 // =============================================================================
@@ -59,28 +61,33 @@ export function initSentry(): void {
  */
 export function initUmami(): void {
   // Only run in production
-  if (!import.meta.env.PROD) return
+  if (!import.meta.env.PROD) return;
 
-  const websiteId = import.meta.env.VITE_UMAMI_WEBSITE_ID
-  if (!websiteId) return // Silent skip if not configured
+  const websiteId = import.meta.env.VITE_UMAMI_WEBSITE_ID;
+  if (!websiteId) return; // Silent skip if not configured
 
   // Inject Umami script
-  const script = document.createElement('script')
-  script.defer = true
-  script.src = 'https://cloud.umami.is/script.js'
-  script.setAttribute('data-website-id', websiteId)
-  document.head.appendChild(script)
+  const script = document.createElement("script");
+  script.defer = true;
+  script.src = "https://cloud.umami.is/script.js";
+  script.setAttribute("data-website-id", websiteId);
+  document.head.appendChild(script);
 }
 
 /**
  * Capture an exception manually
  */
-export function captureException(error: Error, context?: Record<string, unknown>): void {
-  import('@sentry/react').then((Sentry) => {
-    Sentry.captureException(error, { extra: context })
-  }).catch(() => {
-    console.error('[Sentry] Failed to capture:', error)
-  })
+export function captureException(
+  error: Error,
+  context?: Record<string, unknown>,
+): void {
+  import("@sentry/react")
+    .then((Sentry) => {
+      Sentry.captureException(error, { extra: context });
+    })
+    .catch(() => {
+      console.error("[Sentry] Failed to capture:", error);
+    });
 }
 
 // =============================================================================
@@ -94,30 +101,36 @@ export function captureException(error: Error, context?: Record<string, unknown>
  * and to analytics endpoint in production.
  */
 export function initWebVitals(): void {
-  import('web-vitals').then(({ onCLS, onINP, onLCP, onFCP, onTTFB }) => {
-    const reportVital = (metric: { name: string; value: number; id: string }) => {
-      // Log in development
-      if (import.meta.env.DEV) {
-        console.log(`[Web Vitals] ${metric.name}:`, metric.value.toFixed(2))
-      }
+  import("web-vitals")
+    .then(({ onCLS, onINP, onLCP, onFCP, onTTFB }) => {
+      const reportVital = (metric: {
+        name: string;
+        value: number;
+        id: string;
+      }) => {
+        // Log in development
+        if (import.meta.env.DEV) {
+          console.log(`[Web Vitals] ${metric.name}:`, metric.value.toFixed(2));
+        }
 
-      // Send to analytics in production
-      if (import.meta.env.PROD && window.umami) {
-        window.umami.track(`web-vital-${metric.name.toLowerCase()}`, {
-          value: Math.round(metric.value),
-          id: metric.id,
-        })
-      }
-    }
+        // Send to analytics in production
+        if (import.meta.env.PROD && window.umami) {
+          window.umami.track(`web-vital-${metric.name.toLowerCase()}`, {
+            value: Math.round(metric.value),
+            id: metric.id,
+          });
+        }
+      };
 
-    onCLS(reportVital)   // Cumulative Layout Shift
-    onINP(reportVital)   // Interaction to Next Paint (replaced FID in v4)
-    onLCP(reportVital)   // Largest Contentful Paint
-    onFCP(reportVital)   // First Contentful Paint
-    onTTFB(reportVital)  // Time to First Byte
-  }).catch((err) => {
-    console.warn('[Web Vitals] Failed to load:', err)
-  })
+      onCLS(reportVital); // Cumulative Layout Shift
+      onINP(reportVital); // Interaction to Next Paint (replaced FID in v4)
+      onLCP(reportVital); // Largest Contentful Paint
+      onFCP(reportVital); // First Contentful Paint
+      onTTFB(reportVital); // Time to First Byte
+    })
+    .catch((err) => {
+      console.warn("[Web Vitals] Failed to load:", err);
+    });
 }
 
 // =============================================================================
@@ -128,32 +141,35 @@ export function initWebVitals(): void {
  * Register the service worker for PWA functionality.
  */
 export function registerServiceWorker(): void {
-  if ('serviceWorker' in navigator && import.meta.env.PROD) {
-    window.addEventListener('load', async () => {
+  if ("serviceWorker" in navigator && import.meta.env.PROD) {
+    window.addEventListener("load", async () => {
       try {
-        const registration = await navigator.serviceWorker.register('/sw.js', {
-          scope: '/',
-        })
+        const registration = await navigator.serviceWorker.register("/sw.js", {
+          scope: "/",
+        });
 
-        console.log('[SW] Registered:', registration.scope)
+        console.log("[SW] Registered:", registration.scope);
 
         // Handle updates
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing
+        registration.addEventListener("updatefound", () => {
+          const newWorker = registration.installing;
           if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            newWorker.addEventListener("statechange", () => {
+              if (
+                newWorker.state === "installed" &&
+                navigator.serviceWorker.controller
+              ) {
                 // New version available
-                console.log('[SW] New version available')
+                console.log("[SW] New version available");
                 // Optionally show update prompt to user
               }
-            })
+            });
           }
-        })
+        });
       } catch (error) {
-        console.error('[SW] Registration failed:', error)
+        console.error("[SW] Registration failed:", error);
       }
-    })
+    });
   }
 }
 
@@ -161,10 +177,10 @@ export function registerServiceWorker(): void {
  * Unregister service worker (useful for debugging)
  */
 export async function unregisterServiceWorker(): Promise<void> {
-  if ('serviceWorker' in navigator) {
-    const registration = await navigator.serviceWorker.ready
-    await registration.unregister()
-    console.log('[SW] Unregistered')
+  if ("serviceWorker" in navigator) {
+    const registration = await navigator.serviceWorker.ready;
+    await registration.unregister();
+    console.log("[SW] Unregistered");
   }
 }
 
@@ -175,7 +191,7 @@ export async function unregisterServiceWorker(): Promise<void> {
 declare global {
   interface Window {
     umami?: {
-      track: (event: string, data?: Record<string, unknown>) => void
-    }
+      track: (event: string, data?: Record<string, unknown>) => void;
+    };
   }
 }

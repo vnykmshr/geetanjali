@@ -79,8 +79,12 @@ class Commentary(Base, TimestampMixin):
     language: Mapped[str] = mapped_column(String(10), default="en")
 
     # Attribution
-    author: Mapped[Optional[str]] = mapped_column(String(255), index=True, nullable=True)
-    school: Mapped[Optional[str]] = mapped_column(String(100), index=True, nullable=True)
+    author: Mapped[Optional[str]] = mapped_column(
+        String(255), index=True, nullable=True
+    )
+    school: Mapped[Optional[str]] = mapped_column(
+        String(100), index=True, nullable=True
+    )
     translator: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     license: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
@@ -110,7 +114,9 @@ class Translation(Base, TimestampMixin):
     language: Mapped[str] = mapped_column(String(10), default="en", index=True)
 
     # Attribution
-    translator: Mapped[Optional[str]] = mapped_column(String(255), index=True, nullable=True)
+    translator: Mapped[Optional[str]] = mapped_column(
+        String(255), index=True, nullable=True
+    )
     school: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     license: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)

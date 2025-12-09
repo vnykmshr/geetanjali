@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
-import { casesApi, outputsApi } from '../lib/api';
-import { messagesApi } from '../api/messages';
-import type { Case, Message, Output } from '../types';
-import { errorMessages } from '../lib/errorMessages';
+import { useState, useCallback, useEffect } from "react";
+import { casesApi, outputsApi } from "../lib/api";
+import { messagesApi } from "../api/messages";
+import type { Case, Message, Output } from "../types";
+import { errorMessages } from "../lib/errorMessages";
 
 interface UseCaseDataOptions {
   caseId: string | undefined;
@@ -23,10 +23,14 @@ export function useCaseData({ caseId, isAuthenticated }: UseCaseDataOptions) {
   const [wasProcessing, setWasProcessing] = useState(false);
   const [showCompletionBanner, setShowCompletionBanner] = useState(false);
 
-  const isProcessing = caseData?.status === 'pending' || caseData?.status === 'processing';
-  const isFailed = caseData?.status === 'failed';
-  const isPolicyViolation = caseData?.status === 'policy_violation';
-  const isCompleted = caseData?.status === 'completed' || caseData?.status === 'policy_violation' || !caseData?.status;
+  const isProcessing =
+    caseData?.status === "pending" || caseData?.status === "processing";
+  const isFailed = caseData?.status === "failed";
+  const isPolicyViolation = caseData?.status === "policy_violation";
+  const isCompleted =
+    caseData?.status === "completed" ||
+    caseData?.status === "policy_violation" ||
+    !caseData?.status;
 
   const loadCaseData = useCallback(async () => {
     if (!caseId) return;
@@ -35,7 +39,12 @@ export function useCaseData({ caseId, isAuthenticated }: UseCaseDataOptions) {
       const data = await casesApi.get(caseId);
       setCaseData(data);
 
-      if (data.status === 'completed' || data.status === 'failed' || data.status === 'policy_violation' || !data.status) {
+      if (
+        data.status === "completed" ||
+        data.status === "failed" ||
+        data.status === "policy_violation" ||
+        !data.status
+      ) {
         const messagesData = await messagesApi.list(caseId);
         setMessages(messagesData);
 
@@ -83,7 +92,11 @@ export function useCaseData({ caseId, isAuthenticated }: UseCaseDataOptions) {
         const data = await casesApi.get(caseId);
         setCaseData(data);
 
-        if (data.status === 'completed' || data.status === 'failed' || data.status === 'policy_violation') {
+        if (
+          data.status === "completed" ||
+          data.status === "failed" ||
+          data.status === "policy_violation"
+        ) {
           clearInterval(pollInterval);
           loadCaseData();
         }

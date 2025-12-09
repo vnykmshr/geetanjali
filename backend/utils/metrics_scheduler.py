@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 scheduler: BackgroundScheduler | None = None
 
 
-def start_metrics_scheduler(collect_fn: Callable[[], None], interval_seconds: int = 60) -> None:
+def start_metrics_scheduler(
+    collect_fn: Callable[[], None], interval_seconds: int = 60
+) -> None:
     """Start the background scheduler for metrics collection.
 
     Args:

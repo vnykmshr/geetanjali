@@ -4,14 +4,28 @@ interface StepsSectionProps {
   onToggle: () => void;
 }
 
-export function StepsSection({ steps, showSteps, onToggle }: StepsSectionProps) {
+export function StepsSection({
+  steps,
+  showSteps,
+  onToggle,
+}: StepsSectionProps) {
   if (steps.length === 0) return null;
 
   return (
     <div className="relative pl-8 sm:pl-10 pb-3 sm:pb-4">
       <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-green-100 border-2 border-green-300 flex items-center justify-center">
-        <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-green-600"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       </div>
 
@@ -25,8 +39,18 @@ export function StepsSection({ steps, showSteps, onToggle }: StepsSectionProps) 
               {steps.length} actionable steps
             </p>
           </div>
-          <svg className={`w-5 h-5 text-gray-400 transition-transform ${showSteps ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <svg
+            className={`w-5 h-5 text-gray-400 transition-transform ${showSteps ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </div>
       </button>
@@ -39,7 +63,9 @@ export function StepsSection({ steps, showSteps, onToggle }: StepsSectionProps) 
                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center flex-shrink-0 text-xs font-medium">
                   {idx + 1}
                 </div>
-                <p className="text-xs sm:text-sm text-gray-700 pt-0.5">{step}</p>
+                <p className="text-xs sm:text-sm text-gray-700 pt-0.5">
+                  {step}
+                </p>
               </div>
             ))}
           </div>
