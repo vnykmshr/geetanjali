@@ -1,6 +1,7 @@
 """APScheduler setup for periodic metrics collection."""
 
 import logging
+from typing import Callable
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 scheduler: BackgroundScheduler | None = None
 
 
-def start_metrics_scheduler(collect_fn: callable, interval_seconds: int = 60) -> None:
+def start_metrics_scheduler(collect_fn: Callable[[], None], interval_seconds: int = 60) -> None:
     """Start the background scheduler for metrics collection.
 
     Args:
