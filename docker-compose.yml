@@ -242,6 +242,9 @@ services:
       - /etc/letsencrypt/archive/geetanjaliapp.com:/etc/letsencrypt/archive/geetanjaliapp.com:ro
       # Mount certbot challenge directory
       - /var/www/certbot:/var/www/certbot:ro
+    # Add ssl-cert group (GID 1002 on production) for reading SSL private keys
+    group_add:
+      - "1002"
     # Security hardening (nginx needs caps for binding ports and setting up cache dirs)
     cap_drop:
       - ALL
