@@ -4,6 +4,7 @@ import logging
 import secrets
 import string
 import uuid
+from datetime import datetime, timedelta
 from typing import Any, Callable, List, Optional, TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -30,14 +31,9 @@ from services.content_filter import (
     validate_submission_content,
     ContentPolicyError,
 )
+from config import settings
 
 logger = logging.getLogger(__name__)
-
-# Redis cache TTL for public cases (1 hour - can be invalidated on toggle)
-PUBLIC_CASE_REDIS_TTL = 3600
-# HTTP Cache-Control TTL (1 minute - keep very short since shares can be revoked)
-# Browsers cache for this duration without checking server, so shorter = faster revocation
-PUBLIC_CASE_HTTP_TTL = 60
 
 T = TypeVar("T")
 
@@ -57,10 +53,10 @@ def get_public_case_or_404(slug: str, db: Session) -> Case:
         db: Database session
 
     Returns:
-        Case if found and public
+        Case if found, public, and not expired
 
     Raises:
-        HTTPException: If case not found or not public
+        HTTPException: If case not found, not public, or expired
     """
     repo = CaseRepository(db)
     case = repo.get_by_public_slug(slug)
@@ -70,6 +66,16 @@ def get_public_case_or_404(slug: str, db: Session) -> Case:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Case not found or not publicly accessible",
         )
+
+    # Check if public link has expired
+    if settings.PUBLIC_CASE_EXPIRY_DAYS > 0 and case.shared_at:
+        expiry_date = case.shared_at + timedelta(days=settings.PUBLIC_CASE_EXPIRY_DAYS)
+        if datetime.utcnow() > expiry_date:
+            raise HTTPException(
+                status_code=status.HTTP_410_GONE,
+                detail="This shared link has expired",
+            )
+
     return case
 
 
@@ -94,16 +100,16 @@ def cached_public_response(
     # Try cache first
     cached = cache.get(cache_key)
     if cached is not None:
-        response.headers["Cache-Control"] = f"public, max-age={PUBLIC_CASE_HTTP_TTL}"
+        response.headers["Cache-Control"] = f"public, max-age={settings.CACHE_TTL_PUBLIC_CASE_HTTP}"
         response.headers["X-Cache"] = "HIT"
         return cached
 
     # Cache miss - fetch and cache
     data = fetch_fn()
     serialized = serialize_fn(data)
-    cache.set(cache_key, serialized, PUBLIC_CASE_REDIS_TTL)
+    cache.set(cache_key, serialized, settings.CACHE_TTL_PUBLIC_CASE)
 
-    response.headers["Cache-Control"] = f"public, max-age={PUBLIC_CASE_HTTP_TTL}"
+    response.headers["Cache-Control"] = f"public, max-age={settings.CACHE_TTL_PUBLIC_CASE_HTTP}"
     response.headers["X-Cache"] = "MISS"
 
     return data
@@ -334,8 +340,9 @@ async def toggle_case_sharing(
 
     update_data: dict[str, Any] = {"is_public": share_data.is_public}
 
-    # Generate slug when making public (if not already set)
+    # Generate slug and set shared_at when making public (if not already set)
     if share_data.is_public and not case.public_slug:
+        update_data["shared_at"] = datetime.utcnow()
         # Ensure unique slug
         max_attempts = 10
         for _ in range(max_attempts):
