@@ -42,6 +42,15 @@ services:
       - GF_SERVER_ENFORCE_DOMAIN=false
       - GF_ALERTING_ENABLED=false
       - GF_UNIFIED_ALERTING_ENABLED=true
+      # SMTP via Resend for email alerts
+      - GF_SMTP_ENABLED=${GRAFANA_SMTP_ENABLED:-false}
+      - GF_SMTP_HOST=smtp.resend.com:465
+      - GF_SMTP_USER=resend
+      - GF_SMTP_PASSWORD=${RESEND_API_KEY}
+      - GF_SMTP_FROM_ADDRESS=${GRAFANA_SMTP_FROM:-alerts@geetanjaliapp.com}
+      - GF_SMTP_FROM_NAME=Geetanjali Alerts
+      - GF_SMTP_STARTTLS_POLICY=NoStartTLS
+      - GRAFANA_ALERT_EMAIL_TO=${GRAFANA_ALERT_EMAIL_TO:-}
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro

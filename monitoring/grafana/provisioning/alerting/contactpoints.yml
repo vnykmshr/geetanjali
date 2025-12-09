@@ -1,0 +1,15 @@
+# Grafana Alerting Contact Points Provisioning
+# Configures email notifications via Resend SMTP
+
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: email-alerts
+    receivers:
+      - uid: email-primary
+        type: email
+        settings:
+          addresses: ${GRAFANA_ALERT_EMAIL_TO}
+          singleEmail: true
+        disableResolveMessage: false
