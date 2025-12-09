@@ -1,6 +1,5 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
-import { Navbar } from './Navbar';
 
 interface Props {
   children: ReactNode;
@@ -9,6 +8,26 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+}
+
+/**
+ * Minimal navbar for error state - no auth dependencies
+ */
+function ErrorNavbar() {
+  return (
+    <nav className="bg-white shadow-sm border-b border-gray-200 h-14 sm:h-16 flex-shrink-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+        <div className="flex justify-between items-center h-full">
+          <a href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
+            <img src="/logo.svg" alt="Geetanjali" className="h-8 w-8 sm:h-10 sm:w-10" />
+            <span className="text-xl sm:text-2xl font-serif font-bold text-orange-600">
+              Geetanjali
+            </span>
+          </a>
+        </div>
+      </div>
+    </nav>
+  );
 }
 
 /**
@@ -38,7 +57,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
-          <Navbar />
+          <ErrorNavbar />
           <div className="flex-1 flex items-center justify-center">
             <div className="max-w-md mx-auto px-4 text-center">
               <div className="mb-6 p-6 bg-red-50 border border-red-200 rounded-lg">
