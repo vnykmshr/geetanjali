@@ -89,9 +89,14 @@ $SSH_CMD "cd ${DEPLOY_DIR} && \
     docker tag geetanjali-frontend:latest geetanjali-frontend:rollback 2>/dev/null || true && \
     docker tag geetanjali-chromadb:latest geetanjali-chromadb:rollback 2>/dev/null || true"
 
-# Step 6: Rebuild and restart containers
+# Step 5b: Get version from git tag (single source of truth)
+log "Determining app version from git tag..."
+APP_VERSION=$($SSH_CMD "cd ${DEPLOY_DIR} && git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo '1.5.0'")
+info "Deploying version: ${APP_VERSION}"
+
+# Step 6: Rebuild and restart containers with version
 log "Rebuilding and restarting containers..."
-$SSH_CMD "cd ${DEPLOY_DIR} && docker compose build && docker compose up -d" || error "Failed to restart containers"
+$SSH_CMD "cd ${DEPLOY_DIR} && APP_VERSION=${APP_VERSION} docker compose build && APP_VERSION=${APP_VERSION} docker compose up -d" || error "Failed to restart containers"
 
 # Step 7: Wait for health checks
 log "Waiting for services to become healthy..."

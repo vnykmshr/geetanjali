@@ -33,7 +33,7 @@ limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
     title=settings.APP_NAME,
     description="Ethical leadership guidance from the Bhagavad Geeta",
-    version="1.4.0",
+    version=settings.APP_VERSION,
     debug=settings.DEBUG,
 )
 
@@ -143,7 +143,7 @@ async def root():
     """Root endpoint."""
     return {
         "name": settings.APP_NAME,
-        "version": "1.1.0",
+        "version": settings.APP_VERSION,
         "status": "running",
         "environment": settings.APP_ENV,
         "docs": "/docs",
