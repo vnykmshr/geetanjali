@@ -40,7 +40,7 @@ services:
       - GF_ANALYTICS_REPORTING_ENABLED=false
       - GF_SERVER_ROOT_URL=https://grafana.geetanjaliapp.com
       - GF_SERVER_ENFORCE_DOMAIN=true
-      - GF_ALERTING_ENABLED=true
+      - GF_ALERTING_ENABLED=false
       - GF_UNIFIED_ALERTING_ENABLED=true
     volumes:
       - grafana_data:/var/lib/grafana
