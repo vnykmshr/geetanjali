@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { SITE_URL } from '../lib/config';
 
 interface SEOProps {
   title?: string;
@@ -12,10 +13,9 @@ interface SEOProps {
   noIndex?: boolean;
 }
 
-const BASE_URL = 'https://geetanjaliapp.com';
 const DEFAULT_TITLE = 'Geetanjali - Ethical Guidance from the Bhagavad Geeta';
 const DEFAULT_DESCRIPTION = 'Ethical leadership guidance and wisdom from the Bhagavad Geeta for life\'s difficult decisions. Free consultations with timeless wisdom.';
-const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`;
+const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
 /**
  * Custom hook for managing page-specific SEO meta tags
@@ -73,7 +73,7 @@ export function useSEO({
     const finalOgTitle = ogTitle || title || DEFAULT_TITLE;
     const finalOgDescription = ogDescription || description || DEFAULT_DESCRIPTION;
     const finalOgImage = ogImage || DEFAULT_IMAGE;
-    const finalCanonical = canonical ? `${BASE_URL}${canonical}` : `${BASE_URL}/`;
+    const finalCanonical = canonical ? `${SITE_URL}${canonical}` : `${SITE_URL}/`;
 
     // Primary meta tags
     setMeta('meta[name="description"]', finalDescription);

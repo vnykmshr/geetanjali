@@ -2,11 +2,7 @@ import axios from 'axios';
 import type { Case, Output, Verse, Translation, HealthResponse, ScholarReviewRequest, Feedback, FeedbackCreate, Message } from '../types';
 import { tokenStorage, authApi } from '../api/auth';
 import { getSessionId } from './session';
-
-// In production (Docker), use relative paths - nginx proxies /api/ to backend
-// In development, use localhost:8000 for direct backend access
-const API_BASE_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000');
-const API_V1_PREFIX = import.meta.env.VITE_API_V1_PREFIX || '/api/v1';
+import { API_BASE_URL, API_V1_PREFIX } from './config';
 
 export const api = axios.create({
   baseURL: `${API_BASE_URL}${API_V1_PREFIX}`,

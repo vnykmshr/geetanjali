@@ -1,10 +1,7 @@
 import axios from 'axios';
 import type { AuthResponse, LoginRequest, SignupRequest, RefreshResponse, User } from '../types';
 import { getSessionId } from '../lib/session';
-
-// In production (Docker), use relative paths - nginx proxies /api/ to backend
-// In development, use localhost:8000 for direct backend access
-const API_BASE_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000');
+import { API_BASE_URL } from '../lib/config';
 
 // Create a separate axios instance for auth endpoints
 const authClient = axios.create({
