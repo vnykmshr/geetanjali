@@ -8,23 +8,30 @@ from services.metrics_collector import (
     collect_metrics,
     _collect_business_metrics,
     _collect_redis_metrics,
+    _collect_postgres_metrics,
+    _collect_ollama_metrics,
+    _collect_chromadb_metrics,
 )
 
 
 class TestMetricsCollector:
     """Tests for the metrics collector module."""
 
+    @patch("services.metrics_collector.httpx.get")
     @patch("services.metrics_collector.SessionLocal")
     @patch("services.metrics_collector.get_redis_client")
-    def test_collect_metrics_runs_without_error(self, mock_redis, mock_session):
+    def test_collect_metrics_runs_without_error(self, mock_redis, mock_session, mock_httpx):
         """Test that collect_metrics runs without raising exceptions."""
         mock_db = MagicMock()
         mock_session.return_value = mock_db
         mock_db.query.return_value.filter.return_value.filter.return_value.scalar.return_value = 0
         mock_db.query.return_value.scalar.return_value = 0
         mock_db.query.return_value.filter.return_value.scalar.return_value = 0
+        mock_db.execute.return_value.fetchone.return_value = (0, 0)
+        mock_db.execute.return_value.scalar.return_value = 0
 
         mock_redis.return_value = None  # Redis unavailable
+        mock_httpx.side_effect = Exception("Service unavailable")  # Ollama/ChromaDB unavailable
 
         # Should not raise
         collect_metrics()
@@ -182,6 +189,112 @@ class TestMetricsCollector:
         mock_memory.set.assert_called_with(0)
         mock_queue.set.assert_called_with(0)
         mock_worker.set.assert_called_with(0)
+
+    @patch("services.metrics_collector.SessionLocal")
+    @patch("services.metrics_collector.postgres_up")
+    @patch("services.metrics_collector.postgres_connections_active")
+    @patch("services.metrics_collector.postgres_connections_idle")
+    @patch("services.metrics_collector.postgres_database_size_bytes")
+    def test_collect_postgres_metrics_sets_gauges(
+        self, mock_size, mock_idle, mock_active, mock_up, mock_session
+    ):
+        """Test that PostgreSQL metrics are properly collected."""
+        mock_db = MagicMock()
+        mock_session.return_value = mock_db
+        mock_db.execute.return_value.fetchone.return_value = (3, 5)  # active, idle
+        mock_db.execute.return_value.scalar.return_value = 1000000  # db size
+
+        _collect_postgres_metrics()
+
+        mock_up.set.assert_called_once_with(1)
+        mock_active.set.assert_called_once_with(3)
+        mock_idle.set.assert_called_once_with(5)
+        mock_size.set.assert_called_once_with(1000000)
+        mock_db.close.assert_called_once()
+
+    @patch("services.metrics_collector.SessionLocal")
+    @patch("services.metrics_collector.postgres_up")
+    @patch("services.metrics_collector.postgres_connections_active")
+    @patch("services.metrics_collector.postgres_connections_idle")
+    @patch("services.metrics_collector.postgres_database_size_bytes")
+    def test_collect_postgres_metrics_handles_exception(
+        self, mock_size, mock_idle, mock_active, mock_up, mock_session
+    ):
+        """Test PostgreSQL metrics when an exception occurs."""
+        mock_db = MagicMock()
+        mock_session.return_value = mock_db
+        mock_db.execute.side_effect = Exception("Database error")
+
+        # Should not raise
+        _collect_postgres_metrics()
+
+        mock_up.set.assert_called_with(0)
+        mock_active.set.assert_called_with(0)
+        mock_idle.set.assert_called_with(0)
+        mock_size.set.assert_called_with(0)
+        mock_db.close.assert_called_once()
+
+    @patch("services.metrics_collector.httpx.get")
+    @patch("services.metrics_collector.ollama_up")
+    @patch("services.metrics_collector.ollama_models_loaded")
+    def test_collect_ollama_metrics_sets_gauges(
+        self, mock_models, mock_up, mock_httpx
+    ):
+        """Test that Ollama metrics are properly collected."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"models": [{"name": "llama2"}, {"name": "mistral"}]}
+        mock_httpx.return_value = mock_response
+
+        _collect_ollama_metrics()
+
+        mock_up.set.assert_called_once_with(1)
+        mock_models.set.assert_called_once_with(2)
+
+    @patch("services.metrics_collector.httpx.get")
+    @patch("services.metrics_collector.ollama_up")
+    @patch("services.metrics_collector.ollama_models_loaded")
+    def test_collect_ollama_metrics_handles_unavailable(
+        self, mock_models, mock_up, mock_httpx
+    ):
+        """Test Ollama metrics when Ollama is unavailable."""
+        mock_httpx.side_effect = Exception("Connection refused")
+
+        # Should not raise
+        _collect_ollama_metrics()
+
+        mock_up.set.assert_called_once_with(0)
+        mock_models.set.assert_called_once_with(0)
+
+    @patch("services.metrics_collector.httpx.get")
+    @patch("services.metrics_collector.chromadb_up")
+    @patch("services.metrics_collector.chromadb_collection_count")
+    def test_collect_chromadb_metrics_sets_gauges(
+        self, mock_count, mock_up, mock_httpx
+    ):
+        """Test that ChromaDB metrics are properly collected."""
+        mock_heartbeat = MagicMock()
+        mock_heartbeat.status_code = 200
+        mock_httpx.return_value = mock_heartbeat
+
+        _collect_chromadb_metrics()
+
+        mock_up.set.assert_called_with(1)
+
+    @patch("services.metrics_collector.httpx.get")
+    @patch("services.metrics_collector.chromadb_up")
+    @patch("services.metrics_collector.chromadb_collection_count")
+    def test_collect_chromadb_metrics_handles_unavailable(
+        self, mock_count, mock_up, mock_httpx
+    ):
+        """Test ChromaDB metrics when ChromaDB is unavailable."""
+        mock_httpx.side_effect = Exception("Connection refused")
+
+        # Should not raise
+        _collect_chromadb_metrics()
+
+        mock_up.set.assert_called_once_with(0)
+        mock_count.set.assert_called_once_with(0)
 
 
 class TestMetricsScheduler:
