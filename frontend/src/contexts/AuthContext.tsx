@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import type { ReactNode } from "react";
 import type { User, LoginRequest, SignupRequest } from "../types";
 import { authApi, tokenStorage } from "../api/auth";
@@ -68,29 +75,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     initAuth();
   }, []);
 
-  const login = async (credentials: LoginRequest) => {
+  // P2.5 FIX: Wrap handlers in useCallback to prevent unnecessary re-renders
+  const login = useCallback(async (credentials: LoginRequest) => {
     const response = await authApi.login(credentials);
     setUser(response.user);
-  };
+  }, []);
 
-  const signup = async (data: SignupRequest) => {
+  const signup = useCallback(async (data: SignupRequest) => {
     const response = await authApi.signup(data);
     setUser(response.user);
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await authApi.logout();
     setUser(null);
-  };
+  }, []);
 
-  const value: AuthContextType = {
-    user,
-    loading,
-    login,
-    signup,
-    logout,
-    isAuthenticated: !!user,
-  };
+  // P2.5 FIX: Memoize context value to prevent re-renders when value object changes
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user,
+      loading,
+      login,
+      signup,
+      logout,
+      isAuthenticated: !!user,
+    }),
+    [user, loading, login, signup, logout],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

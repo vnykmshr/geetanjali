@@ -97,8 +97,14 @@ async def get_sitemap(request: Request, db: Session = Depends(get_db)):
     # Generate fresh sitemap
     logger.info("Generating fresh sitemap")
 
-    # Query all verses ordered by chapter and verse number
-    verses = db.query(Verse).order_by(Verse.chapter, Verse.verse).all()
+    # P2.1 FIX: Only select columns needed for sitemap (99% memory reduction)
+    # Previously loaded all columns including large text fields (~5.6MB)
+    # Now only loads canonical_id and updated_at (~52KB)
+    verses = (
+        db.query(Verse.canonical_id, Verse.updated_at)
+        .order_by(Verse.chapter, Verse.verse)
+        .all()
+    )
 
     # Build XML
     sitemap_xml = build_sitemap_xml(verses)

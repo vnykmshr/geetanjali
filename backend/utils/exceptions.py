@@ -44,6 +44,16 @@ class LLMError(GeetanjaliException):
         super().__init__(message, status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
+class RetryableLLMError(LLMError):
+    """Exception for transient LLM errors that should be retried.
+
+    Use this for timeout, connection errors, and rate limits.
+    Do NOT use for permanent errors like auth failures or invalid requests.
+    """
+
+    pass
+
+
 async def geetanjali_exception_handler(
     request: Request, exc: GeetanjaliException
 ) -> JSONResponse:

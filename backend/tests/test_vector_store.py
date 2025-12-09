@@ -7,7 +7,7 @@ Run locally with: pytest tests/test_vector_store.py -v
 import os
 import pytest
 import uuid
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # Skip all tests in this module if running in CI or if SKIP_VECTOR_TESTS is set
 pytestmark = pytest.mark.skipif(

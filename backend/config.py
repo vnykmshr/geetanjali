@@ -30,8 +30,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str = (
         "postgresql://geetanjali:geetanjali_dev_pass@localhost:5432/geetanjali"
     )
-    DB_POOL_SIZE: int = 5
-    DB_MAX_OVERFLOW: int = 10
+    # P0.4 FIX: Increased pool size for production workloads
+    # Previous: pool_size=5, max_overflow=10 (max 15 connections)
+    # New: pool_size=20, max_overflow=30 (max 50 connections)
+    # PostgreSQL default max_connections=100, leaving headroom for admin/monitoring
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 30
     DB_POOL_RECYCLE: int = 3600
     DB_POOL_PRE_PING: bool = True
     DB_ECHO: bool = False  # Log all SQL queries (very verbose, for debugging only)

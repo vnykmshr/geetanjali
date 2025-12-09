@@ -129,7 +129,8 @@ All environment variables with defaults. Only override what you need.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_URL` | postgresql://... | PostgreSQL connection string |
-| `DB_POOL_SIZE` | 5 | Connection pool size |
+| `DB_POOL_SIZE` | 20 | Connection pool size |
+| `DB_MAX_OVERFLOW` | 30 | Max overflow connections beyond pool size |
 | `REDIS_URL` | - | Redis URL (optional, enables caching) |
 | `REDIS_ENABLED` | true | Enable Redis caching |
 

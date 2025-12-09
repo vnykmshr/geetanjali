@@ -170,6 +170,7 @@ export default function CaseView() {
   }, [wasProcessing, isCompleted, outputs.length]);
 
   // Polling for processing status
+  // P1.4 FIX: Use poll data directly instead of refetching everything
   useEffect(() => {
     if (!isProcessing || !id) return;
 
@@ -184,7 +185,19 @@ export default function CaseView() {
           data.status === "policy_violation"
         ) {
           clearInterval(pollInterval);
-          loadCaseData();
+          // P1.4 FIX: Only fetch messages and outputs, not case data again
+          // Case data was just fetched above - no need to refetch
+          const [messagesData, outputsData] = await Promise.all([
+            messagesApi.list(id),
+            outputsApi.listByCaseId(id),
+          ]);
+          setMessages(messagesData);
+          setOutputs(outputsData);
+          setPendingFollowUp(null);
+
+          if (outputsData.length > 0) {
+            setExpandedSources(new Set([outputsData[0].id]));
+          }
         }
       } catch {
         // Silent fail - polling will retry
@@ -192,7 +205,7 @@ export default function CaseView() {
     }, 3000);
 
     return () => clearInterval(pollInterval);
-  }, [isProcessing, id, loadCaseData]);
+  }, [isProcessing, id]);
 
   const handleRetry = async () => {
     if (!id || !caseData) return;

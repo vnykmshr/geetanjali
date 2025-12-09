@@ -21,7 +21,7 @@ except ImportError:
 
 from config import settings
 from services.mock_llm import MockLLMService
-from utils.exceptions import LLMError
+from utils.exceptions import LLMError, RetryableLLMError
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +114,13 @@ class LLMService:
             logger.error(f"Ollama health check failed: {e}")
             return False
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(min=2, max=10),
+        retry=retry_if_exception_type((RetryableLLMError,)),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        reraise=True,
+    )
     def _generate_anthropic(
         self,
         prompt: str,
@@ -121,7 +128,13 @@ class LLMService:
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Generate response using Anthropic Claude."""
+        """Generate response using Anthropic Claude with retry logic.
+
+        P1.2 FIX: Added tenacity retry decorator for transient failures.
+        Retries up to 3 times with exponential backoff (2s, 4s, 8s).
+        Only retries on RetryableLLMError (timeout, connection errors).
+        Permanent errors (auth, invalid request) fail immediately.
+        """
         if not self.anthropic_client:
             raise LLMError("Anthropic client not initialized")
 
@@ -155,10 +168,12 @@ class LLMService:
             }
 
         except (APITimeoutError, APIConnectionError) as e:
-            logger.error(f"Anthropic API error: {e}")
-            raise LLMError(f"Anthropic request failed: {str(e)}")
+            # Transient errors - use RetryableLLMError for retry logic
+            logger.error(f"Anthropic API error (retryable): {e}")
+            raise RetryableLLMError(f"Anthropic request failed: {str(e)}")
         except AnthropicError as e:
-            logger.error(f"Anthropic error: {e}")
+            # Permanent errors (auth, invalid request) - don't retry
+            logger.error(f"Anthropic error (permanent): {e}")
             raise LLMError(f"Anthropic error: {str(e)}")
 
     @retry(

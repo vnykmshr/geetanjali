@@ -1,5 +1,6 @@
 """RAG (Retrieval-Augmented Generation) pipeline service."""
 
+import hashlib
 import logging
 import json
 import re
@@ -19,10 +20,14 @@ from services.content_filter import (
     detect_llm_refusal,
     get_policy_violation_response,
 )
+from services.cache import cache, rag_output_key
 from db import SessionLocal
 from db.repositories.verse_repository import VerseRepository
 
 logger = logging.getLogger(__name__)
+
+# P1.1: Cache TTL for RAG outputs (24 hours)
+RAG_CACHE_TTL = 86400
 
 
 def _extract_json_from_text(response_text: str) -> dict:
@@ -897,6 +902,17 @@ class RAGPipeline:
         """
         logger.info(f"Running RAG pipeline for case: {case_data.get('title', 'N/A')}")
 
+        # P1.1 FIX: Check cache before running expensive pipeline
+        # Note: Only successful (non-policy-violation) results are cached.
+        # Policy violations return early at line ~944 before caching occurs,
+        # so cache hits always have is_policy_violation=False.
+        description = case_data.get("description", "")
+        cache_key = rag_output_key(hashlib.md5(description.encode()).hexdigest()[:16])
+        cached_result = cache.get(cache_key)
+        if cached_result:
+            logger.info(f"RAG cache hit for key {cache_key[:24]}")
+            return cached_result, False  # Cached results are never policy violations
+
         retrieved_verses: List[Dict[str, Any]] = []
 
         # Step 1: Retrieve relevant verses (with fallback)
@@ -958,7 +974,11 @@ class RAGPipeline:
                 validated_output["scholar_flag"] = True
                 validated_output["warning"] = "Generated without verse retrieval"
 
-            logger.info("RAG pipeline completed successfully")
+            # P1.1 FIX: Cache successful results
+            cache.set(cache_key, validated_output, RAG_CACHE_TTL)
+            logger.info(
+                f"RAG pipeline completed successfully, cached as {cache_key[:24]}"
+            )
             return validated_output, False
 
         except Exception as e:

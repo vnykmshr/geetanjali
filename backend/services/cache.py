@@ -226,5 +226,14 @@ def public_case_outputs_key(slug: str) -> str:
     return f"public_case:{slug}:outputs"
 
 
+def rag_output_key(description_hash: str) -> str:
+    """Build cache key for RAG pipeline output.
+
+    P1.1 FIX: Cache RAG outputs by case description hash to avoid
+    re-running expensive pipeline for identical queries.
+    """
+    return f"rag_output:{description_hash}"
+
+
 # Convenience instance
 cache = CacheService()

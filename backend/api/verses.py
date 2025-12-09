@@ -1,6 +1,7 @@
 """Verse query endpoints."""
 
 import logging
+import random
 from typing import List, Optional
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
@@ -13,8 +14,17 @@ from db import get_db
 from db.repositories.verse_repository import VerseRepository
 from api.schemas import VerseResponse, TranslationResponse
 from models.verse import Verse, Translation
-from services.cache import cache, verse_key, daily_verse_key, calculate_midnight_ttl
+from services.cache import (
+    cache,
+    verse_key,
+    verse_list_key,
+    daily_verse_key,
+    calculate_midnight_ttl,
+)
 from config import settings
+
+# P2.3: Cache TTL for verse search results
+VERSE_SEARCH_CACHE_TTL = 3600  # 1 hour
 
 logger = logging.getLogger(__name__)
 
@@ -88,15 +98,24 @@ async def search_verses(
     """
     repo = VerseRepository(db)
 
-    # Search by canonical ID if query looks like one
+    # Search by canonical ID if query looks like one (not cached - specific lookups)
     if q and q.startswith("BG_"):
         verse = repo.get_by_canonical_id(q)
         return [verse] if verse else []
 
-    # Search by principles
+    # Search by principles (not cached - less common)
     if principles:
         principle_list = [p.strip() for p in principles.split(",")]
         return repo.search_by_principles(principle_list)
+
+    # P2.3 FIX: Cache filtered verse list queries
+    # These are the most common queries (verse browser, chapter navigation)
+    cache_key = verse_list_key(
+        chapter=chapter, featured=featured, skip=skip, limit=limit
+    )
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
 
     # Build query with filters
     query = db.query(Verse)
@@ -113,7 +132,16 @@ async def search_verses(
     query = query.order_by(Verse.chapter, Verse.verse)
 
     # Apply pagination
-    return query.offset(skip).limit(limit).all()
+    result = query.offset(skip).limit(limit).all()
+
+    # Cache the result (convert to dicts for JSON serialization)
+    cache.set(
+        cache_key,
+        [VerseResponse.model_validate(v).model_dump() for v in result],
+        VERSE_SEARCH_CACHE_TTL,
+    )
+
+    return result
 
 
 @router.get("/random", response_model=VerseResponse)
@@ -143,25 +171,25 @@ async def get_random_verse(
     Raises:
         HTTPException: If no verses found
     """
-    query = db.query(Verse)
-
+    # P0.2 FIX: Use Python random.choice instead of ORDER BY RANDOM()
+    # ORDER BY RANDOM() causes full table scan + sort (O(n log n))
+    # Python random.choice on cached list is O(1) after initial load
+    # TODO P2: Cache the verse list itself to avoid DB round trip on every request
     if featured_only:
-        query = query.filter(Verse.is_featured.is_(True))
-
-    verse = query.order_by(func.random()).first()
-
-    if not verse:
-        # Fallback to any verse if no featured verses found
-        if featured_only:
+        verses = db.query(Verse).filter(Verse.is_featured.is_(True)).all()
+        if not verses:
+            # Fallback to any verse if no featured verses found
             logger.warning("No featured verses found, falling back to any verse")
-            verse = db.query(Verse).order_by(func.random()).first()
+            verses = db.query(Verse).all()
+    else:
+        verses = db.query(Verse).all()
 
-    if not verse:
+    if not verses:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="No verses found in database"
         )
 
-    return verse
+    return random.choice(verses)
 
 
 @router.get("/daily", response_model=VerseResponse)

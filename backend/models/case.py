@@ -67,15 +67,22 @@ class Case(Base, TimestampMixin):
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
     # Relationships
+    # P0.3 FIX: Use lazy="selectin" to batch-load related objects in 1 extra query
+    # instead of N+1 queries (one per case). This is the optimal strategy when
+    # relationships are always accessed (e.g., case detail view).
     user = relationship("User", back_populates="cases")
     outputs = relationship(
-        "Output", back_populates="case", cascade="all, delete-orphan"
+        "Output",
+        back_populates="case",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
     messages = relationship(
         "Message",
         back_populates="case",
         cascade="all, delete-orphan",
         order_by="Message.created_at",
+        lazy="selectin",
     )
 
     def __repr__(self) -> str:

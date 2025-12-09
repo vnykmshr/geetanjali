@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { formatSanskritLines, isSpeakerIntro } from "../lib/sanskritFormatter";
 import type { Verse } from "../types";
@@ -18,7 +19,11 @@ function getVerseLink(verse: Verse): string {
   return `/verses/${verse.canonical_id}`;
 }
 
-export function VerseCard({
+/**
+ * P1.5 FIX: Memoized verse card component to prevent unnecessary re-renders.
+ * Uses React.memo and useMemo for formatSanskritLines computation.
+ */
+export const VerseCard = memo(function VerseCard({
   verse,
   displayMode = "detail",
   showSpeaker = true,
@@ -27,12 +32,15 @@ export function VerseCard({
 }: VerseCardProps) {
   const isCompact = displayMode === "compact";
 
-  // For compact mode: no speaker intros, compact formatting
-  // For detail mode: respect showSpeaker prop
-  const sanskritLines = formatSanskritLines(verse.sanskrit_devanagari || "", {
-    mode: isCompact ? "compact" : "detail",
-    includeSpeakerIntro: isCompact ? false : showSpeaker,
-  });
+  // P1.5 FIX: Memoize expensive formatSanskritLines computation
+  const sanskritLines = useMemo(
+    () =>
+      formatSanskritLines(verse.sanskrit_devanagari || "", {
+        mode: isCompact ? "compact" : "detail",
+        includeSpeakerIntro: isCompact ? false : showSpeaker,
+      }),
+    [verse.sanskrit_devanagari, isCompact, showSpeaker],
+  );
 
   // Compact mode: Sanskrit-only display for verse browsing
   if (isCompact) {
@@ -111,6 +119,6 @@ export function VerseCard({
       </div>
     </div>
   );
-}
+});
 
 export default VerseCard;
