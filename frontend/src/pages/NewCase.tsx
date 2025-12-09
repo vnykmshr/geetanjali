@@ -1,10 +1,15 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { casesApi } from '../lib/api';
 import type { Case } from '../types';
 import { Navbar } from '../components/Navbar';
 import { errorMessages } from '../lib/errorMessages';
 import { useSEO } from '../hooks';
+import { trackEvent, EXPERIMENTS } from '../lib/experiment';
+
+interface LocationState {
+  prefill?: string;
+}
 
 export default function NewCase() {
   useSEO({
@@ -13,12 +18,15 @@ export default function NewCase() {
     canonical: '/cases/new',
   });
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefill = (location.state as LocationState)?.prefill || '';
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [formData, setFormData] = useState({
-    question: '',
+    question: prefill,
     context: '',
     role: 'individual' as string,
     horizon: 'medium' as 'short' | 'medium' | 'long',
@@ -105,6 +113,12 @@ export default function NewCase() {
       };
 
       const createdCase = await casesApi.create(caseData);
+
+      // Track conversion for A/B experiment
+      trackEvent(EXPERIMENTS.HOMEPAGE_CTA.name, 'case_created', {
+        case_id: createdCase.id,
+        had_prefill: !!prefill,
+      });
 
       try {
         await casesApi.analyzeAsync(createdCase.id);

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { checkHealth, casesApi, versesApi } from '../lib/api';
 import type { Case, Verse } from '../types';
@@ -6,18 +6,32 @@ import { useAuth } from '../contexts/AuthContext';
 import { FeaturedVerse } from '../components/FeaturedVerse';
 import { Navbar } from '../components/Navbar';
 import { useSEO } from '../hooks';
+import { useHomepageCTAExperiment } from '../lib/experiment';
 
 export default function Home() {
   // SEO - uses defaults for homepage
   useSEO({ canonical: '/' });
+  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [recentCases, setRecentCases] = useState<Case[]>([]);
   const [dailyVerse, setDailyVerse] = useState<Verse | null>(null);
   const [verseLoading, setVerseLoading] = useState(true);
   const { isAuthenticated } = useAuth();
 
+  // A/B experiment for homepage CTA
+  const { variant, trackClick } = useHomepageCTAExperiment();
+  const [teaserQuestion, setTeaserQuestion] = useState('');
+
   // Cases loading state - only relevant when authenticated
   const [casesLoading, setCasesLoading] = useState(isAuthenticated);
+
+  // Handle teaser input submission (variant B)
+  const handleTeaserSubmit = () => {
+    if (teaserQuestion.trim()) {
+      trackClick();
+      navigate('/cases/new', { state: { prefill: teaserQuestion.trim() } });
+    }
+  };
 
   // Check backend health on mount
   useEffect(() => {
@@ -113,18 +127,49 @@ export default function Home() {
             />
           </div>
 
-          {/* CTA Button - visible on desktop, hidden on mobile (FAB replaces it) */}
+          {/* CTA Section - A/B tested */}
           <div className="hidden sm:flex flex-col items-center mb-6 lg:mb-8">
-            <Link
-              to="/cases/new"
-              className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-8 py-3 sm:px-10 sm:py-4 rounded-xl transition-all shadow-lg hover:shadow-xl text-base sm:text-lg group"
-            >
-              <span>Ask a Question</span>
-              <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </Link>
-            <p className="text-xs text-gray-500 mt-2">Get personalized guidance in minutes</p>
+            {variant === 'control' ? (
+              /* Control: Standard CTA button */
+              <>
+                <Link
+                  to="/cases/new"
+                  onClick={trackClick}
+                  className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-8 py-3 sm:px-10 sm:py-4 rounded-xl transition-all shadow-lg hover:shadow-xl text-base sm:text-lg group"
+                >
+                  <span>Ask a Question</span>
+                  <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+                <p className="text-xs text-gray-500 mt-2">Get personalized guidance in minutes</p>
+              </>
+            ) : (
+              /* Variant: Teaser input */
+              <div className="w-full max-w-xl">
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+                  What's weighing on your mind?
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={teaserQuestion}
+                    onChange={(e) => setTeaserQuestion(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleTeaserSubmit()}
+                    placeholder="Describe your situation..."
+                    className="w-full px-4 py-3 pr-24 text-base border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent shadow-sm"
+                  />
+                  <button
+                    onClick={handleTeaserSubmit}
+                    disabled={!teaserQuestion.trim()}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Continue
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">You'll add more details on the next step</p>
+              </div>
+            )}
           </div>
 
           {/* Recent Consultations */}

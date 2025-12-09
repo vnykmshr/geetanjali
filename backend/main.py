@@ -16,7 +16,7 @@ from utils.exceptions import (
     validation_exception_handler,
     general_exception_handler,
 )
-from api import health, cases, verses, outputs, messages, auth, admin, contact, sitemap, feed
+from api import health, cases, verses, outputs, messages, auth, admin, contact, sitemap, feed, experiments
 from api.middleware.csrf import CSRFMiddleware
 
 logger = setup_logging()
@@ -90,6 +90,7 @@ app.include_router(admin.router, tags=["Admin"])
 app.include_router(contact.router, tags=["Contact"])
 app.include_router(sitemap.router, tags=["SEO"])
 app.include_router(feed.router, tags=["SEO"])
+app.include_router(experiments.router, tags=["Experiments"])
 
 logger.info(f"Starting {settings.APP_NAME} in {settings.APP_ENV} mode")
 

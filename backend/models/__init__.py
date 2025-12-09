@@ -9,6 +9,7 @@ from models.message import Message, MessageRole
 from models.verse import Verse, Commentary, Translation
 from models.feedback import Feedback
 from models.contact import ContactMessage, ContactType
+from models.experiment import ExperimentEvent
 
 __all__ = [
     "Base",
@@ -24,4 +25,5 @@ __all__ = [
     "Feedback",
     "ContactMessage",
     "ContactType",
+    "ExperimentEvent",
 ]
