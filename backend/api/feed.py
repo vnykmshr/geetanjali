@@ -14,7 +14,6 @@ from fastapi import APIRouter, Depends, Request, Response
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from db.connection import get_db
 from models.verse import Verse

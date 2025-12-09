@@ -124,7 +124,8 @@ class Enricher:
         principle_text = "\n".join(principle_list)
 
         # Build prompt
-        prompt = f"""You are analyzing a verse from the Bhagavad Geeta for consulting principles relevant to ethical leadership.
+        prompt = f"""You are analyzing a verse from the Bhagavad Geeta \
+for consulting principles relevant to ethical leadership.
 
 Verse translation:
 {verse_text}
@@ -209,7 +210,8 @@ Focus on actionable wisdom for modern leaders and decision-makers.
 Verse:
 {verse_text}
 
-IMPORTANT: Respond with ONLY plain text. No markdown, no headers, no formatting. Just a single concise sentence or brief paragraph."""
+IMPORTANT: Respond with ONLY plain text. No markdown, no headers, no formatting. \
+Just a single concise sentence or brief paragraph."""
 
         try:
             result = self.llm.generate(

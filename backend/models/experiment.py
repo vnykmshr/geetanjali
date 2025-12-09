@@ -1,6 +1,6 @@
 """Experiment events model for A/B testing analytics."""
 
-from sqlalchemy import String, Text, DateTime, Index, JSON
+from sqlalchemy import String, DateTime, Index, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import JSONB
 import uuid
