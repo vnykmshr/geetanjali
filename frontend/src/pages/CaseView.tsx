@@ -71,7 +71,7 @@ export default function CaseView() {
   // Status-based flags for action visibility
   const isProcessing = caseData?.status === 'pending' || caseData?.status === 'processing';
   const isFailed = caseData?.status === 'failed';
-  const isCompleted = caseData?.status === 'completed' || !caseData?.status;
+  const isCompleted = caseData?.status === 'completed' || caseData?.status === 'policy_violation' || !caseData?.status;
 
   // Action visibility based on status
   const canSave = isCompleted && outputs.length > 0;
@@ -98,8 +98,8 @@ export default function CaseView() {
       const outputsData = await outputsApi.listByCaseId(id);
       setOutputs(outputsData);
 
-      // When completed/failed, clear pending state and set up UI
-      const isFinished = data.status === 'completed' || data.status === 'failed' || !data.status;
+      // When completed/failed/policy_violation, clear pending state and set up UI
+      const isFinished = data.status === 'completed' || data.status === 'failed' || data.status === 'policy_violation' || !data.status;
       if (isFinished) {
         setPendingFollowUp(null);
 
@@ -159,7 +159,7 @@ export default function CaseView() {
         const data = await casesApi.get(id);
         setCaseData(data);
 
-        if (data.status === 'completed' || data.status === 'failed') {
+        if (data.status === 'completed' || data.status === 'failed' || data.status === 'policy_violation') {
           clearInterval(pollInterval);
           loadCaseData();
         }

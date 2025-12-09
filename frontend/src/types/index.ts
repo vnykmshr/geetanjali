@@ -1,6 +1,6 @@
 // API Response Types based on project-description.md
 
-export type CaseStatus = 'draft' | 'pending' | 'processing' | 'completed' | 'failed';
+export type CaseStatus = 'draft' | 'pending' | 'processing' | 'completed' | 'failed' | 'policy_violation';
 
 export interface Case {
   id: string;

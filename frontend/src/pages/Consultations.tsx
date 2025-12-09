@@ -14,6 +14,9 @@ function StatusBadge({ status }: { status?: CaseStatus }) {
   if (!status || status === 'completed') {
     return <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">Completed</span>;
   }
+  if (status === 'policy_violation') {
+    return <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">Completed</span>;
+  }
   if (status === 'processing' || status === 'pending') {
     return (
       <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700 flex items-center gap-1">
@@ -226,7 +229,7 @@ export default function Consultations() {
             <>
               <div className="space-y-3 sm:space-y-4">
                 {cases.map((case_) => {
-                  const isCompleted = !case_.status || case_.status === 'completed';
+                  const isCompleted = !case_.status || case_.status === 'completed' || case_.status === 'policy_violation';
                   const canShare = isCompleted;
 
                   return (

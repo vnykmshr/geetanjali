@@ -25,7 +25,8 @@ export function useCaseData({ caseId, isAuthenticated }: UseCaseDataOptions) {
 
   const isProcessing = caseData?.status === 'pending' || caseData?.status === 'processing';
   const isFailed = caseData?.status === 'failed';
-  const isCompleted = caseData?.status === 'completed' || !caseData?.status;
+  const isPolicyViolation = caseData?.status === 'policy_violation';
+  const isCompleted = caseData?.status === 'completed' || caseData?.status === 'policy_violation' || !caseData?.status;
 
   const loadCaseData = useCallback(async () => {
     if (!caseId) return;
@@ -34,7 +35,7 @@ export function useCaseData({ caseId, isAuthenticated }: UseCaseDataOptions) {
       const data = await casesApi.get(caseId);
       setCaseData(data);
 
-      if (data.status === 'completed' || data.status === 'failed' || !data.status) {
+      if (data.status === 'completed' || data.status === 'failed' || data.status === 'policy_violation' || !data.status) {
         const messagesData = await messagesApi.list(caseId);
         setMessages(messagesData);
 
@@ -82,7 +83,7 @@ export function useCaseData({ caseId, isAuthenticated }: UseCaseDataOptions) {
         const data = await casesApi.get(caseId);
         setCaseData(data);
 
-        if (data.status === 'completed' || data.status === 'failed') {
+        if (data.status === 'completed' || data.status === 'failed' || data.status === 'policy_violation') {
           clearInterval(pollInterval);
           loadCaseData();
         }
@@ -104,6 +105,7 @@ export function useCaseData({ caseId, isAuthenticated }: UseCaseDataOptions) {
     showCompletionBanner,
     isProcessing,
     isFailed,
+    isPolicyViolation,
     isCompleted,
     setShowSignupPrompt,
     setShowCompletionBanner,
