@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { casesApi, outputsApi } from "../lib/api";
 import { messagesApi } from "../api/messages";
@@ -37,6 +37,9 @@ export default function CaseView() {
   const [pendingFollowUp, setPendingFollowUp] = useState<string | null>(null);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const { isAuthenticated } = useAuth();
+
+  // Ref for scrolling to follow-up input
+  const followUpInputRef = useRef<HTMLDivElement>(null);
 
   // Dynamic SEO - private consultations shouldn't be indexed
   useSEO({
@@ -334,6 +337,20 @@ export default function CaseView() {
       setSubmittingFollowUp(false);
     }
   };
+
+  // Handler for "refine this guidance" CTA on low-confidence outputs
+  const handleRefineGuidance = useCallback((prefillText?: string) => {
+    if (prefillText) {
+      setFollowUp(prefillText);
+    }
+    // Scroll to follow-up input after a brief delay to ensure it's rendered
+    setTimeout(() => {
+      followUpInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Focus the textarea inside the follow-up input
+      const textarea = followUpInputRef.current?.querySelector("textarea");
+      textarea?.focus();
+    }, 100);
+  }, []);
 
   const handleSave = () => {
     if (!caseData) return;
@@ -828,13 +845,24 @@ ${messages
                           {exchange.assistant.content}
                         </p>
 
-                        {/* Scholar flag */}
+                        {/* Scholar flag with refine option */}
                         {exchange.output?.scholar_flag && (
-                          <div className="mt-3 flex items-center gap-2 text-yellow-700 text-sm bg-yellow-50 px-3 py-2 rounded-lg">
-                            <span>⚠️</span>
-                            <span>
-                              Low confidence - consider seeking expert guidance
-                            </span>
+                          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                            <div className="flex items-center gap-2 text-amber-800 text-sm font-medium">
+                              <span>⚠️</span>
+                              <span>This guidance has lower confidence</span>
+                            </div>
+                            {showFollowUpInput && (
+                              <button
+                                onClick={() => handleRefineGuidance("Can you provide more detail or clarify the recommended approach?")}
+                                className="mt-2 text-sm text-amber-700 hover:text-amber-900 hover:underline flex items-center gap-1"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                                Ask a follow-up to refine this guidance
+                              </button>
+                            )}
                           </div>
                         )}
 
@@ -928,7 +956,7 @@ ${messages
 
               {/* Follow-up Input - at end of conversation flow */}
               {showFollowUpInput && (
-                <div className="relative pl-8 sm:pl-10 pt-2 pb-4">
+                <div ref={followUpInputRef} className="relative pl-8 sm:pl-10 pt-2 pb-4">
                   <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-100 border-2 border-gray-300 flex items-center justify-center">
                     <svg
                       className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-500"
