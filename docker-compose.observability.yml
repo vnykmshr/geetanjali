@@ -23,6 +23,8 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    # Resource limits
+    pids_limit: 64
     networks:
       - geetanjali-network
     restart: unless-stopped
@@ -45,9 +47,15 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    # Resource limits
+    pids_limit: 64
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      # SECURITY: Password must be set in .env.enc - empty password will use Grafana default
+      # which forces password change on first login
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-}
+      # Disable default admin if no password set (forces proper config)
+      - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=${GRAFANA_DISABLE_ADMIN:-false}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_USERS_ALLOW_ORG_CREATE=false
       - GF_AUTH_ANONYMOUS_ENABLED=false

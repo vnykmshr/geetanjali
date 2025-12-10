@@ -84,7 +84,7 @@ services:
 
   # Redis Cache (ephemeral - no persistence, purely a cache layer)
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     container_name: geetanjali-redis
     # Run as redis user (UID 999 in redis:7-alpine)
     user: "999:999"
@@ -95,7 +95,12 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    # Read-only filesystem with tmpfs for runtime data
+    read_only: true
+    tmpfs:
+      - /data:mode=770,uid=999,gid=999
     # Resource limits
+    pids_limit: 64
     deploy:
       resources:
         limits:
@@ -131,6 +136,7 @@ services:
     security_opt:
       - no-new-privileges:true
     # Resource limits
+    pids_limit: 128
     deploy:
       resources:
         limits:
@@ -165,6 +171,8 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    # Resource limits
+    pids_limit: 256
     depends_on:
       postgres:
         condition: service_healthy
@@ -201,6 +209,8 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    # Resource limits
+    pids_limit: 128
     # Healthcheck via Redis connectivity (worker must connect to function)
     healthcheck:
       test: ["CMD", "python", "healthcheck.py"]
@@ -255,6 +265,8 @@ services:
       - SETGID
     security_opt:
       - no-new-privileges:true
+    # Resource limits
+    pids_limit: 64
     depends_on:
       backend:
         condition: service_started

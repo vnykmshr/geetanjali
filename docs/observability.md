@@ -20,12 +20,16 @@ Backend /metrics → Prometheus (scrape 15s) → Grafana (dashboards + alerts)
 
 ```bash
 # Start with observability
-docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+make obs-up
+# Or: docker compose -f docker-compose.observability.yml up -d
 
 # Access dashboards
-open http://localhost:3001  # Grafana (admin/admin)
-open http://localhost:9090  # Prometheus
+# Production: https://grafana.geetanjaliapp.com
+# Local dev: http://localhost:3000 (Grafana)
+# Prometheus is internal-only (not exposed)
 ```
+
+Default Grafana login: admin / (set GRAFANA_ADMIN_PASSWORD in .env)
 
 ## Metrics Reference
 
@@ -110,7 +114,7 @@ Pre-configured dashboard at `monitoring/grafana/dashboards/geetanjali.json`:
 
 ### Importing Dashboards
 
-1. Open Grafana at http://localhost:3001
+1. Open Grafana (local: http://localhost:3000, prod: https://grafana.geetanjaliapp.com)
 2. Go to Dashboards → Import
 3. Upload `monitoring/grafana/dashboards/geetanjali.json`
 
@@ -171,5 +175,6 @@ Metrics refresh every 60 seconds. If values seem stale:
 
 ## See Also
 
+- [Docker Configuration](docker.md) — Compose files and deployment modes
 - [Architecture](architecture.md) — System design overview
 - [Setup Guide](setup.md) — Development environment

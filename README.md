@@ -125,6 +125,7 @@ Full API documentation at `/docs` when running.
 **[docs.geetanjaliapp.com](https://docs.geetanjaliapp.com)**
 
 - [Setup Guide](docs/setup.md) - Local development, Docker, environment
+- [Docker Configuration](docs/docker.md) - Compose files, deployment modes
 - [Architecture](docs/architecture.md) - System design, RAG pipeline, components
 - [Observability](docs/observability.md) - Monitoring, metrics, Grafana dashboards
 - [Security](docs/security.md) - Container hardening, secrets management

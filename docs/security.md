@@ -125,15 +125,17 @@ services:
 
 ### Container-Specific Hardening
 
-| Container | Runs As | Capabilities | Extra Hardening |
-|-----------|---------|--------------|-----------------|
-| postgres | postgres (non-root) | no-new-privileges | - |
-| redis | redis (non-root) | SETUID, SETGID, CHOWN only | - |
-| chromadb | chromauser (uid 1000) | cap_drop: ALL | - |
-| backend | appuser (uid 1000) | cap_drop: ALL | - |
-| worker | appuser (uid 1000) | cap_drop: ALL | - |
-| frontend | nginx (workers) | NET_BIND_SERVICE, SETUID, SETGID, CHOWN | - |
-| ollama | default | no-new-privileges | - |
+| Container | Runs As | Capabilities | PID Limit | Extra Hardening |
+|-----------|---------|--------------|-----------|-----------------|
+| postgres | postgres (non-root) | no-new-privileges | - | - |
+| redis | redis (non-root) | cap_drop: ALL | 64 | read-only FS, tmpfs /data |
+| chromadb | chromauser (uid 1000) | cap_drop: ALL | 128 | - |
+| backend | appuser (uid 1000) | cap_drop: ALL | 256 | - |
+| worker | appuser (uid 1000) | cap_drop: ALL | 128 | - |
+| frontend | nginx (workers) | NET_BIND_SERVICE, SETUID, SETGID, CHOWN | 64 | - |
+| ollama | default | no-new-privileges | - | - |
+| prometheus | nobody (uid 65534) | cap_drop: ALL | 64 | - |
+| grafana | grafana (uid 472) | cap_drop: ALL | 64 | - |
 
 ### no-new-privileges
 
@@ -212,10 +214,13 @@ Sensitive values are stored in `.env` (git-ignored):
 
 ### API Security
 
-- **Rate Limiting**: `/api/v1/analyze` is rate-limited to 10 requests/hour per IP
+- **Rate Limiting**: Multi-layer protection
+  - nginx: 10 req/s for API, 5 req/min for auth endpoints (brute-force protection)
+  - Backend: `/api/v1/analyze` limited to 10 requests/hour per IP
 - **JWT Authentication**: User sessions use JWT tokens with configurable expiration
 - **CORS**: Configured for specific allowed origins
-- **Security Headers**: nginx adds X-Frame-Options, X-Content-Type-Options, etc.
+- **Security Headers**: nginx adds X-Frame-Options, X-Content-Type-Options, CSP, etc.
+- **Metrics Endpoint**: `/metrics` blocked at nginx level (returns 403)
 
 ### Cookie Security
 

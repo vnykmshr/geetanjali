@@ -25,6 +25,7 @@ Ethical leadership guidance from the Bhagavad Geeta.
 ## Development
 
 - [Setup Guide](setup.md) — Local development environment, Docker, testing
+- [Docker Configuration](docker.md) — Compose files, deployment modes, container orchestration
 
 ---
 

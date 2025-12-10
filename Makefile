@@ -1,106 +1,188 @@
 # Geetanjali - Development Shortcuts
+# See docs/docker.md for detailed Docker configuration documentation
 
 .PHONY: help dev build up down clean logs test lint format
+
+# Use modern docker compose (not docker-compose)
+COMPOSE := docker compose
 
 help: ## Show this help message
 	@echo "Geetanjali Development Commands"
 	@echo "================================"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
+# =============================================================================
 # Development
+# =============================================================================
+
 dev: ## Start development environment
-	docker-compose up -d
-	@echo "✅ Development environment started"
+	$(COMPOSE) up -d
+	@echo "Development environment started"
 	@echo "Backend: http://localhost:8000"
-	@echo "Frontend: http://localhost:5173"
+	@echo "Frontend: http://localhost"
 	@echo "API Docs: http://localhost:8000/docs"
 
 build: ## Build all Docker images
-	docker-compose build
+	$(COMPOSE) build
 
 up: ## Start all containers
-	docker-compose up -d
+	$(COMPOSE) up -d
 
 down: ## Stop all containers
-	docker-compose down
+	$(COMPOSE) down
 
 restart: ## Restart all containers
-	docker-compose restart
+	$(COMPOSE) restart
 
+# =============================================================================
 # Production
+# =============================================================================
+
 prod-up: ## Start production environment
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 prod-down: ## Stop production environment
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml down
 
+prod-build: ## Build production images
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml build
+
+prod-logs: ## Show production logs
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml logs -f
+
+# =============================================================================
+# Observability (Prometheus + Grafana)
+# =============================================================================
+
+obs-up: ## Add observability stack to running environment
+	$(COMPOSE) -f docker-compose.observability.yml up -d
+
+obs-down: ## Remove observability stack
+	$(COMPOSE) -f docker-compose.observability.yml down
+
+obs-logs: ## Show observability logs
+	$(COMPOSE) -f docker-compose.observability.yml logs -f
+
+prod-full-up: ## Start production with observability
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d
+
+prod-full-down: ## Stop production with observability
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml down
+
+# =============================================================================
+# Testing
+# =============================================================================
+
+test-up: ## Start test environment (no Ollama, ephemeral DB)
+	$(COMPOSE) -f docker-compose.test.yml up -d
+
+test-down: ## Stop test environment
+	$(COMPOSE) -f docker-compose.test.yml down
+
+minimal-up: ## Start minimal environment (backend + postgres only)
+	$(COMPOSE) -f docker-compose.minimal.yml up -d
+
+minimal-down: ## Stop minimal environment
+	$(COMPOSE) -f docker-compose.minimal.yml down
+
+# =============================================================================
 # Logs
+# =============================================================================
+
 logs: ## Show logs for all services
-	docker-compose logs -f
+	$(COMPOSE) logs -f
 
 logs-backend: ## Show backend logs
-	docker-compose logs -f backend
+	$(COMPOSE) logs -f backend
+
+logs-worker: ## Show worker logs
+	$(COMPOSE) logs -f worker
 
 logs-ollama: ## Show Ollama logs
-	docker-compose logs -f ollama
+	$(COMPOSE) logs -f ollama
 
+# =============================================================================
 # Database
+# =============================================================================
+
 db-shell: ## Open PostgreSQL shell
-	docker-compose exec postgres psql -U geetanjali -d geetanjali
+	$(COMPOSE) exec postgres psql -U geetanjali -d geetanjali
 
 db-migrate: ## Run database migrations
-	docker-compose exec backend alembic upgrade head
+	$(COMPOSE) exec backend alembic upgrade head
 
 db-reset: ## Reset database (development only!)
-	docker-compose down -v
-	docker-compose up -d postgres
+	$(COMPOSE) down -v
+	$(COMPOSE) up -d postgres
 	@sleep 5
-	docker-compose exec backend alembic upgrade head
+	$(COMPOSE) exec backend alembic upgrade head
 
-# Testing
+# =============================================================================
+# Testing & Code Quality
+# =============================================================================
+
 test: ## Run backend tests
-	docker-compose exec backend pytest
+	$(COMPOSE) exec backend pytest
 
 test-cov: ## Run tests with coverage
-	docker-compose exec backend pytest --cov=. --cov-report=html
+	$(COMPOSE) exec backend pytest --cov=. --cov-report=html
 
-# Code Quality
 lint: ## Run linters
-	docker-compose exec backend flake8 .
+	$(COMPOSE) exec backend flake8 .
 
 format: ## Format code with Black
-	docker-compose exec backend black .
+	$(COMPOSE) exec backend black .
 
 typecheck: ## Run MyPy type checker
-	docker-compose exec backend mypy .
+	$(COMPOSE) exec backend mypy .
 
+# =============================================================================
 # Ollama
+# =============================================================================
+
 ollama-pull: ## Pull qwen2.5:3b model
-	docker-compose exec ollama ollama pull qwen2.5:3b
+	$(COMPOSE) exec ollama ollama pull qwen2.5:3b
 
 ollama-list: ## List available models
-	docker-compose exec ollama ollama list
+	$(COMPOSE) exec ollama ollama list
 
 ollama-shell: ## Interactive Ollama shell
-	docker-compose exec ollama ollama run qwen2.5:3b
+	$(COMPOSE) exec ollama ollama run qwen2.5:3b
 
+# =============================================================================
 # Cleanup
+# =============================================================================
+
 clean: ## Remove all containers, volumes, and images
-	docker-compose down -v --rmi all
-	@echo "✅ Cleaned up all Docker resources"
+	$(COMPOSE) down -v --rmi all
+	@echo "Cleaned up all Docker resources"
 
 clean-cache: ## Remove Python cache files
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 
+docker-clean: ## Clean Docker build cache and unused images locally
+	docker builder prune -f
+	docker image prune -f
+	@echo "Docker cleanup complete"
+
+# =============================================================================
 # Shell Access
+# =============================================================================
+
 shell-backend: ## Open shell in backend container
-	docker-compose exec backend /bin/bash
+	$(COMPOSE) exec backend /bin/bash
 
 shell-postgres: ## Open shell in Postgres container
-	docker-compose exec postgres /bin/sh
+	$(COMPOSE) exec postgres /bin/sh
 
+shell-worker: ## Open shell in worker container
+	$(COMPOSE) exec worker /bin/bash
+
+# =============================================================================
 # Deployment
+# =============================================================================
+
 deploy: ## Deploy to production
 	./scripts/deploy.sh
 
@@ -117,12 +199,10 @@ rollback: ## Rollback to previous deployment (uses .env.local or env vars)
 		docker compose up -d backend frontend"; \
 	echo "Rollback complete."
 
-docker-clean: ## Clean Docker build cache and unused images locally
-	docker builder prune -f
-	docker image prune -f
-	@echo "✅ Docker cleanup complete"
-
+# =============================================================================
 # Secrets Management (SOPS + age)
+# =============================================================================
+
 secrets-edit: ## Edit encrypted secrets (.env.enc)
 	@EDITOR=vim sops .env.enc
 
@@ -132,7 +212,7 @@ secrets-view: ## View decrypted secrets (for debugging)
 secrets-encrypt: ## Encrypt a plaintext .env file to .env.enc (usage: make secrets-encrypt SRC=.env.local)
 	@if [ -z "$(SRC)" ]; then echo "Error: Specify source file with SRC=<file>"; exit 1; fi
 	@sops --encrypt --input-type dotenv --output-type dotenv --output .env.enc $(SRC)
-	@echo "✅ Secrets encrypted to .env.enc"
+	@echo "Secrets encrypted to .env.enc"
 
 secrets-add: ## Add/update a key-value in .env.enc (usage: make secrets-add KEY=FOO VAL=bar)
 	@if [ -z "$(KEY)" ] || [ -z "$(VAL)" ]; then echo "Error: Specify KEY and VAL"; exit 1; fi
@@ -146,9 +226,12 @@ secrets-add: ## Add/update a key-value in .env.enc (usage: make secrets-add KEY=
 	fi && \
 	sops --encrypt --input-type dotenv --output-type dotenv --output .env.enc .env.tmp && \
 	rm -f .env.tmp && \
-	echo "✅ $(KEY) saved to .env.enc"
+	echo "$(KEY) saved to .env.enc"
 
+# =============================================================================
 # Quick Start
+# =============================================================================
+
 init: build up db-migrate ## Initialize project (build, start, migrate)
-	@echo "✅ Project initialized successfully!"
+	@echo "Project initialized successfully!"
 	@echo "Backend: http://localhost:8000/docs"

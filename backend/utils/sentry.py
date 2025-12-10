@@ -47,7 +47,7 @@ def init_sentry(service_name: str = "backend") -> bool:
         sentry_sdk.init(
             dsn=settings.SENTRY_DSN,
             environment=settings.APP_ENV,
-            release=f"geetanjali-{service_name}@1.4.0",
+            release=f"geetanjali-{service_name}@{settings.APP_VERSION}",
             traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
             # Integrations
             integrations=[
@@ -117,6 +117,17 @@ def _filter_event(event: Any, _hint: Dict[str, Any]) -> Any:
                 headers["Cookie"] = "[Filtered]"
             if "X-CSRF-Token" in headers:
                 headers["X-CSRF-Token"] = "[Filtered]"
+        # Scrub sensitive fields from request body (PII protection)
+        if "data" in request and isinstance(request["data"], dict):
+            body = request["data"]
+            sensitive_body_keys = [
+                "password", "new_password", "current_password",
+                "email", "phone", "address", "ssn", "credit_card",
+                "token", "secret", "api_key", "situation",  # situation may contain personal details
+            ]
+            for key in list(body.keys()):
+                if any(s in key.lower() for s in sensitive_body_keys):
+                    body[key] = "[Filtered]"
 
     # Scrub sensitive data from extra context
     if "extra" in event:
