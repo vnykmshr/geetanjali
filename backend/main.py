@@ -36,6 +36,7 @@ from api import (
     sitemap,
     feed,
     experiments,
+    follow_up,
 )
 from api.middleware.csrf import CSRFMiddleware
 
@@ -109,6 +110,7 @@ app.include_router(cases.router, tags=["Cases"])
 app.include_router(verses.router, tags=["Verses"])
 app.include_router(outputs.router, tags=["Outputs"])
 app.include_router(messages.router, prefix="/api/v1", tags=["Messages"])
+app.include_router(follow_up.router, prefix="/api/v1", tags=["Follow-up"])
 app.include_router(admin.router, tags=["Admin"])
 app.include_router(contact.router, tags=["Contact"])
 app.include_router(sitemap.router, tags=["SEO"])

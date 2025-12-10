@@ -52,15 +52,18 @@ class MessageRepository(BaseRepository):
         return result
 
     def create_assistant_message(
-        self, case_id: str, content: str, output_id: str
+        self, case_id: str, content: str, output_id: Optional[str] = None
     ) -> Message:
         """
-        Create a new assistant message linked to an output.
+        Create a new assistant message, optionally linked to an output.
+
+        For initial consultations, output_id links to the full Output record.
+        For follow-up conversations, output_id is None (no Output generated).
 
         Args:
             case_id: Case ID
-            content: Message content (typically executive summary)
-            output_id: Associated output ID
+            content: Message content (executive summary or follow-up response)
+            output_id: Associated output ID (None for follow-up responses)
 
         Returns:
             Created message
