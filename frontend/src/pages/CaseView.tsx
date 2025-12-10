@@ -331,7 +331,7 @@ export default function CaseView() {
       // On error, restore the message and clear pending state
       setFollowUp(messageContent);
       setPendingFollowUp(null);
-      setError(errorMessages.caseAnalyze(err));
+      setError(errorMessages.followUp(err));
     } finally {
       setSubmittingFollowUp(false);
     }

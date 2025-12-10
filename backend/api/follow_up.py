@@ -10,14 +10,15 @@ Flow:
 4. Get latest Output for context
 5. Get conversation history (Messages)
 6. Run FollowUpPipeline
-7. Store user message and response as Messages
+7. Store user message and response as Messages (atomically)
 8. Return response
 """
 
 import logging
-from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from api.schemas import FollowUpRequest, FollowUpResponse, LLMAttributionSchema
@@ -108,13 +109,8 @@ def submit_follow_up(
         for msg in messages
     ]
 
-    # 5. Create user message first (before LLM call)
-    user_message = message_repo.create_user_message(
-        case_id=case_id, content=request.content
-    )
-    logger.info(f"Created user follow-up message: {user_message.id}")
-
-    # 6. Run FollowUpPipeline
+    # 5. Run FollowUpPipeline FIRST (before creating messages)
+    # This ensures we don't create orphaned user messages on LLM failure
     try:
         pipeline = get_follow_up_pipeline()
         result = pipeline.run(
@@ -124,7 +120,6 @@ def submit_follow_up(
             follow_up_question=request.content,
         )
     except LLMError as e:
-        # LLM failed - still save user message but return error
         logger.error(f"Follow-up pipeline failed: {e}", extra={"case_id": case_id})
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -137,7 +132,20 @@ def submit_follow_up(
             detail="An unexpected error occurred.",
         )
 
-    # 7. Store assistant response as Message (no output_id for follow-ups)
+    # 6. Validate response is not empty
+    if not result.content or not result.content.strip():
+        logger.error("Follow-up pipeline returned empty response", extra={"case_id": case_id})
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to generate response. Please try again later.",
+        )
+
+    # 7. Create both messages atomically (only after successful LLM response)
+    user_message = message_repo.create_user_message(
+        case_id=case_id, content=request.content
+    )
+    logger.info(f"Created user follow-up message: {user_message.id}")
+
     assistant_message = message_repo.create_assistant_message(
         case_id=case_id,
         content=result.content,

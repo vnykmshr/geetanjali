@@ -15,6 +15,7 @@ type ErrorContext =
   | "case_create"
   | "case_load"
   | "case_analyze"
+  | "follow_up"
   | "verse_load"
   | "search"
   | "general";
@@ -75,6 +76,7 @@ const HTTP_STATUS_MESSAGES: Record<
     signup:
       "Please check your information. Make sure your password meets the requirements.",
     case_create: "Please provide more details in your question.",
+    follow_up: "Your question couldn't be processed. Please rephrase and try again.",
     general: "Please check your input and try again.",
   },
   429: {
@@ -82,6 +84,7 @@ const HTTP_STATUS_MESSAGES: Record<
     case_create:
       "You have submitted too many consultations. Please wait a moment.",
     case_analyze: "Analysis rate limit reached. Please wait a moment.",
+    follow_up: "Too many follow-up questions. Please wait a moment.",
     general: SHARED.tooManyRequests,
   },
   500: {
@@ -89,6 +92,7 @@ const HTTP_STATUS_MESSAGES: Record<
     case_create:
       "Unable to submit your question right now. Please try again later.",
     case_analyze: "Analysis temporarily unavailable. Please try again later.",
+    follow_up: "Unable to respond right now. Please try again.",
     general: SHARED.somethingWrong,
   },
   // 502 and 503 share the same message
@@ -105,6 +109,7 @@ const DEFAULT_ERROR_MESSAGES: Record<ErrorContext, string> = {
   case_create: "Unable to submit your question. Please try again.",
   case_load: "Unable to load consultation. Please try again.",
   case_analyze: "Unable to analyze case. Please try again.",
+  follow_up: "Unable to respond to your follow-up. Please try again.",
   verse_load: "Unable to load verse. Please try again.",
   search: "Search failed. Please try again.",
   general: "Something went wrong. Please try again.",
@@ -232,6 +237,7 @@ export const errorMessages = {
   caseCreate: (error: unknown) => getErrorMessage(error, "case_create"),
   caseLoad: (error: unknown) => getErrorMessage(error, "case_load"),
   caseAnalyze: (error: unknown) => getErrorMessage(error, "case_analyze"),
+  followUp: (error: unknown) => getErrorMessage(error, "follow_up"),
   verseLoad: (error: unknown) => getErrorMessage(error, "verse_load"),
   search: (error: unknown) => getErrorMessage(error, "search"),
   general: (error: unknown) => getErrorMessage(error, "general"),

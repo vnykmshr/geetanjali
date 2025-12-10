@@ -46,15 +46,24 @@ export function FollowUpInput({
       )}
 
       <form onSubmit={onSubmit}>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <input
-            type="text"
+        <div className="flex gap-2 sm:gap-3">
+          <textarea
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => {
+              // Submit on Enter (without Shift)
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                if (value.trim() && !isDisabled) {
+                  onSubmit(e as unknown as React.FormEvent);
+                }
+              }
+            }}
             placeholder={
               disabled ? "Please wait..." : "Ask a follow-up question..."
             }
-            className={`flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
+            rows={2}
+            className={`flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors resize-none ${
               disabled ? "border-orange-200 bg-orange-50/50" : "border-gray-200"
             }`}
             disabled={isDisabled}
@@ -62,7 +71,7 @@ export function FollowUpInput({
           <button
             type="submit"
             disabled={!value.trim() || isDisabled}
-            className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-medium text-sm flex items-center gap-1.5 transition-colors ${
+            className={`self-end px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-medium text-sm flex items-center gap-1.5 transition-colors ${
               disabled
                 ? "bg-orange-200 text-orange-700 cursor-not-allowed"
                 : "bg-orange-600 text-white hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
