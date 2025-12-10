@@ -27,6 +27,7 @@ The system uses retrieval-augmented generation (RAG) to ground responses in actu
 ## Features
 
 - **Case Analysis** - Submit ethical dilemmas, get structured recommendations
+- **Follow-up Conversations** - Ask clarifying questions after initial consultation
 - **Verse Browser** - Explore 701 verses across 18 chapters with translations
 - **Confidence Scoring** - Low-confidence responses flagged for review
 - **User Feedback** - Rate outputs to improve recommendations
@@ -110,12 +111,13 @@ npm test
 Key endpoints:
 
 ```
-POST /api/v1/cases              # Create case
-POST /api/v1/cases/{id}/analyze # Analyze case
-GET  /api/v1/verses             # List verses
-GET  /api/v1/verses/daily       # Daily verse
-POST /api/v1/auth/signup        # Create account
-POST /api/v1/auth/login         # Login
+POST /api/v1/cases                  # Create case
+POST /api/v1/cases/{id}/analyze     # Analyze case
+POST /api/v1/cases/{id}/follow-up   # Follow-up question
+GET  /api/v1/verses                 # List verses
+GET  /api/v1/verses/daily           # Daily verse
+POST /api/v1/auth/signup            # Create account
+POST /api/v1/auth/login             # Login
 ```
 
 Full API documentation at `/docs` when running.

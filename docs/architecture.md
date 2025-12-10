@@ -112,12 +112,20 @@ RESTful API at `/api/v1/`:
 
 ```
 /auth/*          - Login, signup, refresh, logout
-/cases/*         - CRUD + analyze
+/cases/*         - CRUD + analyze + follow-up conversations
 /verses/*        - Browse, search, daily verse
 /outputs/*       - View analysis, submit feedback, export
-/messages/*      - Follow-up questions on cases
+/messages/*      - Conversation history for cases
 /contact         - Contact form submission
 ```
+
+### Follow-up Conversations
+
+After initial analysis, users can ask follow-up questions via `POST /cases/{id}/follow-up`. This lightweight endpoint:
+- Returns synchronous markdown responses (no polling)
+- Uses prior consultation context without full RAG regeneration
+- Rate limited at 30/hour (3x the analysis rate)
+- Creates user and assistant messages atomically
 
 Full OpenAPI docs at `/docs` when running.
 
