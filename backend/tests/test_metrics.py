@@ -1,6 +1,10 @@
 """Tests for metrics collector and Prometheus instrumentation."""
 
+import pytest
 from unittest.mock import MagicMock, patch
+
+# Mark all tests in this module as unit tests (fast, mocked externals)
+pytestmark = pytest.mark.unit
 
 from services.metrics_collector import (
     collect_metrics,

@@ -1,6 +1,10 @@
 """Tests for health check endpoints."""
 
+import pytest
 from fastapi import status
+
+# Mark all tests in this module as integration tests (require client)
+pytestmark = pytest.mark.integration
 
 
 def test_health_check(client):

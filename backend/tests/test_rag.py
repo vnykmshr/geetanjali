@@ -4,6 +4,9 @@ import json
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 
+# Mark all tests in this module as unit tests (uses mocked services)
+pytestmark = pytest.mark.unit
+
 
 # Sample case data for testing
 SAMPLE_CASE = {

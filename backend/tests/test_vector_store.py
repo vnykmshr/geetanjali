@@ -9,11 +9,14 @@ import pytest
 import uuid
 from unittest.mock import patch
 
-# Skip all tests in this module if running in CI or if SKIP_VECTOR_TESTS is set
-pytestmark = pytest.mark.skipif(
-    os.environ.get("CI") == "true" or os.environ.get("SKIP_VECTOR_TESTS") == "true",
-    reason="Vector store tests require ChromaDB and are skipped in CI",
-)
+# Mark as slow (infrastructure-dependent) and skip in CI
+pytestmark = [
+    pytest.mark.slow,
+    pytest.mark.skipif(
+        os.environ.get("CI") == "true" or os.environ.get("SKIP_VECTOR_TESTS") == "true",
+        reason="Vector store tests require ChromaDB and are skipped in CI",
+    ),
+]
 
 
 class TestVectorStore:

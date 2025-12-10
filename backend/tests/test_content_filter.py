@@ -2,6 +2,9 @@
 
 import pytest
 from unittest.mock import patch
+
+# Mark all tests in this module as unit tests (fast, no DB required)
+pytestmark = pytest.mark.unit
 from services.content_filter import (
     check_blocklist,
     detect_llm_refusal,

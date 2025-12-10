@@ -4,6 +4,9 @@ import pytest
 from fastapi import status
 import uuid
 
+# Mark all tests in this module as integration tests (require DB)
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture
 def session_case(client):

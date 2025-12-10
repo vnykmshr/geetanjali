@@ -9,6 +9,9 @@ Tests the three-layer defense architecture:
 
 import json
 import pytest
+
+# Mark all tests in this module as unit tests (fast, no DB required)
+pytestmark = pytest.mark.unit
 from unittest.mock import patch
 from services.rag import (
     _extract_json_from_text,

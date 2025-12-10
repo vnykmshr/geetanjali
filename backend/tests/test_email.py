@@ -1,6 +1,10 @@
 """Tests for email service."""
 
+import pytest
 from unittest.mock import patch, MagicMock
+
+# Mark all tests in this module as unit tests (fast, mocked externals)
+pytestmark = pytest.mark.unit
 
 
 class TestEmailService:

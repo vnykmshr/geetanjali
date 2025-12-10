@@ -7,6 +7,36 @@ on:
     branches: [main]
 
 jobs:
+  # Fast lint job - no DB required, quick feedback
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install lint dependencies
+        run: pip install flake8 mypy types-requests
+
+      - name: Run linting
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Run type checking
+        run: mypy . --ignore-missing-imports
+
+  # Backend tests - runs in parallel with lint
   backend:
     name: Backend Tests
     runs-on: ubuntu-latest
@@ -16,7 +46,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15-alpine
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
@@ -42,34 +72,42 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run linting
-        run: |
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
-      - name: Run type checking
-        run: mypy . --ignore-missing-imports
-        continue-on-error: false
-
-      - name: Security scan (bandit)
-        run: |
-          pip install bandit
-          bandit -r . -x ./tests,./alembic --severity-level medium -f txt
-
-      - name: Dependency vulnerability check (safety)
-        run: |
-          pip install safety
-          safety check --full-report || true
-        continue-on-error: true
-
-      - name: Run tests
+      - name: Run tests (unit + integration)
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/geetanjali_test
           JWT_SECRET: test-secret-key-for-ci
           API_KEY: test-api-key-for-ci
           DEBUG: "true"
           APP_ENV: test
-        run: pytest --cov=. --cov-report=xml -v
+        run: pytest -m "unit or integration" --cov=. --cov-report=xml -v
+
+  # Security scan - runs in parallel, non-blocking
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install security tools
+        run: pip install bandit safety
+
+      - name: Security scan (bandit)
+        run: bandit -r . -x ./tests,./alembic --severity-level medium -f txt
+
+      - name: Dependency vulnerability check (safety)
+        run: safety check --full-report || true
+        continue-on-error: true
 
   frontend:
     name: Frontend Tests & Build

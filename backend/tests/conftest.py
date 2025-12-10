@@ -1,4 +1,16 @@
-"""Pytest configuration and fixtures."""
+"""Pytest configuration and fixtures.
+
+Test markers:
+- @pytest.mark.unit: Fast isolated tests, no DB/external services
+- @pytest.mark.integration: Tests requiring DB or service mocks
+- @pytest.mark.slow: Long-running tests (skipped in quick CI)
+- @pytest.mark.e2e: End-to-end tests (skipped in CI by default)
+
+Usage:
+    pytest -m "unit"                    # Run only unit tests
+    pytest -m "not slow"                # Skip slow tests
+    pytest -m "unit or integration"     # Run unit and integration
+"""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,6 +20,14 @@ from sqlalchemy.pool import StaticPool
 
 from main import app
 from db import get_db
+
+
+def pytest_configure(config):
+    """Register custom markers."""
+    config.addinivalue_line("markers", "unit: Fast isolated tests, no DB required")
+    config.addinivalue_line("markers", "integration: Tests requiring DB or external services")
+    config.addinivalue_line("markers", "slow: Long-running tests (skipped in quick CI)")
+    config.addinivalue_line("markers", "e2e: End-to-end tests (skipped in CI by default)")
 
 # Import all models to register them with Base.metadata
 # These imports are required to register models with SQLAlchemy Base.metadata

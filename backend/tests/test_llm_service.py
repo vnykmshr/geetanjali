@@ -3,6 +3,9 @@
 import pytest
 from unittest.mock import patch
 
+# Mark all tests in this module as unit tests (fast, mocked externals)
+pytestmark = pytest.mark.unit
+
 
 class TestLLMService:
     """Tests for LLM service."""

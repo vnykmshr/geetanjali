@@ -3,6 +3,9 @@
 import pytest
 from fastapi import status
 
+# Mark all tests in this module as integration tests (require DB)
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture
 def case_with_message(client):

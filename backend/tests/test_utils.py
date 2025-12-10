@@ -1,5 +1,10 @@
 """Tests for utility functions."""
 
+import pytest
+
+# Mark all tests in this module as unit tests (fast, no DB required)
+pytestmark = pytest.mark.unit
+
 from utils.auth import (
     hash_password,
     verify_password,

@@ -27,6 +27,12 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --cov=. --cov-report=term-missing --cov-report=html"
+markers = [
+    "unit: Fast isolated tests, no DB required",
+    "integration: Tests requiring DB or external services",
+    "slow: Long-running tests (skipped in quick CI)",
+    "e2e: End-to-end tests (skipped in CI by default)",
+]
 
 [tool.pyright]
 pythonVersion = "3.10"

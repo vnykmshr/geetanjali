@@ -5,6 +5,9 @@ from fastapi import status
 from models.verse import Verse
 import uuid
 
+# Mark all tests in this module as integration tests (require DB)
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture
 def sample_verse(db_session):
