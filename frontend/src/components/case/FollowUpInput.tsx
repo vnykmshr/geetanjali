@@ -103,7 +103,7 @@ export function FollowUpInput({
           Need a fresh perspective with new options?
         </p>
         <Link
-          to="/"
+          to="/cases/new"
           className="text-xs text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
         >
           <svg

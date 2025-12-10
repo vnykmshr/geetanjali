@@ -198,18 +198,20 @@ class LLMService:
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
         simplified: bool = False,
+        json_mode: bool = True,
     ) -> Dict[str, Any]:
         """
         Generate response using Ollama.
 
         Args:
             simplified: If True, use simplified prompt for faster response
+            json_mode: If True, force JSON output format. Set False for prose/markdown.
         """
         if not self.ollama_enabled:
             raise LLMError("Ollama not enabled")
 
         logger.debug(
-            f"Calling Ollama ({self.ollama_model}) with {len(prompt)} char prompt"
+            f"Calling Ollama ({self.ollama_model}) with {len(prompt)} char prompt, json_mode={json_mode}"
         )
 
         # Use limited tokens for fallback mode
@@ -220,11 +222,14 @@ class LLMService:
             "model": self.ollama_model,
             "prompt": prompt,
             "stream": False,
-            "format": "json",  # OPTIMIZATION: Force JSON output mode
             "options": {
-                "temperature": 0.3,  # OPTIMIZATION: Lower temp for deterministic JSON
+                "temperature": 0.3 if json_mode else temperature,
             },
         }
+
+        # Only force JSON format when JSON output is expected
+        if json_mode:
+            payload["format"] = "json"
 
         if system_prompt:
             payload["system"] = system_prompt
@@ -262,6 +267,7 @@ class LLMService:
         max_tokens: Optional[int] = None,
         fallback_prompt: Optional[str] = None,
         fallback_system: Optional[str] = None,
+        json_mode: bool = True,
     ) -> Dict[str, Any]:
         """
         Generate text using primary LLM with fallback.
@@ -273,6 +279,7 @@ class LLMService:
             max_tokens: Maximum tokens to generate
             fallback_prompt: Simplified prompt for fallback (optional)
             fallback_system: Simplified system prompt for fallback (optional)
+            json_mode: If True, force JSON output for Ollama. Set False for prose/markdown.
 
         Returns:
             Generation result with response text and metadata
@@ -298,7 +305,7 @@ class LLMService:
                 )
             elif self.primary_provider == LLMProvider.OLLAMA:
                 return self._generate_ollama(
-                    prompt, system_prompt, temperature, max_tokens
+                    prompt, system_prompt, temperature, max_tokens, json_mode=json_mode
                 )
         except Exception as e:
             logger.warning(
@@ -333,6 +340,7 @@ class LLMService:
                             temperature,
                             max_tokens,
                             simplified=True,
+                            json_mode=json_mode,
                         )
                     elif self.fallback_provider == LLMProvider.ANTHROPIC:
                         if self.anthropic_client:

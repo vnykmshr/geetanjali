@@ -167,10 +167,16 @@ export interface LLMAttribution {
   output_tokens?: number;
 }
 
+/**
+ * Response from async follow-up submission (HTTP 202 Accepted).
+ * Returns the user message immediately; assistant response is processed in background.
+ * Poll case status until "completed" to get the assistant response.
+ */
 export interface FollowUpResponse {
-  message_id: string;
+  id: string;
+  case_id: string;
+  role: "user";
   content: string;
-  role: "assistant";
+  output_id: string | null;
   created_at: string;
-  llm_attribution?: LLMAttribution;
 }

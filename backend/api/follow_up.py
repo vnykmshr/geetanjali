@@ -1,4 +1,4 @@
-"""Follow-up conversation API endpoint.
+"""Follow-up conversation API endpoint (async).
 
 This module implements the follow-up conversation endpoint which provides
 lightweight conversational responses using the dual-mode pipeline architecture.
@@ -7,30 +7,32 @@ Flow:
 1. Validate case access
 2. Check case has at least one Output (consultation completed)
 3. Apply content filter to follow-up question
-4. Get latest Output for context
-5. Get conversation history (Messages)
-6. Run FollowUpPipeline
-7. Store user message and response as Messages (atomically)
-8. Return response
+4. Create user message immediately
+5. Set case status to processing
+6. Queue background task for LLM processing
+7. Return 202 Accepted
+8. Background task: run LLM, create assistant message, set case completed
 """
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from config import settings
 
-from api.schemas import FollowUpRequest, FollowUpResponse, LLMAttributionSchema
+from api.schemas import FollowUpRequest, ChatMessageResponse
 from api.dependencies import get_case_with_access
-from db.connection import get_db
+from db.connection import get_db, SessionLocal
 from db.repositories.message_repository import MessageRepository
 from db.repositories.output_repository import OutputRepository
-from models.case import Case
+from models.case import Case, CaseStatus
 from services.content_filter import validate_submission_content, ContentPolicyError
 from services.follow_up import get_follow_up_pipeline
+from services.tasks import enqueue_task
 from utils.exceptions import LLMError
 
 logger = logging.getLogger(__name__)
@@ -41,39 +43,157 @@ limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
 
 
+def run_follow_up_background(
+    case_id: str,
+    user_message_id: str,
+    follow_up_content: str,
+    correlation_id: str = "background",
+):
+    """
+    Background task to process follow-up question.
+
+    This runs in RQ worker (or BackgroundTasks fallback) and:
+    1. Gets prior consultation context
+    2. Gets conversation history
+    3. Runs FollowUpPipeline
+    4. Creates assistant message
+    5. Updates case status to completed
+    """
+    from utils.logging import correlation_id as correlation_id_var
+
+    correlation_id_var.set(correlation_id)  # Set correlation ID for this task
+    logger.info(f"[Background] Starting follow-up processing for case {case_id}")
+
+    db = SessionLocal()
+    try:
+        # Get case
+        case = db.query(Case).filter(Case.id == case_id).first()
+        if not case:
+            logger.error(f"[Background] Case not found: {case_id}")
+            return
+
+        # Get prior output for context
+        output_repo = OutputRepository(db)
+        outputs = output_repo.get_by_case_id(case_id)
+        if not outputs:
+            logger.error(f"[Background] No outputs found for case: {case_id}")
+            case.status = CaseStatus.FAILED.value
+            db.commit()
+            return
+
+        latest_output = outputs[0]
+        prior_output = latest_output.result_json
+
+        # Get conversation history
+        message_repo = MessageRepository(db)
+        messages = message_repo.get_by_case(case_id)
+
+        # Convert messages to conversation format (exclude the pending user message)
+        conversation = [
+            {"role": msg.role.value if hasattr(msg.role, "value") else msg.role, "content": msg.content}
+            for msg in messages
+            if msg.id != user_message_id  # Exclude the message we just created
+        ]
+
+        # Run FollowUpPipeline
+        try:
+            pipeline = get_follow_up_pipeline()
+            result = pipeline.run(
+                case_description=case.description,
+                prior_output=prior_output,
+                conversation=conversation,
+                follow_up_question=follow_up_content,
+            )
+        except LLMError as e:
+            logger.error(f"[Background] Follow-up pipeline failed: {e}", extra={"case_id": case_id})
+            case.status = CaseStatus.FAILED.value
+            db.commit()
+            return
+        except Exception as e:
+            logger.error(f"[Background] Unexpected error in follow-up: {e}", extra={"case_id": case_id})
+            case.status = CaseStatus.FAILED.value
+            db.commit()
+            return
+
+        # Validate response
+        if not result.content or not result.content.strip():
+            logger.error("[Background] Follow-up pipeline returned empty response", extra={"case_id": case_id})
+            case.status = CaseStatus.FAILED.value
+            db.commit()
+            return
+
+        # Create assistant message
+        assistant_message = message_repo.create_assistant_message(
+            case_id=case_id,
+            content=result.content,
+            output_id=None,  # Follow-up responses don't have Output records
+        )
+        logger.info(f"[Background] Created assistant follow-up message: {assistant_message.id}")
+
+        # Update case status to completed
+        case.status = CaseStatus.COMPLETED.value
+        db.commit()
+
+        logger.info(
+            f"[Background] Follow-up complete for case {case_id}",
+            extra={"correlation_id": correlation_id},
+        )
+
+    except (OperationalError, SQLAlchemyError) as e:
+        logger.error(f"[Background] Database error in follow-up: {e}", extra={"case_id": case_id})
+        try:
+            case = db.query(Case).filter(Case.id == case_id).first()
+            if case:
+                case.status = CaseStatus.FAILED.value
+                db.commit()
+        except Exception:
+            pass
+    except Exception as e:
+        logger.error(f"[Background] Unexpected error: {e}", extra={"case_id": case_id})
+        try:
+            case = db.query(Case).filter(Case.id == case_id).first()
+            if case:
+                case.status = CaseStatus.FAILED.value
+                db.commit()
+        except Exception:
+            pass
+    finally:
+        db.close()
+
+
 @router.post(
     "/cases/{case_id}/follow-up",
-    response_model=FollowUpResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Submit a follow-up question",
+    response_model=ChatMessageResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Submit a follow-up question (async)",
     description="""
     Submit a follow-up question for an existing consultation.
 
-    This endpoint is for conversational follow-ups after an initial consultation
-    has been completed. It provides a lightweight response without full RAG
-    regeneration.
+    This endpoint returns immediately with status 202 Accepted.
+    The follow-up is processed in the background.
+    Poll GET /cases/{case_id} to check status (processing -> completed/failed).
 
     Requirements:
     - Case must have at least one completed consultation (Output)
     - Follow-up content must pass content moderation
 
     Returns:
-    - Markdown response addressing the follow-up question
-    - Uses prior consultation context and verse references
+    - User message that was created
+    - Case status will be 'processing'
     """,
 )
 @limiter.limit(settings.FOLLOW_UP_RATE_LIMIT)
-def submit_follow_up(
+async def submit_follow_up(
     request: Request,
+    background_tasks: BackgroundTasks,
     follow_up_data: FollowUpRequest,
     case: Case = Depends(get_case_with_access),
     db: Session = Depends(get_db),
-) -> FollowUpResponse:
+) -> ChatMessageResponse:
     """
-    Process a follow-up question and return conversational response.
+    Submit a follow-up question for async processing.
 
-    This creates both a user message (the follow-up question) and an
-    assistant message (the response) in the conversation thread.
+    Creates the user message immediately and queues background processing.
     """
     case_id = case.id
 
@@ -89,7 +209,15 @@ def submit_follow_up(
             "Please start a consultation first.",
         )
 
-    # 2. Apply content filter to follow-up question
+    # 2. Check if already processing
+    if case.status in [CaseStatus.PENDING.value, CaseStatus.PROCESSING.value]:
+        logger.info(f"Case {case_id} already in progress (status: {case.status})")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A follow-up is already being processed. Please wait.",
+        )
+
+    # 3. Apply content filter to follow-up question
     try:
         validate_submission_content("", follow_up_data.content)
     except ContentPolicyError as e:
@@ -102,78 +230,49 @@ def submit_follow_up(
             detail=e.message,
         )
 
-    # 3. Get latest Output for context (outputs are ordered newest first)
-    latest_output = outputs[0]
-    prior_output = latest_output.result_json
-
-    # 4. Get conversation history
+    # 4. Create user message immediately
     message_repo = MessageRepository(db)
-    messages = message_repo.get_by_case(case_id)
-
-    # Convert messages to conversation format
-    conversation = [
-        {"role": msg.role.value if hasattr(msg.role, "value") else msg.role, "content": msg.content}
-        for msg in messages
-    ]
-
-    # 5. Run FollowUpPipeline FIRST (before creating messages)
-    # This ensures we don't create orphaned user messages on LLM failure
-    try:
-        pipeline = get_follow_up_pipeline()
-        result = pipeline.run(
-            case_description=case.description,
-            prior_output=prior_output,
-            conversation=conversation,
-            follow_up_question=follow_up_data.content,
-        )
-    except LLMError as e:
-        logger.error(f"Follow-up pipeline failed: {e}", extra={"case_id": case_id})
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Unable to generate response. Please try again later.",
-        )
-    except Exception as e:
-        logger.error(f"Unexpected error in follow-up: {e}", extra={"case_id": case_id})
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred.",
-        )
-
-    # 6. Validate response is not empty
-    if not result.content or not result.content.strip():
-        logger.error("Follow-up pipeline returned empty response", extra={"case_id": case_id})
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Unable to generate response. Please try again later.",
-        )
-
-    # 7. Create both messages atomically (only after successful LLM response)
     user_message = message_repo.create_user_message(
         case_id=case_id, content=follow_up_data.content
     )
     logger.info(f"Created user follow-up message: {user_message.id}")
 
-    assistant_message = message_repo.create_assistant_message(
-        case_id=case_id,
-        content=result.content,
-        output_id=None,  # Follow-up responses don't have Output records
+    # 5. Update case status to processing
+    case.status = CaseStatus.PROCESSING.value
+    db.commit()
+    db.refresh(case)
+
+    # 6. Get correlation ID from request state
+    request_correlation_id = getattr(request.state, "correlation_id", "background")
+
+    # 7. Queue background task (RQ first, fallback to BackgroundTasks)
+    job_id = enqueue_task(
+        run_follow_up_background,
+        case_id,
+        user_message.id,
+        follow_up_data.content,
+        request_correlation_id,
     )
-    logger.info(f"Created assistant follow-up message: {assistant_message.id}")
 
-    # 8. Build and return response
-    llm_attribution = None
-    if result.model and result.provider:
-        llm_attribution = LLMAttributionSchema(
-            model=result.model,
-            provider=result.provider,
-            input_tokens=result.input_tokens,
-            output_tokens=result.output_tokens,
+    if job_id:
+        logger.info(f"Follow-up queued via RQ (job: {job_id}) for case {case_id}")
+    else:
+        # Fallback to FastAPI BackgroundTasks
+        background_tasks.add_task(
+            run_follow_up_background,
+            case_id,
+            user_message.id,
+            follow_up_data.content,
+            request_correlation_id,
         )
+        logger.info(f"Follow-up queued via BackgroundTasks for case {case_id}")
 
-    return FollowUpResponse(
-        message_id=assistant_message.id,
-        content=result.content,
-        role="assistant",
-        created_at=assistant_message.created_at,
-        llm_attribution=llm_attribution,
+    # 8. Return user message
+    return ChatMessageResponse(
+        id=user_message.id,
+        case_id=case_id,
+        role="user",
+        content=user_message.content,
+        created_at=user_message.created_at,
+        output_id=None,
     )

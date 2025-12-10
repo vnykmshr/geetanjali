@@ -69,6 +69,7 @@ const HTTP_STATUS_MESSAGES: Record<
     signup:
       "An account with this email already exists. Please sign in instead.",
     case_analyze: "Analysis already in progress.",
+    follow_up: "A follow-up is already being processed. Please wait a moment.",
     general: "A conflict occurred. Please try again.",
   },
   422: {

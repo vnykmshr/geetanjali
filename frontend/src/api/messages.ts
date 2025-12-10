@@ -20,12 +20,18 @@ export const messagesApi = {
   },
 
   /**
-   * Submit a follow-up question and get a conversational response.
-   * This is a lightweight endpoint that:
-   * - Creates both user and assistant messages atomically
-   * - Returns markdown prose (not structured JSON)
-   * - Does NOT trigger full RAG pipeline or create a new Output
-   * - Uses prior consultation context for grounded responses
+   * Submit a follow-up question for async processing (HTTP 202 Accepted).
+   *
+   * Returns immediately with the user message. The assistant response is
+   * generated in the background. Poll case status until "completed" to
+   * get the assistant response via list().
+   *
+   * Flow:
+   * 1. Submit follow-up → get back user message (202 Accepted)
+   * 2. Case status changes to "processing"
+   * 3. Background task generates assistant response
+   * 4. Case status changes to "completed"
+   * 5. Call list() to get all messages including assistant response
    */
   async followUp(caseId: string, data: FollowUpRequest): Promise<FollowUpResponse> {
     const response = await api.post(`/cases/${caseId}/follow-up`, data);

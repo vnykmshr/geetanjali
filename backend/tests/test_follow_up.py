@@ -286,63 +286,62 @@ def test_follow_up_validates_content(client, case_with_output):
 
 
 def test_follow_up_returns_response(client, case_with_output):
-    """Test successful follow-up returns markdown response."""
+    """Test successful follow-up returns 202 Accepted with user message."""
     case_id = case_with_output["case"].id
 
-    # Mock the LLM service to avoid actual API calls
-    mock_result = FollowUpResult(
-        content="Option 2 (Stay steady) emphasizes stability, as taught in BG_3_19.",
-        model="test-model",
-        provider="mock",
-        input_tokens=100,
-        output_tokens=50,
+    response = client.post(
+        f"/api/v1/cases/{case_id}/follow-up",
+        json={"content": "Tell me more about Option 2"},
     )
 
-    with patch("api.follow_up.get_follow_up_pipeline") as mock_pipeline:
-        mock_pipeline.return_value.run.return_value = mock_result
-
-        response = client.post(
-            f"/api/v1/cases/{case_id}/follow-up",
-            json={"content": "Tell me more about Option 2"},
-        )
-
-    assert response.status_code == status.HTTP_200_OK
+    # Async endpoint returns 202 Accepted with user message immediately
+    assert response.status_code == status.HTTP_202_ACCEPTED
     data = response.json()
-    assert "message_id" in data
-    assert data["content"] == "Option 2 (Stay steady) emphasizes stability, as taught in BG_3_19."
-    assert data["role"] == "assistant"
+    assert "id" in data
+    assert data["case_id"] == case_id
+    assert data["content"] == "Tell me more about Option 2"
+    assert data["role"] == "user"
     assert "created_at" in data
 
 
-def test_follow_up_creates_messages(client, case_with_output, db_session):
-    """Test that follow-up creates both user and assistant messages."""
+def test_follow_up_creates_user_message(client, case_with_output, db_session):
+    """Test that follow-up creates user message immediately (async processing)."""
     from models.message import Message
+    from models.case import Case
 
     case_id = case_with_output["case"].id
 
     # Count messages before
     messages_before = db_session.query(Message).filter(Message.case_id == case_id).count()
 
-    # Mock the LLM service
-    mock_result = FollowUpResult(
-        content="Follow-up response",
-        model="test-model",
-        provider="mock",
+    response = client.post(
+        f"/api/v1/cases/{case_id}/follow-up",
+        json={"content": "My follow-up question"},
     )
 
-    with patch("api.follow_up.get_follow_up_pipeline") as mock_pipeline:
-        mock_pipeline.return_value.run.return_value = mock_result
-
-        client.post(
-            f"/api/v1/cases/{case_id}/follow-up",
-            json={"content": "My follow-up question"},
-        )
+    # Refresh session to see changes
+    db_session.expire_all()
 
     # Count messages after
     messages_after = db_session.query(Message).filter(Message.case_id == case_id).count()
 
-    # Should have 2 more messages (user question + assistant response)
-    assert messages_after == messages_before + 2
+    # Should have 1 more message (user message created immediately)
+    # Assistant message is created in background task
+    assert messages_after == messages_before + 1
+
+    # Check that case status is set to processing
+    case = db_session.query(Case).filter(Case.id == case_id).first()
+    assert case.status == "processing"
+
+    # Verify the user message content
+    latest_message = (
+        db_session.query(Message)
+        .filter(Message.case_id == case_id)
+        .order_by(Message.created_at.desc())
+        .first()
+    )
+    assert latest_message.content == "My follow-up question"
+    assert latest_message.role.value == "user"
 
 
 def test_follow_up_invalid_case(client):
@@ -366,3 +365,23 @@ def test_follow_up_empty_content_rejected(client, case_with_output):
 
     # Pydantic should reject empty content (min_length=1)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_follow_up_rejects_when_already_processing(client, case_with_output, db_session):
+    """Test that follow-up returns 409 Conflict when case is already processing."""
+    from models.case import Case, CaseStatus
+
+    case_id = case_with_output["case"].id
+
+    # Set case status to processing
+    case = db_session.query(Case).filter(Case.id == case_id).first()
+    case.status = CaseStatus.PROCESSING.value
+    db_session.commit()
+
+    response = client.post(
+        f"/api/v1/cases/{case_id}/follow-up",
+        json={"content": "Another follow-up question"},
+    )
+
+    assert response.status_code == status.HTTP_409_CONFLICT
+    assert "already being processed" in response.json()["detail"]

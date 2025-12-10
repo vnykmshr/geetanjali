@@ -88,6 +88,7 @@ class FollowUpPipeline:
             system_prompt=FOLLOW_UP_SYSTEM_PROMPT,
             temperature=0.7,  # Slightly creative for natural conversation
             max_tokens=1024,  # Reasonable limit for conversational response
+            json_mode=False,  # Follow-ups use markdown prose, not JSON
         )
 
         response_content = result.get("response", "")

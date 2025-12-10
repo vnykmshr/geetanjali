@@ -72,7 +72,7 @@ Default Grafana login: admin / (set GRAFANA_ADMIN_PASSWORD in .env)
 │                                                              │
 │  ┌──────────────┐     ┌──────────────┐     ┌─────────────┐ │
 │  │   Backend    │────▶│  Prometheus  │────▶│   Grafana   │ │
-│  │   /metrics   │     │    :9090     │     │    :3001    │ │
+│  │   /metrics   │     │    :9090     │     │    :3000    │ │
 │  └──────────────┘     └──────────────┘     └─────────────┘ │
 │         │                                         │         │
 │         │ APScheduler                             │ Alerts  │

@@ -2,21 +2,21 @@
 
 All notable changes to Geetanjali are documented here.
 
-## [1.2.0] - 2025-12-10
+## [1.9.0] - 2025-12-10
 
 Follow-up conversations and quality improvements.
 
 ### Features
-- **Follow-up Conversations** - Lightweight conversational follow-ups after initial consultation without full RAG regeneration. Synchronous responses with rate limiting (30/hour).
+- **Follow-up Conversations** - Lightweight conversational follow-ups after initial consultation without full RAG regeneration. Async processing via RQ worker with rate limiting (30/hour).
 - **Refine Guidance CTA** - Low-confidence outputs now show a "Refine Guidance" call-to-action prompting users to provide more context.
 - **Few-Shot Example Toggle** - Configurable few-shot examples in RAG pipeline for improved output consistency.
 
 ### Improvements
 - Accessibility: Added `lang="sa"` attribute for Sanskrit text, ARIA labels for interactive elements
-- Transaction atomicity: Follow-up messages created only after successful LLM response
 - Follow-up input changed from single-line to textarea with Enter key submission
 
 ### Technical
+- Async follow-up processing: HTTP 202 Accepted, background worker processes LLM, frontend polls for completion
 - Rate limiting on follow-up endpoint (30/hour, 3x analyze rate)
 - Dedicated error context for follow-up errors with user-friendly messages
 - Empty LLM response validation before persisting messages

@@ -121,11 +121,12 @@ RESTful API at `/api/v1/`:
 
 ### Follow-up Conversations
 
-After initial analysis, users can ask follow-up questions via `POST /cases/{id}/follow-up`. This lightweight endpoint:
-- Returns synchronous markdown responses (no polling)
+After initial analysis, users can ask follow-up questions via `POST /cases/{id}/follow-up`. This async endpoint:
+- Returns 202 Accepted immediately with the user message
+- Processes LLM response in background via RQ worker
 - Uses prior consultation context without full RAG regeneration
 - Rate limited at 30/hour (3x the analysis rate)
-- Creates user and assistant messages atomically
+- Frontend polls case status until completed to get assistant response
 
 Full OpenAPI docs at `/docs` when running.
 

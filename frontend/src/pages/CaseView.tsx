@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import Markdown from "react-markdown";
 import { casesApi, outputsApi } from "../lib/api";
 import { messagesApi } from "../api/messages";
 import type { Case, Message, Output, CaseStatus, Option } from "../types";
@@ -306,7 +307,7 @@ export default function CaseView() {
 
   const handleFollowUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id || !followUp.trim()) return;
+    if (!id || !followUp.trim() || !caseData) return;
 
     const messageContent = followUp.trim();
     setSubmittingFollowUp(true);
@@ -317,16 +318,29 @@ export default function CaseView() {
       setPendingFollowUp(messageContent);
       setFollowUp("");
 
-      // Submit follow-up and get immediate conversational response
-      // This is a lightweight endpoint that doesn't trigger full RAG
-      await messagesApi.followUp(id, { content: messageContent });
+      // Submit follow-up (async - returns 202 with user message)
+      // Assistant response is processed in background
+      const userMessage = await messagesApi.followUp(id, { content: messageContent });
 
-      // Refresh messages to get both user and assistant messages
-      const updatedMessages = await messagesApi.list(id);
-      setMessages(updatedMessages);
+      // Add the user message to the list immediately
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: userMessage.id,
+          case_id: userMessage.case_id,
+          role: userMessage.role,
+          content: userMessage.content,
+          output_id: userMessage.output_id ?? undefined,
+          created_at: userMessage.created_at,
+        },
+      ]);
 
-      // Clear pending state since we got the response
-      setPendingFollowUp(null);
+      // Update case status to "processing" to trigger existing polling
+      // The polling will detect when status becomes "completed" and fetch messages
+      setCaseData({ ...caseData, status: "processing" });
+
+      // Keep pendingFollowUp set - polling will clear it when assistant responds
+      // This ensures the thinking indicator shows while background processes
     } catch (err) {
       // On error, restore the message and clear pending state
       setFollowUp(messageContent);
@@ -707,7 +721,8 @@ ${messages
           )}
 
           {/* Main Content - Timeline */}
-          {isCompleted && (
+          {/* Show timeline when completed OR when there are existing outputs (follow-up processing) */}
+          {(isCompleted || outputs.length > 0) && (
             <div className="relative">
               {/* Vertical Line */}
               <div className="absolute left-2.5 sm:left-3 top-6 bottom-0 w-0.5 bg-gradient-to-b from-amber-300 via-orange-300 to-red-300" />
@@ -838,11 +853,11 @@ ${messages
                             : "bg-white shadow-md border-orange-100"
                         }`}
                       >
-                        <p
-                          className={`leading-relaxed whitespace-pre-wrap ${isFirst ? "text-gray-900 text-sm sm:text-base" : "text-gray-800 text-sm"}`}
+                        <div
+                          className={`leading-relaxed prose prose-sm max-w-none ${isFirst ? "text-gray-900" : "text-gray-800"} prose-p:my-2 prose-ul:my-2 prose-li:my-0.5 prose-strong:text-inherit`}
                         >
-                          {exchange.assistant.content}
-                        </p>
+                          <Markdown>{exchange.assistant.content}</Markdown>
+                        </div>
 
                         {/* Scholar flag with refine option */}
                         {exchange.output?.scholar_flag && (
@@ -948,9 +963,16 @@ ${messages
                 );
               })}
 
-              {/* Follow-up thinking indicator */}
-              {submittingFollowUp && pendingFollowUp && (
-                <FollowUpThinking pendingMessage={pendingFollowUp} />
+              {/* Follow-up thinking indicator - shows during submission and background processing */}
+              {/* Don't show pendingMessage if it's already in the messages list (async flow adds it immediately) */}
+              {(submittingFollowUp || isProcessing) && pendingFollowUp && (
+                <FollowUpThinking
+                  pendingMessage={
+                    messages.some((m) => m.role === "user" && m.content === pendingFollowUp)
+                      ? undefined
+                      : pendingFollowUp
+                  }
+                />
               )}
 
               {/* Follow-up Input - at end of conversation flow */}
