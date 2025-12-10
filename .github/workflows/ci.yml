@@ -106,8 +106,7 @@ jobs:
         run: bandit -r . -x ./tests,./alembic --severity-level medium -f txt
 
       - name: Dependency vulnerability check (safety)
-        run: safety check --full-report || true
-        continue-on-error: true
+        run: safety check --full-report
 
   frontend:
     name: Frontend Tests & Build

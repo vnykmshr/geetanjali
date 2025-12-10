@@ -131,7 +131,7 @@ export default function VerseDetail() {
                 <div className="text-3xl sm:text-4xl text-amber-400/50 mb-3 sm:mb-4 lg:mb-6 font-light">
                   ॐ
                 </div>
-                <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-serif text-amber-900/70 leading-relaxed tracking-wide mb-3 sm:mb-4 lg:mb-6">
+                <div lang="sa" className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-serif text-amber-900/70 leading-relaxed tracking-wide mb-3 sm:mb-4 lg:mb-6">
                   {formatSanskritLines(verse.sanskrit_devanagari).map(
                     (line, idx) => (
                       <p
@@ -244,6 +244,8 @@ export default function VerseDetail() {
                 </h2>
                 <button
                   onClick={() => setShowAllTranslations(!showAllTranslations)}
+                  aria-label={showAllTranslations ? "Hide translations" : "Show translations"}
+                  aria-pressed={showAllTranslations}
                   className={`relative inline-flex h-7 sm:h-8 w-12 sm:w-14 items-center rounded-full transition-colors ${
                     showAllTranslations ? "bg-amber-600" : "bg-gray-300"
                   }`}

@@ -52,7 +52,7 @@ export const VerseCard = memo(function VerseCard({
         </div>
 
         {/* Full Sanskrit Verse */}
-        <div className="text-amber-900 font-serif text-sm sm:text-base leading-relaxed text-center">
+        <div lang="sa" className="text-amber-900 font-serif text-sm sm:text-base leading-relaxed text-center">
           {sanskritLines.map((line, idx) => (
             <p key={idx} className="mb-0.5">
               {line}
@@ -81,7 +81,7 @@ export const VerseCard = memo(function VerseCard({
         <div className="flex-grow flex flex-col justify-center">
           {/* Sanskrit Text */}
           {displayLines.length > 0 && (
-            <div className="text-base sm:text-xl md:text-2xl text-amber-800/60 font-serif text-center leading-relaxed tracking-wide mb-4 sm:mb-6">
+            <div lang="sa" className="text-base sm:text-xl md:text-2xl text-amber-800/60 font-serif text-center leading-relaxed tracking-wide mb-4 sm:mb-6">
               {displayLines.map((line, idx) => (
                 <p
                   key={idx}
