@@ -53,10 +53,11 @@ def upgrade() -> None:
     )
 
     # P0.1c: GIN index for verse principle search (CRITICAL - full table scan before)
+    # Note: consulting_principles is JSON type, must cast to JSONB for GIN index
     op.execute(
         """
         CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_verses_consulting_principles_gin
-        ON verses USING GIN (consulting_principles)
+        ON verses USING GIN ((consulting_principles::jsonb))
     """
     )
 
