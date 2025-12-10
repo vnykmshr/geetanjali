@@ -16,8 +16,7 @@ test.describe("Authentication Flow", () => {
     await expect(page.locator('input[name="password"]')).toBeVisible();
     await expect(page.locator('input[name="confirmPassword"]')).toBeVisible();
 
-    // Try to submit empty form (HTML5 validation will prevent)
-    // Just verify the submit button exists
+    // Verify the submit button exists
     await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
 
@@ -38,8 +37,8 @@ test.describe("Authentication Flow", () => {
     // Submit
     await page.click('button[type="submit"]');
 
-    // Should show password requirement error
-    await expect(page.locator("text=at least 8 characters")).toBeVisible({ timeout: 5000 });
+    // Should show password requirement error - target the red error text specifically
+    await expect(page.locator(".text-red-600")).toContainText("at least 8 characters", { timeout: 5000 });
   });
 
   test("login page loads correctly", async ({ page }) => {
@@ -52,8 +51,8 @@ test.describe("Authentication Flow", () => {
     await expect(page.locator('input[name="email"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
 
-    // Verify signup link exists
-    await expect(page.locator('a[href="/signup"]')).toBeVisible();
+    // Verify signup link exists in the form area (use the one with lowercase "up")
+    await expect(page.getByRole("link", { name: "Sign up", exact: true })).toBeVisible();
   });
 
   test("can navigate between login and signup", async ({ page }) => {
@@ -61,13 +60,13 @@ test.describe("Authentication Flow", () => {
     await page.goto("/login");
     await expect(page.locator("h2")).toContainText("Welcome Back", { timeout: 15000 });
 
-    // Click signup link
-    await page.click('a[href="/signup"]');
+    // Click signup link in the form (the one that says "Sign up" with lowercase u)
+    await page.getByRole("link", { name: "Sign up", exact: true }).click();
     await expect(page).toHaveURL("/signup");
     await expect(page.locator("h2")).toContainText("Create Your Account", { timeout: 15000 });
 
-    // Click login link from signup page
-    await page.click('a[href="/login"]');
+    // Click login link from signup page (the one that says "Sign in")
+    await page.getByRole("link", { name: "Sign in", exact: true }).click();
     await expect(page).toHaveURL("/login");
   });
 
@@ -96,7 +95,7 @@ test.describe("Authentication Flow", () => {
     // Submit
     await page.click('button[type="submit"]');
 
-    // Should show error message in the red error box
-    await expect(page.locator(".bg-red-50")).toBeVisible({ timeout: 10000 });
+    // Should show error message - look for the red error text
+    await expect(page.locator(".text-red-600")).toBeVisible({ timeout: 15000 });
   });
 });
