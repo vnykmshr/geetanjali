@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios from "axios";
+import type { AxiosError, InternalAxiosRequestConfig } from "axios";
 
 /**
  * Tests for API client configuration and interceptors.
@@ -23,6 +24,11 @@ vi.mock("../api/auth", () => ({
   },
 }));
 
+// Type for FastAPI error response data
+interface FastAPIErrorData {
+  detail?: string | Array<{ loc: string[]; msg: string; type: string }>;
+}
+
 describe("API error message extraction", () => {
   it("should extract error detail from FastAPI error response", () => {
     // Simulate FastAPI error response format
@@ -30,16 +36,17 @@ describe("API error message extraction", () => {
       response: {
         data: {
           detail: "Case not found",
-        },
+        } as FastAPIErrorData,
         status: 404,
         statusText: "Not Found",
       },
       message: "Request failed with status code 404",
-    } as AxiosError;
+    } as AxiosError<FastAPIErrorData>;
 
     // The response interceptor extracts detail to message
-    if (errorResponse.response?.data?.detail) {
-      errorResponse.message = errorResponse.response.data.detail;
+    const detail = errorResponse.response?.data?.detail;
+    if (detail && typeof detail === "string") {
+      errorResponse.message = detail;
     }
 
     expect(errorResponse.message).toBe("Case not found");
@@ -57,19 +64,17 @@ describe("API error message extraction", () => {
               type: "value_error.email",
             },
           ],
-        },
+        } as FastAPIErrorData,
         status: 422,
         statusText: "Unprocessable Entity",
       },
       message: "Request failed with status code 422",
-    } as AxiosError;
+    } as AxiosError<FastAPIErrorData>;
 
     // For array details, keep original message (more complex extraction)
-    if (
-      errorResponse.response?.data?.detail &&
-      typeof errorResponse.response.data.detail === "string"
-    ) {
-      errorResponse.message = errorResponse.response.data.detail;
+    const detail = errorResponse.response?.data?.detail;
+    if (detail && typeof detail === "string") {
+      errorResponse.message = detail;
     }
 
     // Array detail should not overwrite message
@@ -79,15 +84,16 @@ describe("API error message extraction", () => {
   it("should preserve original message when no detail present", () => {
     const errorResponse = {
       response: {
-        data: {},
+        data: {} as FastAPIErrorData,
         status: 500,
         statusText: "Internal Server Error",
       },
       message: "Network Error",
-    } as AxiosError;
+    } as AxiosError<FastAPIErrorData>;
 
-    if (errorResponse.response?.data?.detail) {
-      errorResponse.message = errorResponse.response.data.detail;
+    const detail = errorResponse.response?.data?.detail;
+    if (detail && typeof detail === "string") {
+      errorResponse.message = detail;
     }
 
     expect(errorResponse.message).toBe("Network Error");
@@ -115,7 +121,7 @@ describe("Request configuration", () => {
       method: "get",
     };
 
-    const token = "mock-access-token";
+    const token: string | null = "mock-access-token";
     if (token && token.trim().length > 0) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -130,7 +136,7 @@ describe("Request configuration", () => {
       method: "get",
     };
 
-    const token = "";
+    const token: string | null = "";
     if (token && token.trim().length > 0) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -145,7 +151,7 @@ describe("Request configuration", () => {
       method: "get",
     };
 
-    const token = "   ";
+    const token: string | null = "   ";
     if (token && token.trim().length > 0) {
       config.headers.Authorization = `Bearer ${token}`;
     }
