@@ -29,6 +29,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: Long-running tests (skipped in quick CI)")
     config.addinivalue_line("markers", "e2e: End-to-end tests (skipped in CI by default)")
 
+
 # Import all models to register them with Base.metadata
 # These imports are required to register models with SQLAlchemy Base.metadata
 from models import Base  # noqa: F401
