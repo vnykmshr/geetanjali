@@ -96,6 +96,78 @@ _COMPILED_SPAM: List[Pattern[str]] = [
     re.compile(p, re.IGNORECASE) for p in _SPAM_PATTERNS
 ]
 
+# Common English words for gibberish detection
+# Small set of ~150 most common words - fast lookup, catches nonsense input
+_COMMON_WORDS = frozenset([
+    # Articles, pronouns, prepositions
+    "a", "an", "the", "i", "me", "my", "we", "our", "you", "your", "he", "she",
+    "it", "they", "them", "his", "her", "its", "their", "this", "that", "these",
+    "in", "on", "at", "to", "for", "of", "with", "by", "from", "up", "out",
+    "if", "or", "and", "but", "not", "no", "so", "as", "be", "am", "is", "are",
+    "was", "were", "been", "being", "have", "has", "had", "do", "does", "did",
+    # Common verbs
+    "can", "could", "will", "would", "should", "may", "might", "must", "shall",
+    "get", "got", "make", "made", "go", "going", "went", "come", "came", "take",
+    "know", "think", "see", "want", "need", "feel", "try", "help", "tell", "ask",
+    "work", "give", "find", "say", "said", "use", "let", "keep", "put", "set",
+    # Common nouns
+    "people", "person", "man", "woman", "child", "time", "year", "day", "way",
+    "thing", "world", "life", "hand", "part", "place", "case", "week", "work",
+    "fact", "point", "home", "job", "team", "family", "friend", "money", "issue",
+    # Common adjectives
+    "good", "new", "first", "last", "long", "great", "little", "own", "other",
+    "old", "right", "big", "high", "small", "large", "next", "young", "important",
+    "few", "public", "bad", "same", "able", "best", "better", "sure", "free",
+    # Question words and common adverbs
+    "what", "which", "who", "how", "when", "where", "why", "all", "each", "every",
+    "both", "most", "some", "any", "many", "much", "more", "very", "just", "only",
+    "also", "well", "back", "now", "here", "there", "still", "even", "too", "never",
+    # Domain-relevant words (ethical dilemmas, decisions)
+    "decision", "choice", "dilemma", "problem", "situation", "question", "answer",
+    "option", "career", "boss", "manager", "company", "business", "ethical",
+    "moral", "right", "wrong", "fair", "honest", "integrity", "duty", "advice",
+    "guidance", "help", "support", "concern", "worry", "stress", "conflict",
+    "relationship", "trust", "respect", "value", "principle", "balance",
+])
+
+# Minimum thresholds for gibberish detection
+_MIN_COMMON_WORD_RATIO = 0.25  # At least 25% common words
+_MIN_COMMON_WORDS_ABSOLUTE = 2  # Or at least 2 common words for short texts
+
+
+def _is_gibberish(text: str) -> bool:
+    """
+    Check if text appears to be gibberish (no recognizable words).
+
+    Uses a simple common-words check: if the input has too few recognizable
+    English words, it's likely keyboard mashing or random characters.
+
+    Args:
+        text: Input text to check
+
+    Returns:
+        True if text appears to be gibberish
+    """
+    # Extract words (letters only, lowercase)
+    words = re.findall(r"[a-zA-Z]+", text.lower())
+
+    if not words:
+        return True  # No words at all
+
+    # Count common words
+    common_count = sum(1 for word in words if word in _COMMON_WORDS)
+    total_words = len(words)
+
+    # Check thresholds: need either ratio OR absolute minimum
+    ratio = common_count / total_words if total_words > 0 else 0
+
+    # For very short inputs (1-3 words), require at least 1 common word
+    if total_words <= 3:
+        return common_count < 1
+
+    # For longer inputs, check ratio OR absolute minimum
+    return ratio < _MIN_COMMON_WORD_RATIO and common_count < _MIN_COMMON_WORDS_ABSOLUTE
+
 
 def check_blocklist(text: str) -> ContentCheckResult:
     """
@@ -156,6 +228,17 @@ def check_blocklist(text: str) -> ContentCheckResult:
                 is_violation=True,
                 violation_type=ViolationType.SPAM_GIBBERISH,
             )
+
+    # Check for gibberish (no recognizable words)
+    if _is_gibberish(text):
+        logger.warning(
+            "Blocklist violation detected",
+            extra={"violation_type": ViolationType.SPAM_GIBBERISH.value},
+        )
+        return ContentCheckResult(
+            is_violation=True,
+            violation_type=ViolationType.SPAM_GIBBERISH,
+        )
 
     return ContentCheckResult(is_violation=False)
 
