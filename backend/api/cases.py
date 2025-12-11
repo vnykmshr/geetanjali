@@ -188,7 +188,8 @@ async def create_case(
 
 
 @router.get("/{case_id}", response_model=CaseResponse)
-async def get_case(case: Case = Depends(get_case_with_access)):
+@limiter.limit("60/minute")
+async def get_case(request: Request, case: Case = Depends(get_case_with_access)):
     """
     Get a case by ID (supports anonymous and authenticated users).
 
@@ -205,7 +206,9 @@ async def get_case(case: Case = Depends(get_case_with_access)):
 
 
 @router.get("", response_model=List[CaseResponse])
+@limiter.limit("60/minute")
 async def list_cases(
+    request: Request,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),

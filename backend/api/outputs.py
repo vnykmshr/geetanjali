@@ -10,15 +10,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from db import get_db, SessionLocal
-from db.repositories.case_repository import CaseRepository
 from db.repositories.message_repository import MessageRepository
 from models.output import Output
 from models.case import Case, CaseStatus
 from models.user import User
 from api.schemas import OutputResponse, CaseResponse, FeedbackCreate, FeedbackResponse
 from api.middleware.auth import get_optional_user, require_role, get_session_id
-from api.dependencies import get_case_with_access, limiter
-from api.errors import ERR_CASE_NOT_FOUND, ERR_CASE_ACCESS_DENIED
+from api.dependencies import get_case_with_access, get_output_with_access, limiter
 from services.rag import get_rag_pipeline
 from services.tasks import enqueue_task
 from models.feedback import Feedback
@@ -298,18 +296,13 @@ async def analyze_case(
 
 
 @router.get("/outputs/{output_id}", response_model=OutputResponse)
+@limiter.limit("60/minute")
 async def get_output(
-    output_id: str,
-    db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user),
+    request: Request,
+    output: Output = Depends(get_output_with_access),
 ):
     """
     Get an output by ID (supports anonymous users).
-
-    Args:
-        output_id: Output ID
-        db: Database session
-        current_user: Authenticated user (optional)
 
     Returns:
         Output details
@@ -317,72 +310,25 @@ async def get_output(
     Raises:
         HTTPException: If output not found or user doesn't have access
     """
-    output = db.query(Output).filter(Output.id == output_id).first()
-
-    if not output:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Output {output_id} not found",
-        )
-
-    # Verify ownership via case
-    case_repo = CaseRepository(db)
-    case = case_repo.get(output.case_id)
-
-    if not case:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Case not found for this output",
-        )
-
-    # Verify ownership if case belongs to a user
-    if case.user_id is not None:
-        if current_user is None or case.user_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have access to this output",
-            )
-
     return output
 
 
 @router.get("/cases/{case_id}/outputs", response_model=List[OutputResponse])
+@limiter.limit("60/minute")
 async def list_case_outputs(
-    case_id: str,
+    request: Request,
+    case: Case = Depends(get_case_with_access),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """
     List all outputs for a case (supports anonymous users).
 
-    Args:
-        case_id: Case ID
-        db: Database session
-        current_user: Authenticated user (optional)
-
     Returns:
         List of outputs for the case
     """
-    # Verify case ownership
-    case_repo = CaseRepository(db)
-    case = case_repo.get(case_id)
-
-    if not case:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=ERR_CASE_NOT_FOUND
-        )
-
-    # Verify ownership if case belongs to a user
-    if case.user_id is not None:
-        if current_user is None or case.user_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=ERR_CASE_ACCESS_DENIED,
-            )
-
     outputs = (
         db.query(Output)
-        .filter(Output.case_id == case_id)
+        .filter(Output.case_id == case.id)
         .order_by(Output.created_at.desc())
         .all()
     )
@@ -391,7 +337,9 @@ async def list_case_outputs(
 
 
 @router.post("/outputs/{output_id}/scholar-review", response_model=OutputResponse)
+@limiter.limit("30/minute")
 async def submit_scholar_review(
+    request: Request,
     output_id: str,
     approved: bool,
     db: Session = Depends(get_db),
@@ -452,7 +400,9 @@ async def submit_scholar_review(
     response_model=FeedbackResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("30/minute")
 async def submit_feedback(
+    request: Request,
     output_id: str,
     feedback_data: FeedbackCreate,
     db: Session = Depends(get_db),
