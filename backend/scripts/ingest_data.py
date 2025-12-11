@@ -12,8 +12,6 @@ Usage:
     python scripts/ingest_data.py --dry-run                # Validate only
     python scripts/ingest_data.py --force-refresh          # Bypass cache
     python scripts/ingest_data.py --status                 # Show pipeline status
-
-Note: --no-enrich flag is deprecated. Enrichment is now always separate.
 """
 
 import argparse
@@ -57,12 +55,6 @@ def main():
         "--dry-run",
         action="store_true",
         help="Validate data without persisting to database",
-    )
-
-    parser.add_argument(
-        "--no-enrich",
-        action="store_true",
-        help="[DEPRECATED] Enrichment is now always separate. This flag is ignored.",
     )
 
     parser.add_argument(
@@ -117,11 +109,6 @@ def main():
             "Note: LLM enrichment is separate - use /api/v1/admin/enrich after ingestion"
         )
         logger.info("=" * 80)
-
-        if args.no_enrich:
-            logger.warning(
-                "--no-enrich flag is deprecated and ignored. Enrichment is always separate."
-            )
 
         all_stats = pipeline.ingest_all_sources(
             source_types=source_types,

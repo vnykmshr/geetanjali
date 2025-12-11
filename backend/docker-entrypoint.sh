@@ -126,9 +126,8 @@ if [ "$NEEDS_INGESTION" = "yes" ]; then
     echo "Database appears empty or incomplete. Running initial data ingestion..."
     echo "This may take several minutes..."
 
-    # Run full ingestion without LLM enrichment for faster initial load
-    # Enrichment can be done later via manual trigger
-    python3 scripts/ingest_data.py --all --no-enrich || {
+    # Run full ingestion (enrichment is always separate via /api/v1/admin/enrich)
+    python3 scripts/ingest_data.py --all || {
         echo "⚠️  Warning: Initial data ingestion failed"
         echo "You can trigger ingestion manually later via the API"
     }
