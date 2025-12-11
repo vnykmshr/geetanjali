@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import type { CaseStatus, Verse } from "../types";
 import { versesApi } from "../lib/api";
 
@@ -109,14 +110,22 @@ export function ConsultationWaiting({
           We encountered an issue while preparing your consultation. This can
           happen during high demand.
         </p>
-        {onRetry && (
-          <button
-            onClick={onRetry}
-            className="px-4 sm:px-6 py-2.5 sm:py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm sm:text-base"
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="px-4 sm:px-6 py-2.5 sm:py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm sm:text-base"
+            >
+              Try Again
+            </button>
+          )}
+          <Link
+            to="/cases/new"
+            className="px-4 sm:px-6 py-2.5 sm:py-3 bg-white text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors font-medium text-sm sm:text-base"
           >
-            Try Again
-          </button>
-        )}
+            New Consultation
+          </Link>
+        </div>
       </div>
     );
   }
