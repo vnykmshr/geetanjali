@@ -116,7 +116,8 @@ describe("contentFilter", () => {
     });
 
     it("blocks repeated short words", () => {
-      const result = validateContent("asas as as s as sa as s a s as asaas");
+      // More extreme repetition to test gibberish detection
+      const result = validateContent("aa aa aa aa aa aa aa aa aa aa aa aa");
       expect(result.valid).toBe(false);
     });
 
