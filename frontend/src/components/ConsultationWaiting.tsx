@@ -237,7 +237,7 @@ export function ConsultationWaiting({
           {dailyVerse ? (
             <div className="text-xs sm:text-sm">
               <p className="text-gray-600 mb-1.5 sm:mb-2 line-clamp-3">
-                {dailyVerse.paraphrase_en || dailyVerse.translation_en}
+                {dailyVerse.paraphrase_en || dailyVerse.sanskrit_devanagari}
               </p>
               <p className="text-xs text-gray-400">
                 {dailyVerse.canonical_id?.replace(/_/g, " ")}
