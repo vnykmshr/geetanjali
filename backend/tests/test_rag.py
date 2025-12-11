@@ -276,8 +276,12 @@ class TestRAGPipelineIntegration:
 
         # Bypass cache to ensure failure scenario is actually tested
         with patch("services.rag.cache.get", return_value=None):
-            with patch("services.rag.get_vector_store", return_value=FailingVectorStore()):
-                with patch("services.rag.get_llm_service", return_value=mock_llm_service):
+            with patch(
+                "services.rag.get_vector_store", return_value=FailingVectorStore()
+            ):
+                with patch(
+                    "services.rag.get_llm_service", return_value=mock_llm_service
+                ):
                     pipeline = RAGPipeline()
                     result, is_policy_violation = pipeline.run(SAMPLE_CASE)
 
@@ -324,8 +328,12 @@ class TestRAGPipelineIntegration:
 
         # Bypass cache to ensure empty verses scenario is actually tested
         with patch("services.rag.cache.get", return_value=None):
-            with patch("services.rag.get_vector_store", return_value=EmptyVectorStore()):
-                with patch("services.rag.get_llm_service", return_value=mock_llm_service):
+            with patch(
+                "services.rag.get_vector_store", return_value=EmptyVectorStore()
+            ):
+                with patch(
+                    "services.rag.get_llm_service", return_value=mock_llm_service
+                ):
                     pipeline = RAGPipeline()
                     result, is_policy_violation = pipeline.run(SAMPLE_CASE)
 

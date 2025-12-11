@@ -19,7 +19,9 @@ def case_with_message(client):
         "sensitivity": "low",
     }
     response = client.post("/api/v1/cases", json=case_data, headers=headers)
-    assert response.status_code == status.HTTP_201_CREATED, f"Case creation failed: {response.json()}"
+    assert (
+        response.status_code == status.HTTP_201_CREATED
+    ), f"Case creation failed: {response.json()}"
     result = response.json()
     assert "id" in result, f"Response missing 'id': {result}"
     result["_session_id"] = session_id
@@ -50,9 +52,13 @@ def test_create_follow_up_message(client, case_with_message):
     headers = case_with_message["_headers"]
     message_data = {"content": "What about option C?"}
 
-    response = client.post(f"/api/v1/cases/{case_id}/messages", json=message_data, headers=headers)
+    response = client.post(
+        f"/api/v1/cases/{case_id}/messages", json=message_data, headers=headers
+    )
 
-    assert response.status_code == status.HTTP_201_CREATED, f"Follow-up message failed: {response.json()}"
+    assert (
+        response.status_code == status.HTTP_201_CREATED
+    ), f"Follow-up message failed: {response.json()}"
     message = response.json()
     assert message["content"] == "What about option C?"
     assert message["role"] == "user"
@@ -68,7 +74,9 @@ def test_get_messages_after_follow_up(client, case_with_message):
 
     # Add a follow-up message
     client.post(
-        f"/api/v1/cases/{case_id}/messages", json={"content": "Follow-up question here"}, headers=headers
+        f"/api/v1/cases/{case_id}/messages",
+        json={"content": "Follow-up question here"},
+        headers=headers,
     )
 
     # Get all messages
@@ -124,7 +132,9 @@ def test_messages_ordered_chronologically(client, case_with_message):
     # Add multiple messages
     for i in range(3):
         client.post(
-            f"/api/v1/cases/{case_id}/messages", json={"content": f"Message number {i}"}, headers=headers
+            f"/api/v1/cases/{case_id}/messages",
+            json={"content": f"Message number {i}"},
+            headers=headers,
         )
 
     response = client.get(f"/api/v1/cases/{case_id}/messages", headers=headers)

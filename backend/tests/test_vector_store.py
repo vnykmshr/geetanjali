@@ -75,7 +75,9 @@ class TestVectorStore:
             mock_settings.CHROMA_RETRY_MAX_WAIT = 5
 
             # Patch chromadb.Client to return shared client
-            with patch("services.vector_store.chromadb.Client", return_value=shared_client):
+            with patch(
+                "services.vector_store.chromadb.Client", return_value=shared_client
+            ):
                 yield {
                     "client": shared_client,
                     "collection_name": collection_name,

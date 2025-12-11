@@ -380,7 +380,10 @@ class TestDifferentiatedErrorMessages:
     def test_explicit_content_has_geeta_guidance(self):
         """Explicit content error should mention Bhagavad Geeta."""
         error = ContentPolicyError(ViolationType.EXPLICIT_SEXUAL)
-        assert "bhagavad geeta" in error.message.lower() or "ethical" in error.message.lower()
+        assert (
+            "bhagavad geeta" in error.message.lower()
+            or "ethical" in error.message.lower()
+        )
 
 
 class TestProfanityConfigToggle:
@@ -398,4 +401,7 @@ class TestProfanityConfigToggle:
             result = check_blocklist("you are an idiot")
             # When profanity is disabled, direct insults should pass
             # (unless caught by other patterns)
-            assert result.violation_type != ViolationType.PROFANITY_ABUSE or result.is_violation is False
+            assert (
+                result.violation_type != ViolationType.PROFANITY_ABUSE
+                or result.is_violation is False
+            )

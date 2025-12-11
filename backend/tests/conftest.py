@@ -25,9 +25,13 @@ from db import get_db
 def pytest_configure(config):
     """Register custom markers."""
     config.addinivalue_line("markers", "unit: Fast isolated tests, no DB required")
-    config.addinivalue_line("markers", "integration: Tests requiring DB or external services")
+    config.addinivalue_line(
+        "markers", "integration: Tests requiring DB or external services"
+    )
     config.addinivalue_line("markers", "slow: Long-running tests (skipped in quick CI)")
-    config.addinivalue_line("markers", "e2e: End-to-end tests (skipped in CI by default)")
+    config.addinivalue_line(
+        "markers", "e2e: End-to-end tests (skipped in CI by default)"
+    )
 
 
 # Import all models to register them with Base.metadata
