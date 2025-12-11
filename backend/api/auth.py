@@ -7,7 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session
 
 from api.dependencies import limiter
-from api.errors import ERR_INVALID_CREDENTIALS
+from api.errors import (
+    ERR_INVALID_CREDENTIALS,
+    ERR_INVALID_REFRESH_TOKEN,
+    ERR_USER_NOT_FOUND,
+)
 from api.schemas import (
     SignupRequest,
     LoginRequest,
@@ -248,7 +252,7 @@ async def refresh(request: Request, response: Response, db: Session = Depends(ge
     if not token_record or not token_record.is_valid():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token",
+            detail=ERR_INVALID_REFRESH_TOKEN,
         )
 
     # Get user
@@ -257,7 +261,7 @@ async def refresh(request: Request, response: Response, db: Session = Depends(ge
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=ERR_USER_NOT_FOUND
         )
 
     # Rotate tokens (security best practice)
@@ -401,10 +405,11 @@ async def reset_password(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     # Find user with matching reset token
+    # Note: Bcrypt hashes include random salt, so we must iterate and verify.
+    # For high-scale scenarios, consider adding an indexable token prefix.
     user_repo = UserRepository(db)
     users_with_tokens = user_repo.get_users_with_valid_reset_tokens()
 
-    # Iterate through users and verify token hash
     matching_user = None
     for user in users_with_tokens:
         if user.reset_token_hash and verify_password(

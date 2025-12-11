@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from api.dependencies import limiter
-from api.errors import ERR_NO_VERSES_IN_DB
+from api.errors import ERR_NO_VERSES_IN_DB, ERR_VERSE_NOT_FOUND
 from db import get_db
 from db.repositories.verse_repository import VerseRepository
 from api.schemas import VerseResponse, TranslationResponse
@@ -246,7 +246,7 @@ async def get_verse_of_the_day(request: Request, db: Session = Depends(get_db)):
 
     if not verse:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Verse not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=ERR_VERSE_NOT_FOUND
         )
 
     # Cache until midnight UTC
