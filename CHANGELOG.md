@@ -2,6 +2,29 @@
 
 All notable changes to Geetanjali are documented here.
 
+## [1.10.0] - 2025-12-11
+
+Quality and security improvements from comprehensive code review.
+
+### Security
+- **CSP Hardening** - Removed `unsafe-inline` from Content-Security-Policy, changed default-src to `'none'`, added `frame-ancestors 'none'`
+- **Rate Limiting** - Added rate limits to message endpoints (GET: 60/min, POST: 10/min)
+
+### Reliability
+- **Stale Processing Timeout** - Cases stuck in PROCESSING for >5 minutes are automatically failed when polled, preventing indefinite hangs
+- **Silent Handler Logging** - Added logging to previously silent exception handlers in follow-up background processing
+
+### Improvements
+- **Content Filter Alignment** - Aligned frontend gibberish detection thresholds with backend for consistent validation
+- **Prompt Truncation Logging** - Added logging when follow-up prompts are truncated (>500 chars)
+- **Cache Invalidation** - Public case caches (outputs, messages) are now invalidated when new content is created
+- **Contact Form Validation** - Refactored to use centralized `validate_submission_content` for consistent content filtering
+
+### Technical
+- Consolidated frontend content filter constants with backend values
+- Added `STALE_PROCESSING_TIMEOUT` config setting (300s default)
+- Improved CSP headers with explicit directives for API responses
+
 ## [1.9.0] - 2025-12-10
 
 Follow-up conversations and quality improvements.
