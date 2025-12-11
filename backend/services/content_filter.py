@@ -214,8 +214,8 @@ _COMMON_WORDS = frozenset([
 ])
 
 # Minimum thresholds for gibberish detection
-_MIN_COMMON_WORD_RATIO = 0.25  # At least 25% common words
-_MIN_DISTINCT_COMMON_WORDS = 3  # Need at least 3 different common words for longer texts
+_MIN_COMMON_WORD_RATIO = 0.20  # At least 20% common words (relaxed for natural text)
+_MIN_DISTINCT_COMMON_WORDS = 2  # Need at least 2 different common words for longer texts
 
 
 def _is_gibberish(text: str) -> bool:
@@ -245,13 +245,14 @@ def _is_gibberish(text: str) -> bool:
     distinct_common_count = len(found_common)
     total_words = len(words)
 
-    # For very short inputs (1-3 words), require at least 1 common word
-    if total_words <= 3:
+    # For very short inputs (1-6 words), require at least 1 common word
+    # This allows natural follow-up questions like "What about option C?"
+    if total_words <= 6:
         return distinct_common_count < 1
 
     # For longer inputs, need both:
-    # 1. At least 25% of words are common (by occurrence, for natural text)
-    # 2. At least 3 distinct common words (prevents "as as as a a a")
+    # 1. At least 20% of words are common (by occurrence, for natural text)
+    # 2. At least 2 distinct common words (prevents "as as as a a a")
     common_occurrences = sum(1 for word in words if word in _COMMON_WORDS)
     ratio = common_occurrences / total_words if total_words > 0 else 0
 

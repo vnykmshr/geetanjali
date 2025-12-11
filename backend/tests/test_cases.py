@@ -40,10 +40,11 @@ def test_get_case(client):
     # First create a case with session ID
     case_data = {
         "title": "Test Case",
-        "description": "Test description",
+        "description": "I need guidance on whether to accept a promotion that requires relocating away from my family.",
         "sensitivity": "low",
     }
     create_response = client.post("/api/v1/cases", json=case_data, headers=headers)
+    assert create_response.status_code == status.HTTP_201_CREATED, f"Case creation failed: {create_response.json()}"
     case_id = create_response.json()["id"]
 
     # Then retrieve it with same session ID
@@ -69,11 +70,15 @@ def test_list_cases(client):
     session_id = str(uuid.uuid4())
     headers = {"X-Session-ID": session_id}
 
-    # Create a couple of cases with session
+    # Create a couple of cases with session - use realistic descriptions to pass content filter
+    descriptions = [
+        "Should I take a job that pays more but requires more travel away from family?",
+        "Is it ethical to accept a gift from a vendor when company policy is unclear?",
+    ]
     for i in range(2):
         case_data = {
             "title": f"Test Case {i}",
-            "description": f"Description {i}",
+            "description": descriptions[i],
             "sensitivity": "low",
         }
         client.post("/api/v1/cases", json=case_data, headers=headers)
