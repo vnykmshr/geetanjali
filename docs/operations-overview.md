@@ -1,219 +1,142 @@
-# Operations Overview: Consultation Flows
-
-Core business logic for the Geetanjali ethical consultation system.
-
+---
+layout: default
+title: Operations Overview
+description: How Geetanjali processes ethical consultations - from initial analysis to follow-up conversations.
 ---
 
-## System Architecture
+# Operations Overview
+
+How consultations flow through the system, from submission to response.
+
+## Consultation Modes
+
+Geetanjali offers two modes of interaction:
+
+| Mode | Purpose | Pipeline |
+|------|---------|----------|
+| **Initial Consultation** | Full analysis of an ethical dilemma | RAG (retrieval + generation) |
+| **Follow-up Conversation** | Clarification and refinement | Lightweight (context-only) |
+
+Both modes process asynchronously, allowing the system to handle long-running LLM operations without blocking.
+
+## Initial Consultation
+
+When a user submits an ethical dilemma, the system performs a full RAG (retrieval-augmented generation) analysis:
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Frontend  │────▶│   FastAPI   │────▶│   Worker    │
-│  (React)    │◀────│   Backend   │◀────│   (RQ)      │
-└─────────────┘     └─────────────┘     └─────────────┘
-                           │
-              ┌────────────┼────────────┐
-              ▼            ▼            ▼
-        ┌──────────┐ ┌──────────┐ ┌──────────┐
-        │ Postgres │ │ ChromaDB │ │   LLM    │
-        │  (Data)  │ │ (Vectors)│ │(Anthropic│
-        └──────────┘ └──────────┘ │/Ollama)  │
-                                  └──────────┘
+User submits dilemma
+        │
+        ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│ Content Filter  │────▶│ Vector Search   │────▶│ LLM Generation  │
+│ (validation)    │     │ (find verses)   │     │ (structured)    │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                        │
+                                                        ▼
+                                               ┌─────────────────┐
+                                               │ Structured      │
+                                               │ Response        │
+                                               │ - Summary       │
+                                               │ - Options       │
+                                               │ - Steps         │
+                                               │ - Citations     │
+                                               └─────────────────┘
 ```
 
----
+**Output includes:**
+- Executive summary
+- Multiple options with tradeoffs
+- Recommended action with steps
+- Reflection prompts
+- Verse citations with relevance scores
 
-## Two Consultation Modes
+## Follow-up Conversations
 
-### 1. Initial Consultation (Analyze)
-
-Full RAG pipeline with verse retrieval and structured output.
-
-```
-POST /cases/{id}/analyze/async → 202 Accepted
-
-┌────────┐   ┌─────────┐   ┌────────────┐   ┌───────────┐
-│ DRAFT  │──▶│ PENDING │──▶│ PROCESSING │──▶│ COMPLETED │
-└────────┘   └─────────┘   └────────────┘   └───────────┘
-                                 │
-                    ┌────────────┴────────────┐
-                    ▼                         ▼
-             ┌────────────────┐        ┌──────────┐
-             │POLICY_VIOLATION│        │  FAILED  │
-             └────────────────┘        └──────────┘
-```
-
-**Pipeline Steps:**
-1. Content validation (blocklist filter)
-2. Vector similarity search (ChromaDB)
-3. Verse retrieval (top-K relevant)
-4. LLM generation (structured JSON)
-5. Response parsing & validation
-6. Output + Message creation
-
-**Creates:**
-- `Output` record (structured JSON with options, steps, sources)
-- `Message` records (user question + assistant response)
-
----
-
-### 2. Follow-up Conversation
-
-Lightweight conversational mode using prior context.
+After receiving guidance, users can ask follow-up questions for clarification or deeper exploration. Follow-ups use a lightweight pipeline that leverages existing context:
 
 ```
-POST /cases/{id}/follow-up → 202 Accepted
-
-┌───────────┐   ┌────────────┐   ┌───────────┐
-│ COMPLETED │──▶│ PROCESSING │──▶│ COMPLETED │
-└───────────┘   └────────────┘   └───────────┘
-                      │
-                      ▼
-               ┌──────────┐
-               │  FAILED  │
-               └──────────┘
+User asks follow-up
+        │
+        ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│ Content Filter  │────▶│ Load Context    │────▶│ LLM Generation  │
+│ (validation)    │     │ (prior output)  │     │ (conversational)│
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                        │
+                                                        ▼
+                                               ┌─────────────────┐
+                                               │ Conversational  │
+                                               │ Response        │
+                                               │ (prose format)  │
+                                               └─────────────────┘
 ```
 
-**Pipeline Steps:**
-1. Content validation (blocklist filter)
-2. Create user message immediately
-3. Load prior Output context
-4. Load conversation history (rolling window)
-5. LLM generation (markdown prose)
-6. Create assistant message
+**Differences from initial consultation:**
+- No new verse retrieval (uses prior citations)
+- Conversational prose output (not structured JSON)
+- Rolling conversation history for context
+- Faster response times
 
-**Creates:**
-- `Message` records only (no new Output)
+## Processing States
 
----
-
-## Key Differences
-
-| Aspect | Analyze | Follow-up |
-|--------|---------|-----------|
-| Retrieval | Vector search + verse fetch | None (uses prior context) |
-| Output format | Structured JSON | Markdown prose |
-| Creates Output | Yes | No |
-| Token limit | 2048 (Anthropic) | 1024 (configurable) |
-| Use case | Initial dilemma analysis | Clarification, refinement |
-
----
-
-## State Machine
+Consultations progress through defined states:
 
 ```
-                    ┌─────────────────────────────┐
-                    │                             │
-                    ▼                             │
-┌───────┐  create  ┌───────┐  analyze  ┌─────────┐│
-│ (new) │─────────▶│ DRAFT │──────────▶│ PENDING ││
-└───────┘          └───────┘           └─────────┘│
-                                            │     │
-                                    task    │     │
-                                    start   │     │
-                                            ▼     │
-                                     ┌────────────┴┐
-                                     │ PROCESSING  │◀──┐
-                                     └─────────────┘   │
-                                            │          │
-                       ┌────────────────────┼──────────┤
-                       │                    │          │
-                       ▼                    ▼          │ follow-up
-                ┌──────────┐         ┌────────────────┐│
-                │  FAILED  │         │   COMPLETED    │┘
-                └──────────┘         └────────────────┘
-                       │                    │
-                       │    retry           │
-                       └────────────────────┘
-
-Terminal: COMPLETED, FAILED, POLICY_VIOLATION
+┌───────┐     ┌─────────┐     ┌────────────┐     ┌───────────┐
+│ DRAFT │────▶│ PENDING │────▶│ PROCESSING │────▶│ COMPLETED │
+└───────┘     └─────────┘     └────────────┘     └───────────┘
+                                    │
+                         ┌──────────┴──────────┐
+                         ▼                     ▼
+                  ┌──────────┐          ┌────────────────┐
+                  │  FAILED  │          │POLICY_VIOLATION│
+                  └──────────┘          └────────────────┘
 ```
 
----
+| State | Meaning |
+|-------|---------|
+| DRAFT | Case created, not yet submitted |
+| PENDING | Submitted, waiting for processing |
+| PROCESSING | Analysis in progress |
+| COMPLETED | Guidance ready |
+| FAILED | Processing error (can retry) |
+| POLICY_VIOLATION | Content policy triggered |
 
-## Frontend Polling
+## Async Processing
 
-Status changes are detected via polling:
+Both consultation modes use asynchronous processing:
 
-```javascript
-// Fixed 5-second interval
-// ~24 requests for 2-minute operation
-// Max 5s latency after completion
-const POLL_INTERVAL = 5000;
+1. **Submission** — User submits request, receives immediate acknowledgment
+2. **Queue** — Request is queued for background processing
+3. **Processing** — Worker processes the request (LLM generation)
+4. **Completion** — Status updates, results available
 
-setInterval(async () => {
-  const data = await casesApi.get(caseId);
-  if (isTerminal(data.status)) {
-    fetchFinalData();
-  }
-}, POLL_INTERVAL);
-```
-
----
-
-## Background Task Queue
-
-```
-┌──────────────┐     ┌───────────┐     ┌────────────┐
-│   Endpoint   │────▶│   Redis   │────▶│   Worker   │
-│ (enqueue)    │     │   Queue   │     │ (process)  │
-└──────────────┘     └───────────┘     └────────────┘
-                           │
-                    Fallback if Redis
-                    unavailable:
-                           │
-                           ▼
-                   ┌───────────────┐
-                   │ BackgroundTask│
-                   │  (in-process) │
-                   └───────────────┘
-```
-
-**Retry Policy:**
-- 2 retries with exponential backoff
-- Delays: 30s, 120s (configurable)
-
----
-
-## Content Moderation
-
-Three-layer defense:
-
-1. **Pre-submission blocklist** - Regex patterns for explicit/violent content
-2. **LLM refusal detection** - Detect if LLM refuses to respond
-3. **Policy violation handling** - Educational response for flagged content
-
----
-
-## Configuration Reference
-
-```python
-# RAG Pipeline
-RAG_TOP_K_VERSES = 5          # Verses to retrieve
-RAG_CONFIDENCE_THRESHOLD = 0.7 # Below triggers scholar flag
-
-# Follow-up Pipeline
-FOLLOW_UP_MAX_TOKENS = 1024   # Token limit for responses
-
-# Rate Limits
-ANALYZE_RATE_LIMIT = "5/minute"
-FOLLOW_UP_RATE_LIMIT = "10/minute"
-
-# Queue
-RQ_JOB_TIMEOUT = 600          # 10 minutes max
-RQ_RETRY_DELAYS = "30,120"    # Retry after 30s, 2min
-```
-
----
+The frontend polls for status changes until processing completes. This architecture allows the system to handle concurrent requests efficiently and provide a responsive user experience even when LLM operations take time.
 
 ## Error Handling
 
-| Status | Meaning | Recovery |
-|--------|---------|----------|
-| `FAILED` | LLM/system error | Retry via `/cases/{id}/retry` |
-| `POLICY_VIOLATION` | Content flagged | Edit and resubmit |
-| `409 CONFLICT` | Already processing | Wait for completion |
+| Scenario | Behavior |
+|----------|----------|
+| LLM timeout | Marked as FAILED, can retry |
+| Invalid content | Returns educational response |
+| Rate limit exceeded | Returns 429 with retry-after |
+| Service unavailable | Fallback to secondary provider |
 
----
+Failed consultations can be retried. The system maintains state to prevent duplicate processing.
 
-*Last updated: 2025-12-11*
+## Rate Limits
+
+To ensure fair usage and system stability:
+
+| Operation | Limit |
+|-----------|-------|
+| Initial consultation | 10/hour |
+| Follow-up questions | 30/hour |
+
+Authenticated users share limits across sessions. Anonymous users are tracked by session.
+
+## See Also
+
+- [Architecture](architecture.md) — System components and data flow
+- [Content Moderation](content-moderation.md) — How content filtering works
+- [Setup Guide](setup.md) — Configuration options

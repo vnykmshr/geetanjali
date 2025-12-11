@@ -17,6 +17,7 @@ Ethical leadership guidance from the Bhagavad Geeta.
 ## Reference
 
 - [Architecture](architecture.md) — System design, components, data flow
+- [Operations Overview](operations-overview.md) — Consultation flows, processing states, async handling
 - [Observability](observability.md) — Monitoring, metrics, Grafana dashboards, alerting
 - [Security](security.md) — Container hardening, secrets management, threat model
 - [Content Moderation](content-moderation.md) — Two-layer content filtering, configuration, patterns
