@@ -47,6 +47,7 @@ bcrypt==4.3.0  # pinned due to passlib 1.7.4 incompatibility with bcrypt 5.0.0
 python-dotenv==1.2.1
 tenacity==9.1.2  # Retry logic for robustness
 slowapi==0.1.9  # Rate limiting
+better-profanity==0.7.0  # Profanity detection with obfuscation handling
 
 # Redis Cache & Task Queue
 redis==7.1.0

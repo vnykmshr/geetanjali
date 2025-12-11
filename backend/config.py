@@ -93,6 +93,7 @@ class Settings(BaseSettings):
     # Content Moderation
     CONTENT_FILTER_ENABLED: bool = True  # Master switch for all content filtering
     CONTENT_FILTER_BLOCKLIST_ENABLED: bool = True  # Layer 1: Pre-submission blocklist
+    CONTENT_FILTER_PROFANITY_ENABLED: bool = True  # Layer 1: Profanity/abuse detection
     CONTENT_FILTER_LLM_REFUSAL_DETECTION: bool = True  # Layer 2: Detect LLM refusals
 
     # API

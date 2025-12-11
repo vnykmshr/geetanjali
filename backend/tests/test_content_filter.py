@@ -258,3 +258,132 @@ class TestPolicyViolationResponseImmutability:
 
         # response2 should be unaffected
         assert response2["options"][0]["title"] == "Reflect on Your Underlying Concern"
+
+
+class TestProfanityAbuseDetection:
+    """Tests for profanity/abuse detection (direct abuse vs. contextual mentions)."""
+
+    # === SHOULD BLOCK: Direct abuse ===
+
+    def test_blocks_direct_f_word_attack(self):
+        """Direct 'f*ck you' should be blocked."""
+        result = check_blocklist("fuck you")
+        assert result.is_violation is True
+        # May be caught by EXPLICIT_SEXUAL or PROFANITY_ABUSE - both are valid
+        assert result.violation_type in (
+            ViolationType.PROFANITY_ABUSE,
+            ViolationType.EXPLICIT_SEXUAL,
+        )
+
+    def test_blocks_obfuscated_f_word(self):
+        """Obfuscated 'f4ck you' should be blocked."""
+        result = check_blocklist("f4ck you")
+        assert result.is_violation is True
+        assert result.violation_type == ViolationType.PROFANITY_ABUSE
+
+    def test_blocks_you_suck(self):
+        """'You suck' should be blocked."""
+        result = check_blocklist("you suck")
+        assert result.is_violation is True
+        assert result.violation_type == ViolationType.PROFANITY_ABUSE
+
+    def test_blocks_direct_insult(self):
+        """Direct insults like 'you are an idiot' should be blocked."""
+        result = check_blocklist("you are an idiot")
+        assert result.is_violation is True
+        assert result.violation_type == ViolationType.PROFANITY_ABUSE
+
+    def test_blocks_go_to_hell(self):
+        """'Go to hell' should be blocked."""
+        result = check_blocklist("go to hell")
+        assert result.is_violation is True
+        assert result.violation_type == ViolationType.PROFANITY_ABUSE
+
+    def test_blocks_abuse_acronyms(self):
+        """Abuse acronyms like 'stfu' should be blocked."""
+        result = check_blocklist("stfu")
+        assert result.is_violation is True
+        assert result.violation_type == ViolationType.PROFANITY_ABUSE
+
+    def test_blocks_slurs(self):
+        """Slurs should always be blocked."""
+        result = check_blocklist("you are a f4ggot")
+        assert result.is_violation is True
+        assert result.violation_type == ViolationType.PROFANITY_ABUSE
+
+    # === SHOULD ALLOW: Contextual mentions ===
+
+    def test_allows_describing_harsh_situation(self):
+        """Describing a harsh workplace situation should pass."""
+        text = "My boss called me incompetent in front of everyone"
+        result = check_blocklist(text)
+        assert result.is_violation is False
+
+    def test_allows_quoted_profanity_in_context(self):
+        """Quoting what someone else said should pass."""
+        text = "He said 'this project is bullshit' and I don't know how to respond"
+        result = check_blocklist(text)
+        assert result.is_violation is False
+
+    def test_allows_mild_profanity_expression(self):
+        """Mild expressions like 'damn' or 'hell' in context should pass."""
+        text = "I feel like crap about this decision. It's a damn mess."
+        result = check_blocklist(text)
+        assert result.is_violation is False
+
+    def test_allows_ethical_dilemma_with_harsh_context(self):
+        """Complex ethical dilemmas involving harsh situations should pass."""
+        text = """
+        My coworker told our boss that my work was 'completely worthless'.
+        Should I confront them about this or let it go?
+        """
+        result = check_blocklist(text)
+        assert result.is_violation is False
+
+    def test_allows_reporting_harassment(self):
+        """Describing harassment for ethical guidance should pass."""
+        text = """
+        Someone at work called me a derogatory name. I want to report it
+        but I'm worried about retaliation. What should I do?
+        """
+        result = check_blocklist(text)
+        assert result.is_violation is False
+
+
+class TestDifferentiatedErrorMessages:
+    """Tests for differentiated error messages by violation type."""
+
+    def test_spam_message_is_specific(self):
+        """Spam/gibberish error should mention 'clear description'."""
+        error = ContentPolicyError(ViolationType.SPAM_GIBBERISH)
+        assert "clear description" in error.message.lower()
+        assert "specific situation" in error.message.lower()
+
+    def test_profanity_message_is_specific(self):
+        """Profanity error should mention 'rephrase' and 'offensive'."""
+        error = ContentPolicyError(ViolationType.PROFANITY_ABUSE)
+        assert "rephrase" in error.message.lower()
+        assert "offensive" in error.message.lower()
+
+    def test_explicit_content_has_geeta_guidance(self):
+        """Explicit content error should mention Bhagavad Geeta."""
+        error = ContentPolicyError(ViolationType.EXPLICIT_SEXUAL)
+        assert "bhagavad geeta" in error.message.lower() or "ethical" in error.message.lower()
+
+
+class TestProfanityConfigToggle:
+    """Tests for profanity filter configuration toggle."""
+
+    def test_profanity_disabled_allows_abuse(self):
+        """Profanity check should be bypassed when disabled."""
+        with patch("services.content_filter.settings") as mock_settings:
+            mock_settings.CONTENT_FILTER_ENABLED = True
+            mock_settings.CONTENT_FILTER_BLOCKLIST_ENABLED = True
+            mock_settings.CONTENT_FILTER_PROFANITY_ENABLED = False
+
+            # This would normally be blocked by profanity filter
+            # Note: may still be blocked by explicit patterns
+            result = check_blocklist("you are an idiot")
+            # When profanity is disabled, direct insults should pass
+            # (unless caught by other patterns)
+            assert result.violation_type != ViolationType.PROFANITY_ABUSE or result.is_violation is False

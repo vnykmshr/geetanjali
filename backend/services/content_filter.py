@@ -2,6 +2,9 @@
 
 Provides two layers of content moderation:
 1. Pre-submission blocklist - Rejects obvious violations before database write
+   - Explicit content patterns (sexual, violence)
+   - Spam/gibberish detection
+   - Profanity/abuse detection (direct offensive language)
 2. LLM refusal detection - Detects when LLM refuses to process content
 
 Design principles:
@@ -9,10 +12,12 @@ Design principles:
 - Minimal blocklist to reduce false positives
 - No content logged (privacy protection)
 - Configurable via environment variables
+- Contextual profanity allowed (describing situations), direct abuse blocked
 
 Configuration:
 - CONTENT_FILTER_ENABLED: Master switch (default: True)
 - CONTENT_FILTER_BLOCKLIST_ENABLED: Layer 1 switch (default: True)
+- CONTENT_FILTER_PROFANITY_ENABLED: Layer 1 profanity check (default: True)
 - CONTENT_FILTER_LLM_REFUSAL_DETECTION: Layer 2 switch (default: True)
 """
 
@@ -34,6 +39,7 @@ class ViolationType(str, Enum):
     EXPLICIT_SEXUAL = "explicit_sexual"
     EXPLICIT_VIOLENCE = "explicit_violence"
     SPAM_GIBBERISH = "spam_gibberish"
+    PROFANITY_ABUSE = "profanity_abuse"
     LLM_REFUSAL = "llm_refusal"
 
 
@@ -96,6 +102,73 @@ _COMPILED_SPAM: List[Pattern[str]] = [
     re.compile(p, re.IGNORECASE) for p in _SPAM_PATTERNS
 ]
 
+# ============================================================================
+# Profanity/Abuse Detection (Layer 1)
+# ============================================================================
+# Detects DIRECT abuse, not contextual mentions of profanity.
+# "f*ck you" → blocked (direct abuse)
+# "He said 'this is bullshit'" → allowed (describing situation)
+
+# Direct abuse patterns: profanity directed at the reader/system
+_ABUSE_PATTERNS = [
+    # Profanity + second person (direct attack)
+    r"\b(f+[uü*@4]+c*k+|fck|fuk)\s*(you|u|off|this|that)\b",
+    r"\b(you|u|ur)\s*(suck|f+[uü*@4]+c*k|fck|fuk|stink)\b",
+    # Direct insults
+    r"\b(you|u)\s+(are\s+)?(an?\s+)?(idiot|moron|stupid|dumb|retard)",
+    r"\b(go\s+to\s+hell|die|kys|kill\s+yourself)\b",
+    r"\b(stfu|gtfo|foad)\b",  # Common abuse acronyms
+    # Slurs (always blocked, even in context)
+    r"\b(n+[i1*]+gg+[ae3*]+r?|f+[a@4]+gg*[o0]+t|r+[e3]+t+[a@4]+r+d)\b",
+]
+
+_COMPILED_ABUSE: List[Pattern[str]] = [
+    re.compile(p, re.IGNORECASE) for p in _ABUSE_PATTERNS
+]
+
+
+def _check_profanity_abuse(text: str) -> bool:
+    """
+    Check for direct abusive language (not contextual profanity).
+
+    This catches direct attacks like "f*ck you" while allowing
+    contextual descriptions like "my boss said this is bullshit".
+
+    Uses pattern matching for direct abuse + better-profanity for
+    obfuscation detection (f4ck, sh1t, etc.).
+
+    Args:
+        text: Input text to check
+
+    Returns:
+        True if text contains direct abuse
+    """
+    # Check direct abuse patterns first (fast, regex-based)
+    for pattern in _COMPILED_ABUSE:
+        if pattern.search(text):
+            return True
+
+    # Use better-profanity for obfuscation detection
+    # Only import when needed to avoid startup cost if disabled
+    try:
+        from better_profanity import profanity
+
+        # Check if text contains profanity with obfuscation handling
+        if profanity.contains_profanity(text):
+            # Found profanity - check if it's directed at the reader
+            # by looking for second-person patterns nearby
+            text_lower = text.lower()
+            second_person = r"\b(you|u|ur|yours?|yourself)\b"
+            if re.search(second_person, text_lower):
+                # Profanity + second person = likely abuse
+                return True
+    except ImportError:
+        # better-profanity not installed, skip this check
+        logger.debug("better-profanity not installed, skipping obfuscation check")
+
+    return False
+
+
 # Common English words for gibberish detection
 # Small set of ~150 most common words - fast lookup, catches nonsense input
 _COMMON_WORDS = frozenset([
@@ -152,7 +225,9 @@ def _is_gibberish(text: str) -> bool:
     words = re.findall(r"[a-zA-Z]+", text.lower())
 
     if not words:
-        return True  # No words at all
+        # No alphabetic words - allow if text is short (might be numbers, dates, etc.)
+        # Block only if it's long gibberish with no letters
+        return len(text.strip()) > 20
 
     # Count distinct common words (not just occurrences)
     # "as as as a a" should count as 2 distinct, not 5 occurrences
@@ -220,6 +295,20 @@ def check_blocklist(text: str) -> ContentCheckResult:
                 is_violation=True,
                 violation_type=ViolationType.EXPLICIT_VIOLENCE,
             )
+
+    # Check profanity/abuse (if enabled)
+    if settings.CONTENT_FILTER_PROFANITY_ENABLED and _check_profanity_abuse(text):
+        logger.warning(
+            "Blocklist violation detected",
+            extra={
+                "violation_type": ViolationType.PROFANITY_ABUSE.value,
+                "input_length": len(text),
+            },
+        )
+        return ContentCheckResult(
+            is_violation=True,
+            violation_type=ViolationType.PROFANITY_ABUSE,
+        )
 
     # Check spam patterns
     for pattern in _COMPILED_SPAM:
@@ -414,7 +503,28 @@ class ContentPolicyError(Exception):
     @staticmethod
     def _get_user_message(violation_type: ViolationType) -> str:
         """Get user-friendly error message for violation type."""
-        base_message = (
+        # Differentiated messages by violation type
+        if violation_type == ViolationType.SPAM_GIBBERISH:
+            return (
+                "Please enter a clear description of your dilemma. "
+                "We couldn't understand your input.\n\n"
+                "Try describing:\n"
+                "• The specific situation you're facing\n"
+                "• The decision you need to make\n"
+                "• Why it feels difficult or conflicting"
+            )
+
+        if violation_type == ViolationType.PROFANITY_ABUSE:
+            return (
+                "Please rephrase without direct offensive language. "
+                "We're here to help with genuine ethical dilemmas.\n\n"
+                "If you're describing a difficult situation involving harsh language, "
+                "try framing it as: \"My colleague said something hurtful\" rather than "
+                "quoting the exact words."
+            )
+
+        # Default message for explicit content violations
+        return (
             "We couldn't process this submission. Geetanjali helps with genuine "
             "ethical dilemmas—difficult decisions about right action, duty, and "
             "integrity.\n\n"
@@ -425,7 +535,6 @@ class ContentPolicyError(Exception):
             "The Bhagavad Geeta's wisdom is most helpful when we approach it "
             "with sincere questions about how to live and act with integrity."
         )
-        return base_message
 
 
 def validate_submission_content(title: str, description: str) -> None:
