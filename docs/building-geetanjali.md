@@ -27,6 +27,8 @@ A naive approach would fine-tune an LLM on Geeta content. RAG avoids this becaus
 - Citations matter; RAG naturally preserves source attribution
 - The corpus is small (701 verses); fine-tuning would likely overfit
 
+With this architecture in mind, let's look at where Geetanjali fits—and where it doesn't.
+
 ## When to Use Geetanjali
 
 **Good fit:**
@@ -61,43 +63,22 @@ curl -X POST http://localhost:8000/api/v1/cases \
 
 ```json
 {
-  "executive_summary": "This case presents a classic tension between
-                        loyalty and truth-telling...",
+  "executive_summary": "This case presents a classic tension between loyalty and truth-telling...",
   "options": [
-    {
-      "title": "Internal Escalation",
-      "description": "Escalate to board audit committee...",
-      "sources": ["BG_18_63"]
-    },
-    {
-      "title": "External Disclosure",
-      "description": "Report to regulators...",
-      "sources": ["BG_2_47"]
-    },
-    {
-      "title": "Document and Wait",
-      "description": "Preserve evidence, continue internal advocacy...",
-      "sources": ["BG_3_19"]
-    }
+    {"title": "Internal Escalation", "sources": ["BG_18_63"]},
+    {"title": "External Disclosure", "sources": ["BG_2_47"]},
+    {"title": "Document and Wait", "sources": ["BG_3_19"]}
   ],
   "recommended_action": {
     "option": 1,
-    "steps": [
-      "Request audit committee meeting",
-      "Present documented evidence",
-      "Set timeline for response"
-    ]
+    "steps": ["Request audit committee meeting", "Present documented evidence", "Set timeline"]
   },
-  "sources": [
-    {
-      "canonical_id": "BG_18_63",
-      "paraphrase": "Choose with knowledge and freedom after reflection.",
-      "relevance": 0.92
-    }
-  ],
+  "sources": [{"canonical_id": "BG_18_63", "paraphrase": "Choose with knowledge and freedom.", "relevance": 0.92}],
   "confidence": 0.84
 }
 ```
+
+Each option includes pros, cons, and verse citations. The full response includes reflection prompts and a scholar review flag for low-confidence cases.
 
 ## Architecture
 
@@ -202,81 +183,21 @@ sequenceDiagram
 
 ### Step 1: Embedding
 
-User case descriptions are embedded using `sentence-transformers/all-MiniLM-L6-v2`:
-
-```python
-# backend/services/embeddings.py
-class EmbeddingService:
-    def __init__(self):
-        self.model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-
-    def encode(self, texts: Union[str, List[str]]) -> List[float]:
-        return self.model.encode(texts, normalize_embeddings=True).tolist()
-```
-
-Why MiniLM-L6-v2:
-- 384 dimensions (compact)
-- Fast inference (~14ms per sentence)
-- Strong performance on semantic similarity benchmarks
-- Runs locally without API calls
+User case descriptions are embedded using `sentence-transformers/all-MiniLM-L6-v2`. We chose this model for its balance of speed (~14ms per sentence), compact size (384 dimensions), and strong semantic similarity performance. It runs locally without API calls.
 
 ### Step 2: Retrieval
 
-ChromaDB finds semantically similar verses:
-
-```python
-# backend/services/vector_store.py
-def search(self, query: str, top_k: int = 5) -> Dict[str, Any]:
-    query_embedding = self.embedding_service.encode(query)
-
-    results = self.collection.query(
-        query_embeddings=[query_embedding],
-        n_results=top_k
-    )
-
-    return {
-        "ids": results["ids"][0],
-        "distances": results["distances"][0],
-        "documents": results["documents"][0],
-        "metadatas": results["metadatas"][0]
-    }
-```
-
-Each verse is stored with metadata:
-- `canonical_id`: BG_{chapter}_{verse} (e.g., BG_2_47)
-- `paraphrase`: Modern English interpretation
-- `principles`: Extracted ethical principles
-- `themes`: Categorization tags
+ChromaDB finds semantically similar verses using cosine similarity. Each verse is stored with metadata including `canonical_id` (e.g., BG_2_47), a modern English `paraphrase`, extracted `principles`, and thematic tags. The top-k results (default 5) are returned with relevance scores.
 
 ### Step 3: Context Construction
 
-Retrieved verses are formatted into a structured prompt:
-
-```python
-# backend/services/prompts.py
-def build_user_prompt(case_data: Dict, retrieved_verses: List[Dict]) -> str:
-    prompt_parts = [
-        "# Ethical Dilemma Case\n",
-        f"**Title:** {case_data.get('title')}\n",
-        f"**Role:** {case_data.get('role')}\n",
-        f"**Description:** {case_data.get('description')}\n",
-    ]
-
-    prompt_parts.append("\n# Relevant Bhagavad Geeta Verses\n")
-    for verse in retrieved_verses:
-        canonical_id = verse['metadata']['canonical_id']
-        paraphrase = verse['metadata']['paraphrase']
-        prompt_parts.append(f"**{canonical_id}**: {paraphrase}\n")
-
-    return "".join(prompt_parts)
-```
+Retrieved verses are formatted into a structured prompt that presents the user's dilemma alongside relevant scripture. The prompt template includes the case title, role, description, stakeholders, and constraints, followed by the retrieved verses with their paraphrases.
 
 ### Step 4: LLM Generation
 
-The LLM receives the constructed prompt with a system message defining the expected JSON output:
+The LLM receives the constructed prompt with a system message defining the expected JSON structure:
 
 ```python
-# backend/services/rag.py
 def generate_brief(self, prompt: str, retrieved_verses: List[Dict]) -> Dict:
     result = self.llm_service.generate(
         prompt=prompt,
@@ -285,63 +206,14 @@ def generate_brief(self, prompt: str, retrieved_verses: List[Dict]) -> Dict:
         fallback_prompt=build_ollama_prompt(case_data, retrieved_verses),
         fallback_system=OLLAMA_SYSTEM_PROMPT
     )
-
     return json.loads(result["response"])
 ```
 
-The system prompt enforces structure:
-
-```json
-{
-  "executive_summary": "...",
-  "options": [
-    {
-      "title": "Option 1",
-      "description": "...",
-      "pros": ["..."],
-      "cons": ["..."],
-      "sources": ["BG_2_47"]
-    }
-  ],
-  "recommended_action": {
-    "option": 1,
-    "steps": ["..."],
-    "sources": ["BG_18_63"]
-  },
-  "reflection_prompts": ["..."],
-  "sources": [
-    {
-      "canonical_id": "BG_2_47",
-      "paraphrase": "Act focused on duty, not fruits.",
-      "relevance": 0.95
-    }
-  ],
-  "confidence": 0.85,
-  "scholar_flag": false
-}
-```
+The system prompt enforces structure: executive summary, three options with pros/cons/sources, recommended action with steps, reflection prompts, cited sources with relevance scores, confidence score, and a scholar review flag.
 
 ### Step 5: Validation and Fallback
 
-Output validation ensures completeness and flags low-confidence responses:
-
-```python
-# backend/services/rag.py
-def validate_output(self, output: Dict) -> Dict:
-    required_fields = [
-        "executive_summary", "options", "recommended_action",
-        "reflection_prompts", "sources", "confidence"
-    ]
-
-    for field in required_fields:
-        if field not in output:
-            output[field] = [] if field != "confidence" else 0.5
-
-    if output["confidence"] < settings.RAG_SCHOLAR_REVIEW_THRESHOLD:
-        output["scholar_flag"] = True
-
-    return output
-```
+Output validation ensures completeness. Missing fields get sensible defaults. Low-confidence responses (below threshold) are flagged for scholar review. The pipeline never fails completely—if verse retrieval fails, it continues without verses; if LLM generation fails, it returns a graceful fallback response.
 
 ## LLM Provider Strategy
 
@@ -521,47 +393,20 @@ def run(self, case_data: Dict, top_k: int = None) -> Dict:
 
 ### Deployment
 
-Docker Compose orchestrates seven core containers plus optional observability:
-
-```
-# Core services (docker-compose.yml)
-nginx (frontend)     → reverse proxy, static assets, TLS
-backend (FastAPI)    → API server
-worker (RQ)          → async RAG processing
-postgres             → relational data
-redis                → cache, rate limits, job queue
-chromadb             → vector store
-ollama               → local LLM
-
-# Observability (docker-compose.observability.yml)
-prometheus           → metrics collection
-grafana              → dashboards, alerting
-```
+Docker Compose orchestrates seven core services. A single `docker compose up` brings up the full stack: nginx (reverse proxy + static assets), FastAPI backend, RQ worker for async processing, PostgreSQL, Redis, ChromaDB, and Ollama.
 
 Key deployment features:
-- Single `docker compose up` brings up entire stack
-- Background worker handles long-running RAG jobs
+- Background worker handles long-running RAG jobs (15-30s for local LLM)
 - Nginx serves static assets with aggressive caching (1 year for hashed files)
 - Rate limiting at both nginx and application layers
 
 ### Security
 
-Container hardening:
-- Non-root users in all containers
-- Minimal Linux capabilities (drop all, add only required)
-- Internal services not exposed to host network
-- Redis authentication enabled
+**Container hardening:** Non-root users, minimal Linux capabilities (drop all, add only required), internal services not exposed to host network.
 
-Secrets management:
-- SOPS + age encryption for `.env` files
-- Encrypted secrets committed to git, decrypted at deploy time
-- No plaintext credentials in repository
+**Secrets management:** SOPS + age encryption for `.env` files. Encrypted secrets committed to git, decrypted at deploy time.
 
-Application security:
-- CSRF protection on state-changing endpoints
-- Security headers (HSTS, CSP, X-Frame-Options)
-- Rate limiting (60 req/min per IP on most endpoints)
-- Session-based anonymous access (no PII required)
+**Application security:** Security headers (HSTS, CSP, X-Frame-Options), rate limiting (60 req/min per IP), session-based anonymous access (no PII required).
 
 See [Security](security.md) for full hardening checklist and incident response procedures.
 
@@ -569,52 +414,16 @@ See [Security](security.md) for full hardening checklist and incident response p
 
 | Operation | Latency |
 |-----------|---------|
-| Embedding (per query) | ~15ms |
-| Vector search (top-5) | ~25ms |
-| LLM generation (Ollama local) | 15-30s |
-| LLM generation (Anthropic Claude) | 2-5s |
-| Total pipeline (local) | 20-35s |
-| Total pipeline (cloud) | 3-8s |
-
-Load tested at 682 req/s on health endpoints, 60 req/min rate limit on API.
+| Embedding + Vector search | ~40ms |
+| LLM generation (local) | 15-30s |
+| LLM generation (cloud) | 2-5s |
+| **Total pipeline** | **3-35s** |
 
 ### Observability
 
-Prometheus + Grafana provide monitoring and alerting:
+Prometheus + Grafana provide optional monitoring. Business metrics track consultations and active users. Infrastructure metrics monitor service health. The stack deploys separately from core services.
 
-```mermaid
-flowchart LR
-    subgraph Metrics Collection
-        Backend[Backend /metrics]
-        Collector[APScheduler 60s]
-    end
-
-    subgraph Monitoring Stack
-        Prometheus[(Prometheus)]
-        Grafana[Grafana Dashboards]
-    end
-
-    Collector -->|Update gauges| Backend
-    Prometheus -->|Scrape 15s| Backend
-    Prometheus --> Grafana
-    Grafana -->|Alerts| Email[Email via Resend]
-```
-
-**Business metrics** track consultations, active users, exports, and verse usage. **Infrastructure metrics** monitor PostgreSQL, Redis, Ollama, and ChromaDB health. **Queue metrics** show RQ job depth and worker count.
-
-Key metrics exposed at `/metrics`:
-- `geetanjali_consultations_total` - Completed consultations
-- `geetanjali_active_users_24h` - Users active in last 24 hours
-- `geetanjali_postgres_up` - Database availability
-- `geetanjali_ollama_up` - LLM availability
-- `geetanjali_queue_depth` - Background jobs waiting
-
-The observability stack is optional and deployed separately:
-```bash
-docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
-```
-
-See [Observability](observability.md) for full metric reference and alerting setup.
+See [Observability](observability.md) for metric reference and alerting setup.
 
 ## Conclusion
 
