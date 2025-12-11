@@ -83,17 +83,14 @@ export function useCaseData({ caseId, isAuthenticated }: UseCaseDataOptions) {
     }
   }, [wasProcessing, isCompleted, outputs.length]);
 
-  // Polling for processing status with exponential backoff
-  // LLM operations take 1-3 minutes, so aggressive polling is wasteful
+  // Polling for processing status
+  // Fixed 5s interval: predictable latency, reasonable request count
   useEffect(() => {
     if (!isProcessing || !caseId) return;
 
-    let timeoutId: ReturnType<typeof setTimeout>;
-    let interval = 2000; // Start at 2 seconds
-    const maxInterval = 10000; // Cap at 10 seconds
-    const backoffFactor = 1.5;
+    const POLL_INTERVAL = 5000; // 5 seconds
 
-    const poll = async () => {
+    const pollInterval = setInterval(async () => {
       try {
         const data = await casesApi.get(caseId);
         setCaseData(data);
@@ -103,21 +100,15 @@ export function useCaseData({ caseId, isAuthenticated }: UseCaseDataOptions) {
           data.status === "failed" ||
           data.status === "policy_violation"
         ) {
+          clearInterval(pollInterval);
           loadCaseData();
-          return; // Stop polling
         }
-
-        // Increase interval with exponential backoff (capped)
-        interval = Math.min(interval * backoffFactor, maxInterval);
-        timeoutId = setTimeout(poll, interval);
       } catch {
-        // On error, retry with same interval
-        timeoutId = setTimeout(poll, interval);
+        // Silent fail - polling will retry
       }
-    };
+    }, POLL_INTERVAL);
 
-    timeoutId = setTimeout(poll, interval);
-    return () => clearTimeout(timeoutId);
+    return () => clearInterval(pollInterval);
   }, [isProcessing, caseId, loadCaseData]);
 
   return {
