@@ -132,7 +132,7 @@ _COMMON_WORDS = frozenset([
 
 # Minimum thresholds for gibberish detection
 _MIN_COMMON_WORD_RATIO = 0.25  # At least 25% common words
-_MIN_COMMON_WORDS_ABSOLUTE = 2  # Or at least 2 common words for short texts
+_MIN_DISTINCT_COMMON_WORDS = 3  # Need at least 3 different common words for longer texts
 
 
 def _is_gibberish(text: str) -> bool:
@@ -154,19 +154,23 @@ def _is_gibberish(text: str) -> bool:
     if not words:
         return True  # No words at all
 
-    # Count common words
-    common_count = sum(1 for word in words if word in _COMMON_WORDS)
+    # Count distinct common words (not just occurrences)
+    # "as as as a a" should count as 2 distinct, not 5 occurrences
+    found_common = set(word for word in words if word in _COMMON_WORDS)
+    distinct_common_count = len(found_common)
     total_words = len(words)
-
-    # Check thresholds: need either ratio OR absolute minimum
-    ratio = common_count / total_words if total_words > 0 else 0
 
     # For very short inputs (1-3 words), require at least 1 common word
     if total_words <= 3:
-        return common_count < 1
+        return distinct_common_count < 1
 
-    # For longer inputs, check ratio OR absolute minimum
-    return ratio < _MIN_COMMON_WORD_RATIO and common_count < _MIN_COMMON_WORDS_ABSOLUTE
+    # For longer inputs, need both:
+    # 1. At least 25% of words are common (by occurrence, for natural text)
+    # 2. At least 3 distinct common words (prevents "as as as a a a")
+    common_occurrences = sum(1 for word in words if word in _COMMON_WORDS)
+    ratio = common_occurrences / total_words if total_words > 0 else 0
+
+    return ratio < _MIN_COMMON_WORD_RATIO or distinct_common_count < _MIN_DISTINCT_COMMON_WORDS
 
 
 def check_blocklist(text: str) -> ContentCheckResult:
