@@ -2,9 +2,8 @@
 
 import hashlib
 import logging
-import json
 import re
-from typing import Dict, Any, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple
 
 from config import settings
 from services.vector_store import get_vector_store
@@ -24,84 +23,10 @@ from services.content_filter import (
 from services.cache import cache, rag_output_key
 from db import SessionLocal
 from db.repositories.verse_repository import VerseRepository
+from utils.json_parsing import extract_json_from_text
+from utils.validation import validate_canonical_id
 
 logger = logging.getLogger(__name__)
-
-
-def _extract_json_from_text(response_text: str) -> dict:
-    """
-    Robustly extract JSON from LLM response.
-
-    Handles:
-    - Direct JSON
-    - Markdown code blocks (```json ... ```)
-    - JSON wrapped in explanation text
-    - Multiple JSON objects (returns first valid)
-
-    Args:
-        response_text: Raw LLM response text
-
-    Returns:
-        Parsed JSON dict
-
-    Raises:
-        ValueError: If no valid JSON can be extracted
-    """
-    # Strategy 1: Try direct JSON parse (LLM followed instructions perfectly)
-    try:
-        return cast(Dict[Any, Any], json.loads(response_text))
-    except json.JSONDecodeError:
-        pass
-
-    # Strategy 2: Extract from markdown code block
-    # Try ```json variant first, then generic ```
-    for pattern in [r"```(?:json)?\s*\n(.*?)\n```", r"```(.*?)```"]:
-        matches = re.finditer(pattern, response_text, re.DOTALL)
-        for match in matches:
-            json_text = match.group(1).strip()
-            try:
-                return cast(Dict[Any, Any], json.loads(json_text))
-            except json.JSONDecodeError as e:
-                logger.debug(
-                    f"Markdown block parse failed at pos {e.pos}: "
-                    f"{json_text[max(0,e.pos-30):e.pos+30]}"
-                )
-                continue
-
-    # Strategy 3: Find first { and try to extract complete JSON
-    # This handles: "analysis: {... proper json ...}" pattern
-    # Use json.JSONDecoder.raw_decode() to find the complete object
-    for start_idx in range(len(response_text)):
-        if response_text[start_idx] == "{":
-            try:
-                decoder = json.JSONDecoder()
-                parsed, end_idx = decoder.raw_decode(response_text, start_idx)
-                logger.debug(f"Extracted JSON from position {start_idx}")
-                return cast(Dict[Any, Any], parsed)
-            except json.JSONDecodeError:
-                continue
-
-    # Failed all strategies
-    logger.error(
-        f"Could not extract JSON from response. First 500 chars: {response_text[:500]}"
-    )
-    raise ValueError("No valid JSON found in LLM response")
-
-
-def _validate_canonical_id(canonical_id: str) -> bool:
-    """
-    Validate that canonical_id follows BG_X_Y format.
-
-    Args:
-        canonical_id: The ID to validate
-
-    Returns:
-        True if valid format, False otherwise
-    """
-    if not isinstance(canonical_id, str):
-        return False
-    # Valid format: BG_<chapter>_<verse> where chapter and verse are integers
-    return bool(re.match(r"^BG_\d+_\d+$", canonical_id))
 
 
 def _validate_relevance(relevance: Any) -> bool:
@@ -199,7 +124,7 @@ def _validate_source_object_structure(source: Dict[str, Any]) -> tuple[bool, str
     if not isinstance(canonical_id, str):
         return False, "Source missing or invalid canonical_id"
 
-    if not _validate_canonical_id(canonical_id):
+    if not validate_canonical_id(canonical_id):
         return False, f"Source canonical_id invalid format: {canonical_id}"
 
     # Check paraphrase
@@ -423,7 +348,7 @@ class RAGPipeline:
 
         # Parse JSON with robust extraction
         try:
-            parsed_result = _extract_json_from_text(response_text)
+            parsed_result = extract_json_from_text(response_text)
             # Add LLM attribution metadata
             parsed_result["llm_attribution"] = {
                 "provider": provider,

@@ -13,9 +13,9 @@ import pytest
 # Mark all tests in this module as unit tests (fast, no DB required)
 pytestmark = pytest.mark.unit
 from unittest.mock import patch
+from utils.json_parsing import extract_json_from_text
+from utils.validation import validate_canonical_id
 from services.rag import (
-    _extract_json_from_text,
-    _validate_canonical_id,
     _validate_relevance,
     _validate_source_reference,
     _validate_option_structure,
@@ -30,21 +30,21 @@ class TestJSONExtraction:
         """Test extraction of direct JSON (perfect LLM compliance)."""
         json_data = {"title": "Test", "options": []}
         response = json.dumps(json_data)
-        result = _extract_json_from_text(response)
+        result = extract_json_from_text(response)
         assert result == json_data
 
     def test_extract_json_with_markdown_block(self):
         """Test extraction of JSON wrapped in ```json code block."""
         json_data = {"title": "Test", "options": []}
         response = f"```json\n{json.dumps(json_data)}\n```"
-        result = _extract_json_from_text(response)
+        result = extract_json_from_text(response)
         assert result == json_data
 
     def test_extract_json_with_generic_markdown_block(self):
         """Test extraction of JSON wrapped in generic ``` code block."""
         json_data = {"title": "Test", "options": []}
         response = f"```\n{json.dumps(json_data)}\n```"
-        result = _extract_json_from_text(response)
+        result = extract_json_from_text(response)
         assert result == json_data
 
     def test_extract_json_in_explanation_text(self):
@@ -55,7 +55,7 @@ class TestJSONExtraction:
             f"{json.dumps(json_data)}\n"
             "This is the end of the response."
         )
-        result = _extract_json_from_text(response)
+        result = extract_json_from_text(response)
         assert result == json_data
 
     def test_extract_json_multiple_markdown_blocks_returns_first_valid(self):
@@ -66,7 +66,7 @@ class TestJSONExtraction:
             f"```json\n{json.dumps(json_data_1)}\n```\n\n"
             f"```json\n{json.dumps(json_data_2)}\n```"
         )
-        result = _extract_json_from_text(response)
+        result = extract_json_from_text(response)
         assert result == json_data_1
 
     def test_extract_json_with_text_before_and_after(self):
@@ -77,7 +77,7 @@ class TestJSONExtraction:
             f"{json.dumps(json_data)}\n\n"
             "Please review this carefully."
         )
-        result = _extract_json_from_text(response)
+        result = extract_json_from_text(response)
         assert result == json_data
 
     def test_extract_json_with_nested_objects(self):
@@ -92,21 +92,21 @@ class TestJSONExtraction:
             "confidence": 0.92,
         }
         response = json.dumps(json_data)
-        result = _extract_json_from_text(response)
+        result = extract_json_from_text(response)
         assert result == json_data
 
     def test_extract_json_failure_raises_valueerror(self):
         """Test that invalid JSON raises ValueError."""
         response = "This is not JSON at all, just text."
         with pytest.raises(ValueError, match="No valid JSON found"):
-            _extract_json_from_text(response)
+            extract_json_from_text(response)
 
     def test_extract_json_malformed_markdown_tries_next_strategy(self):
         """Test that malformed markdown blocks don't crash, try next strategy."""
         json_data = {"title": "Test"}
         # Malformed markdown followed by valid JSON
         response = "```json\n{MALFORMED JSON}\n```\n\n" f"{json.dumps(json_data)}"
-        result = _extract_json_from_text(response)
+        result = extract_json_from_text(response)
         assert result == json_data
 
     def test_extract_json_with_unicode_content(self):
@@ -116,14 +116,14 @@ class TestJSONExtraction:
             "options": ["सामर्थ्य", "विवेक"],  # Sanskrit
         }
         response = json.dumps(json_data, ensure_ascii=False)
-        result = _extract_json_from_text(response)
+        result = extract_json_from_text(response)
         assert result == json_data
 
     def test_extract_json_handles_escaped_quotes_in_markdown(self):
         """Test extraction of JSON with escaped quotes in markdown blocks."""
         json_data = {"title": 'Test with "quotes"', "value": 'and "double" quotes'}
         response = f"```json\n{json.dumps(json_data)}\n```"
-        result = _extract_json_from_text(response)
+        result = extract_json_from_text(response)
         assert result == json_data
 
 
@@ -132,27 +132,27 @@ class TestCanonicalIDValidation:
 
     def test_valid_canonical_id(self):
         """Test valid BG_X_Y format."""
-        assert _validate_canonical_id("BG_2_47") is True
-        assert _validate_canonical_id("BG_18_63") is True
-        assert _validate_canonical_id("BG_1_1") is True
+        assert validate_canonical_id("BG_2_47") is True
+        assert validate_canonical_id("BG_18_63") is True
+        assert validate_canonical_id("BG_1_1") is True
 
     def test_invalid_canonical_id_wrong_prefix(self):
         """Test rejection of wrong prefix."""
-        assert _validate_canonical_id("GK_2_47") is False
-        assert _validate_canonical_id("BG2_47") is False
-        assert _validate_canonical_id("bg_2_47") is False  # Case sensitive
+        assert validate_canonical_id("GK_2_47") is False
+        assert validate_canonical_id("BG2_47") is False
+        assert validate_canonical_id("bg_2_47") is False  # Case sensitive
 
     def test_invalid_canonical_id_non_numeric(self):
         """Test rejection of non-numeric chapters/verses."""
-        assert _validate_canonical_id("BG_a_b") is False
-        assert _validate_canonical_id("BG_2_47x") is False
-        assert _validate_canonical_id("BG_x_47") is False
+        assert validate_canonical_id("BG_a_b") is False
+        assert validate_canonical_id("BG_2_47x") is False
+        assert validate_canonical_id("BG_x_47") is False
 
     def test_invalid_canonical_id_non_string(self):
         """Test rejection of non-string input."""
-        assert _validate_canonical_id(12345) is False
-        assert _validate_canonical_id(None) is False
-        assert _validate_canonical_id({"id": "BG_2_47"}) is False
+        assert validate_canonical_id(12345) is False
+        assert validate_canonical_id(None) is False
+        assert validate_canonical_id({"id": "BG_2_47"}) is False
 
 
 class TestRelevanceValidation:
@@ -493,7 +493,7 @@ class TestValidationIntegration:
 
     def test_markdown_json_extraction_preserves_structure(self):
         """Test that markdown-wrapped JSON extraction preserves data structure."""
-        from services.rag import _extract_json_from_text
+        from services.rag import extract_json_from_text
 
         response_data = {
             "executive_summary": "Test",
@@ -519,7 +519,7 @@ class TestValidationIntegration:
         }
         response = f"```json\n{json.dumps(response_data)}\n```"
 
-        result = _extract_json_from_text(response)
+        result = extract_json_from_text(response)
 
         # Verify structure is preserved through extraction
         assert result["executive_summary"] == "Test"
