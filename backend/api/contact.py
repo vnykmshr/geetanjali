@@ -11,6 +11,7 @@ from api.dependencies import limiter
 from db.connection import get_db
 from models.contact import ContactMessage, ContactType
 from services.email import send_contact_email
+from services.content_filter import check_blocklist, ViolationType
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,27 @@ async def submit_contact(
     Returns:
         Success status and message
     """
+    # Content validation (spam, gibberish, abuse detection)
+    # Include name field - someone could put abuse there too
+    text_to_check = f"{request.name} {request.subject or ''} {request.message}"
+    content_result = check_blocklist(text_to_check)
+    if content_result.is_violation:
+        logger.warning(
+            "Contact form content violation",
+            extra={
+                "violation_type": content_result.violation_type.value if content_result.violation_type else "unknown",
+                "input_length": len(text_to_check),
+            },
+        )
+        # Return user-friendly message based on violation type
+        if content_result.violation_type == ViolationType.SPAM_GIBBERISH:
+            detail = "Please enter a clear message. We couldn't understand your input."
+        elif content_result.violation_type == ViolationType.PROFANITY_ABUSE:
+            detail = "Please rephrase without direct offensive language."
+        else:
+            detail = "We couldn't process this message. Please rephrase and try again."
+        raise HTTPException(status_code=422, detail=detail)
+
     try:
         # Convert API enum to model enum
         db_message_type = ContactType(request.message_type.value)

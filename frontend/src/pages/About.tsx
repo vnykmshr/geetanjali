@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Navbar } from "../components/Navbar";
 import { api } from "../lib/api";
+import { validateContent } from "../lib/contentFilter";
 import { useSEO } from "../hooks";
 
 type ContactType =
@@ -44,6 +45,20 @@ export default function About() {
     setIsSubmitting(true);
     setSubmitStatus("idle");
     setErrorMessage("");
+
+    // Client-side content validation (name, subject, and message)
+    const textToValidate = `${formData.name} ${formData.subject || ""} ${formData.message}`.trim();
+    const contentCheck = validateContent(textToValidate);
+    if (!contentCheck.valid) {
+      setSubmitStatus("error");
+      // Use contact-form-specific error messages
+      const reason = contentCheck.reason?.includes("dilemma")
+        ? "Please enter a clear message. We couldn't understand your input."
+        : contentCheck.reason || "Please check your input and try again.";
+      setErrorMessage(reason);
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       await api.post("/contact", formData);
