@@ -15,6 +15,8 @@ from api.errors import (
     ERR_AUTH_REQUIRED,
     ERR_CASE_NOT_FOUND,
     ERR_CASE_ACCESS_DENIED,
+    ERR_OUTPUT_NOT_FOUND,
+    ERR_OUTPUT_ACCESS_DENIED,
     ERR_INVALID_API_KEY,
 )
 from api.middleware.auth import (
@@ -23,6 +25,7 @@ from api.middleware.auth import (
     user_can_access_resource,
 )
 from models.case import Case
+from models.output import Output
 from models.user import User
 
 # Public exports
@@ -31,6 +34,7 @@ __all__ = [
     "verify_admin_api_key",
     "get_case_with_access",
     "get_case_with_auth",
+    "get_output_with_access",
     "get_session_id",  # Re-exported from api.middleware.auth
 ]
 
@@ -125,3 +129,86 @@ class CaseAccessDep:
 # Pre-configured dependency instances
 get_case_with_access = CaseAccessDep(require_auth=False)
 get_case_with_auth = CaseAccessDep(require_auth=True)
+
+
+class OutputAccessDep:
+    """
+    Dependency that retrieves an output and validates access via its parent case.
+
+    Use as a dependency to get an output with access control:
+
+        @router.get("/outputs/{output_id}")
+        def get_output(output: Output = Depends(get_output_with_access)):
+            return output
+    """
+
+    def __init__(self, require_auth: bool = False):
+        """
+        Args:
+            require_auth: If True, requires authenticated user (not anonymous)
+        """
+        self.require_auth = require_auth
+
+    def __call__(
+        self,
+        output_id: str,
+        db: Session = Depends(get_db),
+        current_user: Optional[User] = Depends(get_optional_user),
+        session_id: Optional[str] = Depends(get_session_id),
+    ) -> Output:
+        """
+        Retrieve output and validate access via parent case.
+
+        Args:
+            output_id: Output ID from path parameter
+            db: Database session
+            current_user: Authenticated user (optional)
+            session_id: Session ID from X-Session-ID header
+
+        Returns:
+            Output object if found and accessible
+
+        Raises:
+            HTTPException 404: Output or parent case not found
+            HTTPException 403: Access denied
+            HTTPException 401: Auth required but not provided
+        """
+        if self.require_auth and current_user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=ERR_AUTH_REQUIRED,
+            )
+
+        # Fetch the output
+        output = db.query(Output).filter(Output.id == output_id).first()
+        if not output:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=ERR_OUTPUT_NOT_FOUND,
+            )
+
+        # Fetch parent case to check access
+        repo = CaseRepository(db)
+        case = repo.get(output.case_id)
+
+        if not case:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=ERR_CASE_NOT_FOUND,
+            )
+
+        if not user_can_access_resource(
+            resource_user_id=case.user_id,
+            resource_session_id=case.session_id,
+            current_user=current_user,
+            session_id=session_id,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=ERR_OUTPUT_ACCESS_DENIED,
+            )
+
+        return output
+
+
+get_output_with_access = OutputAccessDep(require_auth=False)
