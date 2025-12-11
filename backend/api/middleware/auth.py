@@ -10,6 +10,7 @@ from db.connection import get_db
 from db.repositories.user_repository import UserRepository
 from models.user import User
 from utils.jwt import decode_access_token
+from api.errors import ERR_INVALID_TOKEN, ERR_USER_NOT_FOUND
 
 # UUID v4 format regex for session ID validation
 SESSION_ID_PATTERN = re.compile(
@@ -44,7 +45,7 @@ async def get_current_user(
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail=ERR_INVALID_TOKEN,
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -63,7 +64,7 @@ async def get_current_user(
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail=ERR_USER_NOT_FOUND,
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -194,8 +195,8 @@ def user_can_access_resource(
         # Both anonymous - check session ID match
         if session_id and resource_session_id:
             return session_id == resource_session_id
-        # Backward compatibility: allow access if both have no session
-        if not session_id and not resource_session_id:
-            return True
+        # Deny access if session ownership cannot be verified
+        # (either request or resource missing session ID)
+        return False
 
     return False

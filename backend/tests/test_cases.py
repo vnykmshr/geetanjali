@@ -31,17 +31,23 @@ def test_create_case(client):
 
 def test_get_case(client):
     """Test getting a case by ID."""
-    # First create a case
+    import uuid
+
+    # Use session ID for anonymous access
+    session_id = str(uuid.uuid4())
+    headers = {"X-Session-ID": session_id}
+
+    # First create a case with session ID
     case_data = {
         "title": "Test Case",
         "description": "Test description",
         "sensitivity": "low",
     }
-    create_response = client.post("/api/v1/cases", json=case_data)
+    create_response = client.post("/api/v1/cases", json=case_data, headers=headers)
     case_id = create_response.json()["id"]
 
-    # Then retrieve it
-    response = client.get(f"/api/v1/cases/{case_id}")
+    # Then retrieve it with same session ID
+    response = client.get(f"/api/v1/cases/{case_id}", headers=headers)
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()

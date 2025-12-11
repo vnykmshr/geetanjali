@@ -1,5 +1,6 @@
 """Tests for message endpoints."""
 
+import uuid
 import pytest
 from fastapi import status
 
@@ -10,20 +11,26 @@ pytestmark = pytest.mark.integration
 @pytest.fixture
 def case_with_message(client):
     """Create a case for message testing."""
+    session_id = str(uuid.uuid4())
+    headers = {"X-Session-ID": session_id}
     case_data = {
         "title": "Message Test Case",
         "description": "Initial description for message testing",
         "sensitivity": "low",
     }
-    response = client.post("/api/v1/cases", json=case_data)
-    return response.json()
+    response = client.post("/api/v1/cases", json=case_data, headers=headers)
+    result = response.json()
+    result["_session_id"] = session_id
+    result["_headers"] = headers
+    return result
 
 
 def test_get_messages_for_case(client, case_with_message):
     """Test getting messages for a case."""
     case_id = case_with_message["id"]
+    headers = case_with_message["_headers"]
 
-    response = client.get(f"/api/v1/cases/{case_id}/messages")
+    response = client.get(f"/api/v1/cases/{case_id}/messages", headers=headers)
 
     assert response.status_code == status.HTTP_200_OK
     messages = response.json()
@@ -37,9 +44,10 @@ def test_get_messages_for_case(client, case_with_message):
 def test_create_follow_up_message(client, case_with_message):
     """Test creating a follow-up message."""
     case_id = case_with_message["id"]
+    headers = case_with_message["_headers"]
     message_data = {"content": "What about option C?"}
 
-    response = client.post(f"/api/v1/cases/{case_id}/messages", json=message_data)
+    response = client.post(f"/api/v1/cases/{case_id}/messages", json=message_data, headers=headers)
 
     assert response.status_code == status.HTTP_201_CREATED
     message = response.json()
@@ -53,14 +61,15 @@ def test_create_follow_up_message(client, case_with_message):
 def test_get_messages_after_follow_up(client, case_with_message):
     """Test that messages list includes follow-up."""
     case_id = case_with_message["id"]
+    headers = case_with_message["_headers"]
 
     # Add a follow-up message
     client.post(
-        f"/api/v1/cases/{case_id}/messages", json={"content": "Follow-up question"}
+        f"/api/v1/cases/{case_id}/messages", json={"content": "Follow-up question"}, headers=headers
     )
 
     # Get all messages
-    response = client.get(f"/api/v1/cases/{case_id}/messages")
+    response = client.get(f"/api/v1/cases/{case_id}/messages", headers=headers)
 
     assert response.status_code == status.HTTP_200_OK
     messages = response.json()
@@ -90,10 +99,12 @@ def test_get_messages_invalid_case(client):
 def test_create_message_with_content(client, case_with_message):
     """Test creating message with content succeeds."""
     case_id = case_with_message["id"]
+    headers = case_with_message["_headers"]
 
     response = client.post(
         f"/api/v1/cases/{case_id}/messages",
         json={"content": "A valid follow-up question"},
+        headers=headers,
     )
 
     # Should succeed
@@ -104,14 +115,15 @@ def test_create_message_with_content(client, case_with_message):
 def test_messages_ordered_chronologically(client, case_with_message):
     """Test that messages are returned in chronological order."""
     case_id = case_with_message["id"]
+    headers = case_with_message["_headers"]
 
     # Add multiple messages
     for i in range(3):
         client.post(
-            f"/api/v1/cases/{case_id}/messages", json={"content": f"Message {i}"}
+            f"/api/v1/cases/{case_id}/messages", json={"content": f"Message {i}"}, headers=headers
         )
 
-    response = client.get(f"/api/v1/cases/{case_id}/messages")
+    response = client.get(f"/api/v1/cases/{case_id}/messages", headers=headers)
     messages = response.json()
 
     # Verify chronological order by created_at
@@ -122,11 +134,13 @@ def test_messages_ordered_chronologically(client, case_with_message):
 def test_create_message_with_explicit_content_rejected(client, case_with_message):
     """Test that explicit content in follow-up messages is rejected (Layer 1)."""
     case_id = case_with_message["id"]
+    headers = case_with_message["_headers"]
 
     # Try to post explicit content in follow-up
     response = client.post(
         f"/api/v1/cases/{case_id}/messages",
         json={"content": "How do I fuck up my career decisions?"},
+        headers=headers,
     )
 
     # Should be rejected with 422
@@ -139,10 +153,12 @@ def test_create_message_with_explicit_content_rejected(client, case_with_message
 def test_create_message_with_violent_content_rejected(client, case_with_message):
     """Test that violent content in follow-up messages is rejected."""
     case_id = case_with_message["id"]
+    headers = case_with_message["_headers"]
 
     response = client.post(
         f"/api/v1/cases/{case_id}/messages",
         json={"content": "How do I kill someone who wronged me?"},
+        headers=headers,
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -152,11 +168,13 @@ def test_create_message_with_violent_content_rejected(client, case_with_message)
 def test_create_message_with_spam_content_rejected(client, case_with_message):
     """Test that spam/gibberish content in follow-up messages is rejected."""
     case_id = case_with_message["id"]
+    headers = case_with_message["_headers"]
 
     # Very long repeated character sequence
     response = client.post(
         f"/api/v1/cases/{case_id}/messages",
         json={"content": "a" * 50},  # 50 repeated characters
+        headers=headers,
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY

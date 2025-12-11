@@ -152,12 +152,14 @@ class TestFollowUpPipeline:
 @pytest.fixture
 def case_with_output(client, db_session):
     """Create a case with a completed consultation (Output)."""
+    import uuid
     from models.case import Case
     from models.output import Output
     from models.message import Message, MessageRole
     from datetime import datetime
 
-    # Create case
+    # Create case with session ID
+    session_id = str(uuid.uuid4())
     case = Case(
         title="Test Case for Follow-up",
         description="I need to make a difficult decision about my career.",
@@ -167,6 +169,7 @@ def case_with_output(client, db_session):
         constraints=[],
         horizon="short",
         sensitivity="low",
+        session_id=session_id,
     )
     db_session.add(case)
     db_session.flush()
@@ -235,14 +238,16 @@ def case_with_output(client, db_session):
     db_session.add(assistant_msg)
     db_session.commit()
 
-    return {"case": case, "output": output}
+    return {"case": case, "output": output, "session_id": session_id}
 
 
 @pytest.fixture
 def case_without_output(client, db_session):
     """Create a case without any consultation (no Output)."""
+    import uuid
     from models.case import Case
 
+    session_id = str(uuid.uuid4())
     case = Case(
         title="Pending Case",
         description="This case has no consultation yet.",
@@ -252,20 +257,24 @@ def case_without_output(client, db_session):
         constraints=[],
         horizon="short",
         sensitivity="low",
+        session_id=session_id,
     )
     db_session.add(case)
     db_session.commit()
 
-    return {"case": case}
+    return {"case": case, "session_id": session_id}
 
 
 def test_follow_up_requires_completed_consultation(client, case_without_output):
     """Test that follow-up fails if case has no Output."""
     case_id = case_without_output["case"].id
+    session_id = case_without_output["session_id"]
+    headers = {"X-Session-ID": session_id}
 
     response = client.post(
         f"/api/v1/cases/{case_id}/follow-up",
         json={"content": "What about option 2?"},
+        headers=headers,
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -275,11 +284,14 @@ def test_follow_up_requires_completed_consultation(client, case_without_output):
 def test_follow_up_validates_content(client, case_with_output):
     """Test that follow-up applies content filter."""
     case_id = case_with_output["case"].id
+    session_id = case_with_output["session_id"]
+    headers = {"X-Session-ID": session_id}
 
     # Try explicit content
     response = client.post(
         f"/api/v1/cases/{case_id}/follow-up",
         json={"content": "How do I fuck up my competitors?"},
+        headers=headers,
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -288,10 +300,13 @@ def test_follow_up_validates_content(client, case_with_output):
 def test_follow_up_returns_response(client, case_with_output):
     """Test successful follow-up returns 202 Accepted with user message."""
     case_id = case_with_output["case"].id
+    session_id = case_with_output["session_id"]
+    headers = {"X-Session-ID": session_id}
 
     response = client.post(
         f"/api/v1/cases/{case_id}/follow-up",
         json={"content": "Tell me more about Option 2"},
+        headers=headers,
     )
 
     # Async endpoint returns 202 Accepted with user message immediately
@@ -310,6 +325,8 @@ def test_follow_up_creates_user_message(client, case_with_output, db_session):
     from models.case import Case
 
     case_id = case_with_output["case"].id
+    session_id = case_with_output["session_id"]
+    headers = {"X-Session-ID": session_id}
 
     # Count messages before
     messages_before = db_session.query(Message).filter(Message.case_id == case_id).count()
@@ -317,6 +334,7 @@ def test_follow_up_creates_user_message(client, case_with_output, db_session):
     response = client.post(
         f"/api/v1/cases/{case_id}/follow-up",
         json={"content": "My follow-up question"},
+        headers=headers,
     )
 
     # Refresh session to see changes
@@ -357,10 +375,13 @@ def test_follow_up_invalid_case(client):
 def test_follow_up_empty_content_rejected(client, case_with_output):
     """Test that empty content is rejected."""
     case_id = case_with_output["case"].id
+    session_id = case_with_output["session_id"]
+    headers = {"X-Session-ID": session_id}
 
     response = client.post(
         f"/api/v1/cases/{case_id}/follow-up",
         json={"content": ""},
+        headers=headers,
     )
 
     # Pydantic should reject empty content (min_length=1)
@@ -372,6 +393,8 @@ def test_follow_up_rejects_when_already_processing(client, case_with_output, db_
     from models.case import Case, CaseStatus
 
     case_id = case_with_output["case"].id
+    session_id = case_with_output["session_id"]
+    headers = {"X-Session-ID": session_id}
 
     # Set case status to processing
     case = db_session.query(Case).filter(Case.id == case_id).first()
@@ -381,6 +404,7 @@ def test_follow_up_rejects_when_already_processing(client, case_with_output, db_
     response = client.post(
         f"/api/v1/cases/{case_id}/follow-up",
         json={"content": "Another follow-up question"},
+        headers=headers,
     )
 
     assert response.status_code == status.HTTP_409_CONFLICT
