@@ -127,3 +127,25 @@ export function formatSanskritLines(
 export function isSpeakerIntro(line: string): boolean {
   return line.includes("वाच");
 }
+
+/**
+ * Convert a human-readable verse reference to canonical URL path
+ * @param ref - Human-readable reference (e.g., "BG 2.47")
+ * @returns URL-safe canonical ID (e.g., "BG_2_47")
+ *
+ * @example
+ * verseRefToCanonicalId("BG 2.47") // "BG_2_47"
+ * verseRefToCanonicalId("BG 18.63") // "BG_18_63"
+ */
+export function verseRefToCanonicalId(ref: string): string {
+  return ref.replace(/\s/g, "_").replace(/\./g, "_");
+}
+
+/**
+ * Get the URL path for a verse from its human-readable reference
+ * @param ref - Human-readable reference (e.g., "BG 2.47")
+ * @returns URL path (e.g., "/verses/BG_2_47")
+ */
+export function getVersePath(ref: string): string {
+  return `/verses/${verseRefToCanonicalId(ref)}`;
+}
