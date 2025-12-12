@@ -136,3 +136,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Security audit
+        run: npm audit --audit-level=high
