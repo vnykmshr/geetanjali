@@ -77,7 +77,8 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [
-            { "options": { "0": { "color": "red", "index": 1, "text": "DOWN" }, "1": { "color": "green", "index": 0, "text": "UP" } }, "type": "value" }
+            { "options": { "0": { "color": "red", "index": 1, "text": "DOWN" } }, "type": "value" },
+            { "options": { "from": 1, "to": 999, "result": { "color": "green", "index": 0, "text": "UP" } }, "type": "range" }
           ],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
         }
@@ -87,7 +88,7 @@
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "title": "Redis",
       "type": "stat",
-      "targets": [{ "expr": "geetanjali_redis_connections > 0 or vector(0)", "refId": "A" }]
+      "targets": [{ "expr": "geetanjali_redis_connections", "refId": "A" }]
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
