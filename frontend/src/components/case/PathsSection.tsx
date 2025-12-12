@@ -23,9 +23,9 @@ export function PathsSection({
 
   return (
     <div className="relative pl-8 sm:pl-10 pb-3 sm:pb-4">
-      <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-red-100 border-2 border-red-300 flex items-center justify-center">
+      <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center">
         <svg
-          className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-600"
+          className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-600"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -40,9 +40,9 @@ export function PathsSection({
       </div>
 
       <button onClick={onToggle} className="w-full text-left">
-        <div className="flex items-center justify-between bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-red-100 hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-orange-100 hover:shadow-md transition-shadow">
           <div>
-            <div className="text-xs font-semibold text-red-700 uppercase tracking-wide">
+            <div className="text-xs font-semibold text-orange-700 uppercase tracking-wide">
               Paths Before You
             </div>
             <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">
@@ -75,17 +75,17 @@ export function PathsSection({
                 onClick={() => onSelectOption(idx)}
                 className={`flex-shrink-0 w-28 sm:w-auto p-2.5 sm:p-3 rounded-xl border-2 text-left transition-all h-full ${
                   selectedOption === idx
-                    ? "bg-red-50 border-red-400 shadow-md"
-                    : "bg-white border-gray-200 hover:border-red-200"
+                    ? "bg-orange-50 border-orange-400 shadow-md"
+                    : "bg-white border-gray-200 hover:border-orange-200"
                 }`}
               >
                 <div
-                  className={`text-xs font-semibold ${selectedOption === idx ? "text-red-700" : "text-gray-500"}`}
+                  className={`text-xs font-semibold ${selectedOption === idx ? "text-orange-700" : "text-gray-500"}`}
                 >
                   Path {idx + 1}
                 </div>
                 <div
-                  className={`text-xs sm:text-sm font-medium mt-0.5 sm:mt-1 leading-snug line-clamp-2 ${selectedOption === idx ? "text-red-900" : "text-gray-700"}`}
+                  className={`text-xs sm:text-sm font-medium mt-0.5 sm:mt-1 leading-snug line-clamp-2 ${selectedOption === idx ? "text-orange-900" : "text-gray-700"}`}
                 >
                   {opt.title.replace(" Approach", "")}
                 </div>
@@ -94,7 +94,7 @@ export function PathsSection({
           </div>
 
           {/* Selected path details */}
-          <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-red-100">
+          <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-orange-100">
             <h4 className="font-semibold text-gray-900 text-sm sm:text-base">
               {options[selectedOption].title}
             </h4>

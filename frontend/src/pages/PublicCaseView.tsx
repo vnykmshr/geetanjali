@@ -387,11 +387,11 @@ export default function PublicCaseView() {
                       onClick={() => setShowPaths(!showPaths)}
                       className="w-full text-left"
                     >
-                      <div className="flex items-center justify-between bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-red-100 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-orange-100 hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
                             <svg
-                              className="w-4 h-4 text-red-600"
+                              className="w-4 h-4 text-orange-600"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -405,7 +405,7 @@ export default function PublicCaseView() {
                             </svg>
                           </div>
                           <div>
-                            <div className="text-xs font-semibold text-red-700 uppercase tracking-wide">
+                            <div className="text-xs font-semibold text-orange-700 uppercase tracking-wide">
                               Paths to Consider
                             </div>
                             <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
@@ -439,17 +439,17 @@ export default function PublicCaseView() {
                               onClick={() => setSelectedOption(idx)}
                               className={`flex-shrink-0 w-[140px] sm:w-auto p-2.5 sm:p-3 rounded-xl border-2 text-left transition-all h-full ${
                                 selectedOption === idx
-                                  ? "bg-red-50 border-red-400 shadow-md"
-                                  : "bg-white border-gray-200 hover:border-red-200"
+                                  ? "bg-orange-50 border-orange-400 shadow-md"
+                                  : "bg-white border-gray-200 hover:border-orange-200"
                               }`}
                             >
                               <div
-                                className={`text-xs font-semibold ${selectedOption === idx ? "text-red-700" : "text-gray-500"}`}
+                                className={`text-xs font-semibold ${selectedOption === idx ? "text-orange-700" : "text-gray-500"}`}
                               >
                                 Path {idx + 1}
                               </div>
                               <div
-                                className={`text-xs sm:text-sm font-medium mt-1 leading-snug ${selectedOption === idx ? "text-red-900" : "text-gray-700"}`}
+                                className={`text-xs sm:text-sm font-medium mt-1 leading-snug ${selectedOption === idx ? "text-orange-900" : "text-gray-700"}`}
                               >
                                 {opt.title.replace(" Approach", "")}
                               </div>

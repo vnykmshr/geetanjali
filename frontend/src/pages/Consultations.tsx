@@ -210,7 +210,7 @@ export default function Consultations() {
               {/* CTA visible on tablet+ only, FAB handles mobile */}
               <Link
                 to="/cases/new"
-                className="hidden sm:inline-block bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg transition-colors text-sm sm:text-base"
+                className="hidden sm:inline-block bg-orange-600 hover:bg-orange-700 text-white font-semibold px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg transition-colors text-sm sm:text-base"
               >
                 Ask a Question
               </Link>
@@ -257,7 +257,7 @@ export default function Consultations() {
               </p>
               <Link
                 to="/cases/new"
-                className="inline-block bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2.5 sm:px-8 sm:py-3 rounded-lg transition-colors text-sm sm:text-base"
+                className="inline-block bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-2.5 sm:px-8 sm:py-3 rounded-lg transition-colors text-sm sm:text-base"
               >
                 Ask Your First Question
               </Link>

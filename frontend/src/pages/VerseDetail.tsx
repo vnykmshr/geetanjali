@@ -117,7 +117,7 @@ export default function VerseDetail() {
           <div className="mb-4 sm:mb-6">
             <button
               onClick={() => navigate(-1)}
-              className="text-red-600 hover:text-red-700 font-medium text-sm"
+              className="text-orange-600 hover:text-orange-700 font-medium text-sm"
             >
               ← Go Back
             </button>
@@ -294,7 +294,7 @@ export default function VerseDetail() {
             {verse.verse > 1 ? (
               <Link
                 to={`/verses/BG_${verse.chapter}_${verse.verse - 1}`}
-                className="text-red-600 hover:text-red-700 font-medium"
+                className="text-orange-600 hover:text-orange-700 font-medium"
               >
                 ← <span className="hidden sm:inline">Previous Verse</span>
                 <span className="sm:hidden">Prev</span>
@@ -302,7 +302,7 @@ export default function VerseDetail() {
             ) : verse.chapter > 1 ? (
               <Link
                 to={`/verses?chapter=${verse.chapter - 1}`}
-                className="text-red-600 hover:text-red-700 font-medium"
+                className="text-orange-600 hover:text-orange-700 font-medium"
               >
                 ← <span className="hidden sm:inline">Previous Chapter</span>
                 <span className="sm:hidden">Prev Ch.</span>
@@ -313,7 +313,7 @@ export default function VerseDetail() {
             {verse.chapter < 18 ? (
               <Link
                 to={`/verses/BG_${verse.chapter}_${verse.verse + 1}`}
-                className="text-red-600 hover:text-red-700 font-medium"
+                className="text-orange-600 hover:text-orange-700 font-medium"
               >
                 <span className="hidden sm:inline">Next Verse</span>
                 <span className="sm:hidden">Next</span> →

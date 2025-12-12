@@ -205,7 +205,7 @@ export default function Verses() {
               onClick={() => handleFilterSelect("featured")}
               className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 showFeatured
-                  ? "bg-red-600 text-white shadow-md"
+                  ? "bg-orange-600 text-white shadow-md"
                   : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
               }`}
             >
@@ -216,7 +216,7 @@ export default function Verses() {
               onClick={() => handleFilterSelect("all")}
               className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 showAll
-                  ? "bg-red-600 text-white shadow-md"
+                  ? "bg-orange-600 text-white shadow-md"
                   : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
               }`}
             >
@@ -232,7 +232,7 @@ export default function Verses() {
                 onClick={() => setShowChapterDropdown(!showChapterDropdown)}
                 className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 ${
                   selectedChapter
-                    ? "bg-red-600 text-white shadow-md"
+                    ? "bg-orange-600 text-white shadow-md"
                     : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
                 }`}
               >
@@ -273,8 +273,8 @@ export default function Verses() {
                             }}
                             className={`h-10 rounded-lg text-sm font-medium transition-all ${
                               selectedChapter === chapter
-                                ? "bg-red-600 text-white shadow-md"
-                                : "bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-700 border border-gray-200"
+                                ? "bg-orange-600 text-white shadow-md"
+                                : "bg-gray-50 text-gray-700 hover:bg-orange-50 hover:text-orange-700 border border-gray-200"
                             }`}
                           >
                             {chapter}

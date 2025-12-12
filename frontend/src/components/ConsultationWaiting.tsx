@@ -196,7 +196,7 @@ export function ConsultationWaiting({
           {!showBreathing ? (
             <button
               onClick={() => setShowBreathing(true)}
-              className="w-full py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs sm:text-sm"
+              className="w-full py-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors text-xs sm:text-sm"
             >
               Start breathing exercise
             </button>
@@ -204,11 +204,11 @@ export function ConsultationWaiting({
             <div className="text-center">
               <div className="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3">
                 <div
-                  className="absolute inset-0 rounded-full bg-red-100 animate-ping"
+                  className="absolute inset-0 rounded-full bg-orange-100 animate-ping"
                   style={{ animationDuration: "4s" }}
                 />
-                <div className="absolute inset-1.5 sm:inset-2 rounded-full bg-red-200 flex items-center justify-center">
-                  <span className="text-xl sm:text-2xl font-bold text-red-600">
+                <div className="absolute inset-1.5 sm:inset-2 rounded-full bg-orange-200 flex items-center justify-center">
+                  <span className="text-xl sm:text-2xl font-bold text-orange-600">
                     {breathCount}
                   </span>
                 </div>

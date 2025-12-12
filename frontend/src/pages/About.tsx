@@ -288,7 +288,10 @@ export default function About() {
         </section>
 
         {/* Contact Form */}
-        <section className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
+        <section
+          id="contact"
+          className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8"
+        >
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
             Get in Touch
           </h2>

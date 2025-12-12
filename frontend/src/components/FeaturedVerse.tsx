@@ -3,7 +3,7 @@ import { formatSanskritLines } from "../lib/sanskritFormatter";
 import type { Verse } from "../types";
 
 interface FeaturedVerseProps {
-  verse: Verse;
+  verse: Verse | null;
   loading?: boolean;
 }
 

@@ -130,7 +130,7 @@ export default function NotFound() {
           {/* CTA Button */}
           <Link
             to="/"
-            className="inline-flex items-center gap-2 bg-red-600 text-white px-5 sm:px-6 lg:px-8 py-2.5 sm:py-3 rounded-lg hover:bg-red-700 transition-colors font-semibold text-sm sm:text-base lg:text-lg"
+            className="inline-flex items-center gap-2 bg-orange-600 text-white px-5 sm:px-6 lg:px-8 py-2.5 sm:py-3 rounded-lg hover:bg-orange-700 transition-colors font-semibold text-sm sm:text-base lg:text-lg"
           >
             <svg
               className="w-4 h-4 sm:w-5 sm:h-5"

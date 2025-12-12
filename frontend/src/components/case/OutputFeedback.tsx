@@ -112,7 +112,7 @@ export const OutputFeedback = memo(
                 onFeedbackTextChange(output.id, e.target.value.slice(0, 280))
               }
               placeholder="Tell us what wasn't helpful..."
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
               rows={2}
               maxLength={280}
             />
