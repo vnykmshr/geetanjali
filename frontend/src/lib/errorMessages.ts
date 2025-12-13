@@ -18,6 +18,8 @@ type ErrorContext =
   | "follow_up"
   | "verse_load"
   | "search"
+  | "contact"
+  | "health"
   | "general";
 
 // Shared messages for common patterns
@@ -41,6 +43,7 @@ const HTTP_STATUS_MESSAGES: Record<
     login: "Please check your email and password format.",
     signup: "Please check your information and try again.",
     case_create: "Please check your input and try again.",
+    contact: "Please check your message and try again.",
     search: "Please try a different search term.",
     general: "Please check your input and try again.",
   },
@@ -78,6 +81,7 @@ const HTTP_STATUS_MESSAGES: Record<
       "Please check your information. Make sure your password meets the requirements.",
     case_create: "Please provide more details in your question.",
     follow_up: "Your question couldn't be processed. Please rephrase and try again.",
+    contact: "Please check your message content and try again.",
     general: "Please check your input and try again.",
   },
   429: {
@@ -86,6 +90,7 @@ const HTTP_STATUS_MESSAGES: Record<
       "You have submitted too many consultations. Please wait a moment.",
     case_analyze: "Analysis rate limit reached. Please wait a moment.",
     follow_up: "Too many follow-up questions. Please wait a moment.",
+    contact: "Too many messages sent. Please try again in an hour.",
     general: SHARED.tooManyRequests,
   },
   500: {
@@ -94,6 +99,8 @@ const HTTP_STATUS_MESSAGES: Record<
       "Unable to submit your question right now. Please try again later.",
     case_analyze: "Analysis temporarily unavailable. Please try again later.",
     follow_up: "Unable to respond right now. Please try again.",
+    contact: "Unable to send your message. Please try again later.",
+    health: SHARED.serverUnavailable,
     general: SHARED.somethingWrong,
   },
   // 502 and 503 share the same message
@@ -113,6 +120,8 @@ const DEFAULT_ERROR_MESSAGES: Record<ErrorContext, string> = {
   follow_up: "Unable to respond to your follow-up. Please try again.",
   verse_load: "Unable to load verse. Please try again.",
   search: "Search failed. Please try again.",
+  contact: "Unable to send your message. Please try again.",
+  health: "Service temporarily unavailable.",
   general: "Something went wrong. Please try again.",
 };
 
@@ -230,6 +239,9 @@ export function getErrorMessage(
 
 /**
  * Convenience functions for specific contexts
+ *
+ * IMPORTANT: Always use these functions instead of raw err.message to ensure
+ * user-friendly error messages. Add new contexts here as needed.
  */
 export const errorMessages = {
   login: (error: unknown) => getErrorMessage(error, "login"),
@@ -241,6 +253,8 @@ export const errorMessages = {
   followUp: (error: unknown) => getErrorMessage(error, "follow_up"),
   verseLoad: (error: unknown) => getErrorMessage(error, "verse_load"),
   search: (error: unknown) => getErrorMessage(error, "search"),
+  contact: (error: unknown) => getErrorMessage(error, "contact"),
+  health: (error: unknown) => getErrorMessage(error, "health"),
   general: (error: unknown) => getErrorMessage(error, "general"),
 };
 

@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import { api } from "../lib/api";
 import { validateContent } from "../lib/contentFilter";
+import { errorMessages } from "../lib/errorMessages";
 import { useSEO } from "../hooks";
 
 type ContactType =
@@ -88,11 +89,7 @@ export default function About() {
       });
     } catch (err) {
       setSubmitStatus("error");
-      setErrorMessage(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+      setErrorMessage(errorMessages.contact(err));
     } finally {
       setIsSubmitting(false);
     }

@@ -9,6 +9,7 @@ import { Footer } from "../components/Footer";
 import { Navbar } from "../components/Navbar";
 import { useSEO } from "../hooks";
 import { trackEvent } from "../lib/experiment";
+import { errorMessages } from "../lib/errorMessages";
 
 export default function Home() {
   // SEO - uses defaults for homepage
@@ -33,7 +34,7 @@ export default function Home() {
 
   // Check backend health on mount
   useEffect(() => {
-    checkHealth().catch((err) => setError(err.message));
+    checkHealth().catch((err) => setError(errorMessages.health(err)));
   }, []);
 
   // Load recent consultations when authenticated

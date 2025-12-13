@@ -20,6 +20,17 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Prevent raw error.message usage - use errorMessages helper instead
+      // This catches common patterns like: err.message, error.message, e.message
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'CatchClause MemberExpression[property.name="message"][object.name=/^(err|error|e)$/]',
+          message: 'Avoid using raw err.message. Use errorMessages helper from lib/errorMessages.ts for user-friendly messages.',
+        },
+      ],
+    },
   },
   // Test files - disable react-refresh rules
   {

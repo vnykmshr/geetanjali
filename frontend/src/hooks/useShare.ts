@@ -82,9 +82,8 @@ export function useShare(): UseShareReturn {
         setIsSharing(false);
         return true;
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Failed to copy";
-        setLastError(message);
+        // Use friendly message - browser clipboard errors are typically permission-related
+        setLastError("Unable to copy to clipboard. Please try again.");
         console.error("[Share] Clipboard error:", error);
         setIsSharing(false);
         return false;
@@ -126,9 +125,10 @@ export function useShare(): UseShareReturn {
           return await copyToClipboard(shareText);
         }
       } catch (error) {
-        // User cancelled share or error occurred
+        // User cancelled share (AbortError) or actual error occurred
         if (error instanceof Error && error.name !== "AbortError") {
-          setLastError(error.message);
+          // Use friendly message for share failures
+          setLastError("Unable to share. Please try again.");
           console.error("[Share] Error:", error);
         }
         setIsSharing(false);

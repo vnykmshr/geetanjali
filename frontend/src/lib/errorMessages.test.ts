@@ -231,6 +231,30 @@ describe("errorMessages convenience functions", () => {
       "Analysis already in progress.",
     );
   });
+
+  it("should handle contact context", () => {
+    const error429 = createAxiosError(429);
+    expect(errorMessages.contact(error429)).toBe(
+      "Too many messages sent. Please try again in an hour.",
+    );
+
+    const error422 = createAxiosError(422);
+    expect(errorMessages.contact(error422)).toBe(
+      "Please check your message content and try again.",
+    );
+
+    const error500 = createAxiosError(500);
+    expect(errorMessages.contact(error500)).toBe(
+      "Unable to send your message. Please try again later.",
+    );
+  });
+
+  it("should handle health context", () => {
+    const error500 = createAxiosError(500);
+    expect(errorMessages.health(error500)).toBe(
+      "Our servers are temporarily unavailable. Please try again later.",
+    );
+  });
 });
 
 describe("technical message detection", () => {
