@@ -386,10 +386,10 @@ export default function Verses() {
         </div>
       </div>
 
-      {/* Active Filter Banner - Shows when filters are applied */}
-      {(selectedChapter || selectedPrinciple) && (
-        <div className="bg-amber-50/80 border-b border-amber-100">
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-2.5">
+      {/* Active Filter Banner - Fixed height to prevent layout shift */}
+      <div className="bg-amber-50/80 border-b border-amber-100 min-h-[36px] sm:min-h-[40px]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-2.5">
+          {(selectedChapter || selectedPrinciple) ? (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs sm:text-sm text-amber-700">Filtering by:</span>
 
@@ -426,22 +426,24 @@ export default function Verses() {
               )}
 
               {/* Clear all button */}
-              {(selectedChapter || selectedPrinciple) && (
-                <button
-                  onClick={() => {
-                    setFilterMode("featured");
-                    setSelectedPrinciple(null);
-                    updateSearchParams("featured", null);
-                  }}
-                  className="text-xs sm:text-sm text-amber-600 hover:text-amber-800 font-medium underline underline-offset-2 ml-auto"
-                >
-                  Clear all
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setFilterMode("featured");
+                  setSelectedPrinciple(null);
+                  updateSearchParams("featured", null);
+                }}
+                className="text-xs sm:text-sm text-amber-600 hover:text-amber-800 font-medium underline underline-offset-2 ml-auto"
+              >
+                Clear all
+              </button>
             </div>
-          </div>
+          ) : (
+            <div className="text-xs sm:text-sm text-amber-600/70">
+              {showFeatured ? "Showing curated featured verses" : "Showing all 701 verses"}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Content */}
       <div className="flex-1 py-4 sm:py-6">
