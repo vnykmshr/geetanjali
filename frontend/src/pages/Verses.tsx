@@ -7,6 +7,7 @@ import { Footer } from "../components/Footer";
 import { VerseCard } from "../components/VerseCard";
 import { errorMessages } from "../lib/errorMessages";
 import { useSEO } from "../hooks";
+import { PRINCIPLE_TAXONOMY, getPrincipleShortLabel } from "../constants/principles";
 
 const VERSES_PER_PAGE = 20;
 
@@ -79,7 +80,12 @@ export default function Verses() {
     return "featured";
   };
 
+  const getInitialPrinciple = (): string | null => {
+    return searchParams.get("topic");
+  };
+
   const [filterMode, setFilterMode] = useState<FilterMode>(getInitialFilter);
+  const [selectedPrinciple, setSelectedPrinciple] = useState<string | null>(getInitialPrinciple);
   const [showChapterDropdown, setShowChapterDropdown] = useState(false);
 
   // Derived state
@@ -87,24 +93,27 @@ export default function Verses() {
   const showFeatured = filterMode === "featured";
   const showAll = filterMode === "all";
 
+  // All principle IDs for the pill row
+  const principleIds = Object.keys(PRINCIPLE_TAXONOMY);
+
   // Memoized load functions
   const loadCount = useCallback(async () => {
     try {
       const chapter = typeof filterMode === "number" ? filterMode : undefined;
       const featured = filterMode === "featured" ? true : undefined;
-      const count = await versesApi.count(chapter, featured);
+      const count = await versesApi.count(chapter, featured, selectedPrinciple || undefined);
       setTotalCount(count);
     } catch {
       setTotalCount(null);
     }
-  }, [filterMode]);
+  }, [filterMode, selectedPrinciple]);
 
   const loadVerses = useCallback(
     async (reset: boolean = false) => {
       try {
         if (reset) {
           setLoading(true);
-          setVerses([]);
+          // Don't clear verses immediately - keep showing old cards with opacity
           setHasMore(true);
         } else {
           setLoadingMore(true);
@@ -120,6 +129,7 @@ export default function Verses() {
           VERSES_PER_PAGE,
           chapter,
           featured,
+          selectedPrinciple || undefined,
         );
 
         if (reset) {
@@ -136,7 +146,7 @@ export default function Verses() {
         setLoadingMore(false);
       }
     },
-    [filterMode],
+    [filterMode, selectedPrinciple],
   );
 
   useEffect(() => {
@@ -158,6 +168,7 @@ export default function Verses() {
         VERSES_PER_PAGE,
         chapter,
         featured,
+        selectedPrinciple || undefined,
       );
 
       // Deduplicate when adding new verses
@@ -172,29 +183,56 @@ export default function Verses() {
     } finally {
       setLoadingMore(false);
     }
-  }, [filterMode, verses.length, loadingMore]);
+  }, [filterMode, selectedPrinciple, verses.length, loadingMore]);
+
+  const updateSearchParams = (filter: FilterMode, principle: string | null) => {
+    const params: Record<string, string> = {};
+    if (typeof filter === "number") {
+      params.chapter = filter.toString();
+    } else if (filter === "all") {
+      params.all = "true";
+    }
+    if (principle) {
+      params.topic = principle;
+    }
+    setSearchParams(params);
+  };
 
   const handleFilterSelect = (filter: FilterMode) => {
     setFilterMode(filter);
+    setSelectedPrinciple(null); // Clear topic on mode change
+    updateSearchParams(filter, null);
+  };
 
-    if (typeof filter === "number") {
-      setSearchParams({ chapter: filter.toString() });
-    } else if (filter === "all") {
-      setSearchParams({ all: "true" });
-    } else {
-      setSearchParams({});
-    }
+  const handlePrincipleSelect = (principle: string | null) => {
+    setSelectedPrinciple(principle);
+    updateSearchParams(filterMode, principle);
   };
 
   const getFilterDescription = () => {
-    if (showFeatured) return "featured ";
-    if (selectedChapter) return `from Chapter ${selectedChapter} `;
-    return "";
+    const parts = [];
+    if (showFeatured) parts.push("featured");
+    if (selectedChapter) parts.push(`from Chapter ${selectedChapter}`);
+    if (selectedPrinciple) parts.push(`on ${getPrincipleShortLabel(selectedPrinciple)}`);
+    return parts.length > 0 ? parts.join(" ") + " " : "";
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
       <Navbar />
+
+      {/* Page Header - Contemplative intro */}
+      <div className="bg-gradient-to-b from-amber-50/80 to-transparent py-6 sm:py-8 text-center">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="text-3xl sm:text-4xl text-amber-400/70 mb-2">ॐ</div>
+          <h1 className="text-xl sm:text-2xl font-serif text-amber-900 mb-1">
+            Explore the Bhagavad Geeta
+          </h1>
+          <p className="text-sm text-gray-600">
+            701 verses of timeless wisdom
+          </p>
+        </div>
+      </div>
 
       {/* Sticky Filter Bar - Below navbar */}
       <div className="sticky top-14 sm:top-16 z-10 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200">
@@ -288,6 +326,27 @@ export default function Verses() {
               )}
             </div>
           </div>
+
+          {/* Topic Pills Row */}
+          <div className="mt-3 sm:mt-4 flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:-mx-6 sm:px-6 scrollbar-hide">
+            {principleIds.map((principleId) => (
+              <button
+                key={principleId}
+                onClick={() =>
+                  handlePrincipleSelect(
+                    selectedPrinciple === principleId ? null : principleId
+                  )
+                }
+                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                  selectedPrinciple === principleId
+                    ? "bg-amber-600 text-white shadow-md"
+                    : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
+                }`}
+              >
+                {getPrincipleShortLabel(principleId)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -327,12 +386,13 @@ export default function Verses() {
               </div>
 
               {/* Verse Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                {verses.map((verse) => (
+              <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 transition-opacity duration-200 ${loading ? "opacity-50" : "opacity-100"}`}>
+                {verses.map((verse, index) => (
                   <Link
                     key={verse.id}
                     to={`/verses/${verse.canonical_id}`}
-                    className="transition-all hover:shadow-lg"
+                    className="transition-all hover:shadow-lg animate-fade-in"
+                    style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
                   >
                     <VerseCard
                       verse={verse}
@@ -340,6 +400,7 @@ export default function Verses() {
                       showSpeaker={false}
                       showCitation={true}
                       showTranslation={false}
+                      showTranslationPreview={true}
                     />
                   </Link>
                 ))}

@@ -231,18 +231,21 @@ export const versesApi = {
     limit = 100,
     chapter?: number,
     featured?: boolean,
+    principles?: string,
   ): Promise<Verse[]> => {
-    const params: Record<string, number | boolean> = { skip, limit };
+    const params: Record<string, number | boolean | string> = { skip, limit };
     if (chapter) params.chapter = chapter;
     if (featured !== undefined) params.featured = featured;
+    if (principles) params.principles = principles;
     const response = await api.get(`/verses`, { params });
     return response.data;
   },
 
-  count: async (chapter?: number, featured?: boolean): Promise<number> => {
-    const params: Record<string, number | boolean> = {};
+  count: async (chapter?: number, featured?: boolean, principles?: string): Promise<number> => {
+    const params: Record<string, number | boolean | string> = {};
     if (chapter) params.chapter = chapter;
     if (featured !== undefined) params.featured = featured;
+    if (principles) params.principles = principles;
     const response = await api.get(`/verses/count`, { params });
     return response.data.count;
   },
