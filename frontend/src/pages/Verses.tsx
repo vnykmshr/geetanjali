@@ -474,15 +474,20 @@ export default function Verses() {
                       {/* Center content */}
                       <div className={`flex flex-col items-center transition-all duration-300 ${loadingMore ? "scale-95 opacity-70" : "group-hover:scale-105"}`}>
                         {loadingMore ? (
-                          <SpinnerIcon className="w-5 h-5 text-amber-500 mb-1" />
+                          <SpinnerIcon className="w-6 h-6 text-amber-500 mb-1.5" />
                         ) : (
-                          <span className="text-amber-400/80 text-lg mb-0.5">॰</span>
+                          <span className="text-amber-400/70 text-xl mb-1">॰</span>
                         )}
-                        <span className="text-sm font-medium text-amber-700/80 group-hover:text-amber-800 transition-colors">
-                          {loadingMore ? "Loading" : "Continue"}
+                        <span className="flex items-center gap-1.5 text-base font-medium text-amber-700/80 group-hover:text-amber-800 transition-colors">
+                          {loadingMore ? "Loading" : (
+                            <>
+                              Continue
+                              <ChevronDownIcon className="w-4 h-4" />
+                            </>
+                          )}
                         </span>
                         {!loadingMore && totalCount && (
-                          <span className="text-xs text-amber-600/50 mt-0.5">
+                          <span className="text-xs text-amber-600/50 mt-1">
                             {totalCount - verses.length} more
                           </span>
                         )}
