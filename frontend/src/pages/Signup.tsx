@@ -59,7 +59,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-orange-50 to-white">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-orange-50 to-amber-50">
       <Navbar />
       <div className="flex-1 flex items-center justify-center px-4 py-6 sm:py-8">
         <div className="max-w-md w-full space-y-5 sm:space-y-6">
@@ -106,7 +106,7 @@ export default function Signup() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="block w-full px-3 py-2.5 sm:py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base sm:text-sm"
+                  className="block w-full px-3 py-2.5 sm:py-2 border border-amber-200 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base sm:text-sm"
                   placeholder="Your name"
                 />
               </div>
@@ -125,7 +125,7 @@ export default function Signup() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full px-3 py-2.5 sm:py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base sm:text-sm"
+                  className="block w-full px-3 py-2.5 sm:py-2 border border-amber-200 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base sm:text-sm"
                   placeholder="your@email.com"
                 />
               </div>
@@ -144,7 +144,7 @@ export default function Signup() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full px-3 py-2.5 sm:py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base sm:text-sm"
+                  className="block w-full px-3 py-2.5 sm:py-2 border border-amber-200 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base sm:text-sm"
                   placeholder="••••••••"
                 />
                 <p className="mt-1 text-xs text-gray-500">
@@ -166,7 +166,7 @@ export default function Signup() {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="block w-full px-3 py-2.5 sm:py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base sm:text-sm"
+                  className="block w-full px-3 py-2.5 sm:py-2 border border-amber-200 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base sm:text-sm"
                   placeholder="••••••••"
                 />
               </div>

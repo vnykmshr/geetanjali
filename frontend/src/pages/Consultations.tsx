@@ -378,7 +378,7 @@ export default function Consultations() {
                       )}
 
                       {/* Action bar */}
-                      <div className="px-4 sm:px-5 lg:px-6 py-2.5 sm:py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
+                      <div className="px-4 sm:px-5 lg:px-6 py-2.5 sm:py-3 bg-amber-50/50 border-t border-amber-100 flex items-center justify-end gap-2">
                         {/* Share/Unshare button (only for completed cases) */}
                         {canShare && (
                           <button

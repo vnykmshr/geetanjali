@@ -347,7 +347,7 @@ export default function About() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full px-4 py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Your name"
                   />
                 </div>
@@ -366,7 +366,7 @@ export default function About() {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full px-4 py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="you@example.com"
                   />
                 </div>
@@ -389,7 +389,7 @@ export default function About() {
                         message_type: e.target.value as ContactType,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full px-4 py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   >
                     <option value="feedback">General Feedback</option>
                     <option value="question">Question</option>
@@ -412,7 +412,7 @@ export default function About() {
                     onChange={(e) =>
                       setFormData({ ...formData, subject: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className="w-full px-4 py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Brief subject"
                   />
                 </div>
@@ -433,7 +433,7 @@ export default function About() {
                   onChange={(e) =>
                     setFormData({ ...formData, message: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+                  className="w-full px-4 py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
                   placeholder="Share your thoughts..."
                 />
               </div>
