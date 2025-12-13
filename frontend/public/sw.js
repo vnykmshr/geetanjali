@@ -8,15 +8,14 @@
  * - App shell caching for instant loads
  */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `geetanjali-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `geetanjali-dynamic-${CACHE_VERSION}`;
 const VERSE_CACHE = `geetanjali-verses-${CACHE_VERSION}`;
 
-// Static assets to cache on install
+// Static assets to cache on install (app shell only - JS bundles cached on demand)
 const STATIC_ASSETS = [
   '/',
-  '/index.html',
   '/manifest.json',
   '/favicon.svg',
   '/logo.svg',
@@ -24,37 +23,49 @@ const STATIC_ASSETS = [
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
+  console.log('[SW] Installing...');
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => {
-      console.log('[SW] Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(STATIC_CACHE)
+      .then((cache) => {
+        console.log('[SW] Caching static assets');
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .then(() => {
+        console.log('[SW] Install complete, skipping waiting');
+        return self.skipWaiting();  // Only skip AFTER caching completes
+      })
+      .catch((error) => {
+        console.error('[SW] Install failed:', error);
+        throw error;  // Re-throw to fail the install
+      })
   );
-  // Activate immediately
-  self.skipWaiting();
 });
 
 // Activate event - clean old caches
 self.addEventListener('activate', (event) => {
+  console.log('[SW] Activating...');
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys
-          .filter((key) => {
-            return key.startsWith('geetanjali-') &&
-                   key !== STATIC_CACHE &&
-                   key !== DYNAMIC_CACHE &&
-                   key !== VERSE_CACHE;
-          })
-          .map((key) => {
+    caches.keys()
+      .then((keys) => {
+        const oldCaches = keys.filter((key) => {
+          return key.startsWith('geetanjali-') &&
+                 key !== STATIC_CACHE &&
+                 key !== DYNAMIC_CACHE &&
+                 key !== VERSE_CACHE;
+        });
+        console.log('[SW] Found', oldCaches.length, 'old caches to delete');
+        return Promise.all(
+          oldCaches.map((key) => {
             console.log('[SW] Deleting old cache:', key);
             return caches.delete(key);
           })
-      );
-    })
+        );
+      })
+      .then(() => {
+        console.log('[SW] Activation complete, claiming clients');
+        return self.clients.claim();
+      })
   );
-  // Take control immediately
-  self.clients.claim();
 });
 
 // Fetch event - handle requests
@@ -114,8 +125,13 @@ async function cacheFirst(request, cacheName) {
     }
     return response;
   } catch (error) {
-    // Return offline page if available
-    return caches.match('/') || new Response('Offline', { status: 503 });
+    // Only return offline page for HTML requests, not JS/CSS/images
+    const url = new URL(request.url);
+    if (request.headers.get('accept')?.includes('text/html') || url.pathname === '/') {
+      return caches.match('/') || new Response('Offline', { status: 503 });
+    }
+    // For other assets, let the error propagate (browser will show network error)
+    throw error;
   }
 }
 
