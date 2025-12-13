@@ -65,8 +65,8 @@ class ContactResponse(BaseModel):
 @router.post("", response_model=ContactResponse)
 @limiter.limit("3/hour")
 async def submit_contact(
-    request_obj: Request,
-    request: ContactRequest,
+    request: Request,
+    data: ContactRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
@@ -77,7 +77,8 @@ async def submit_contact(
     to the configured recipient.
 
     Args:
-        request: Contact form data
+        request: Starlette Request (required by rate limiter)
+        data: Contact form data
         background_tasks: FastAPI background tasks for async email sending
         db: Database session
 
@@ -88,15 +89,15 @@ async def submit_contact(
     # Using subject as title, message as description - mirrors case submission pattern
     try:
         validate_submission_content(
-            title=request.subject or request.name,  # Use name if no subject
-            description=request.message,
+            title=data.subject or data.name,  # Use name if no subject
+            description=data.message,
         )
     except ContentPolicyError as e:
         logger.warning(
             "Contact form content violation",
             extra={
                 "violation_type": e.violation_type.value,
-                "input_length": len(request.message),
+                "input_length": len(data.message),
             },
         )
         raise HTTPException(
@@ -106,15 +107,15 @@ async def submit_contact(
 
     try:
         # Convert API enum to model enum
-        db_message_type = ContactType(request.message_type.value)
+        db_message_type = ContactType(data.message_type.value)
 
         # Create database record
         contact = ContactMessage(
-            name=request.name,
-            email=request.email,
+            name=data.name,
+            email=data.email,
             message_type=db_message_type,
-            subject=request.subject,
-            message=request.message,
+            subject=data.subject,
+            message=data.message,
             email_sent=False,
         )
 
@@ -128,11 +129,11 @@ async def submit_contact(
         background_tasks.add_task(
             send_contact_email_task,
             contact_id=contact.id,
-            name=request.name,
-            email=request.email,
-            message_type=request.message_type.value,
-            subject=request.subject,
-            message=request.message,
+            name=data.name,
+            email=data.email,
+            message_type=data.message_type.value,
+            subject=data.subject,
+            message=data.message,
         )
 
         return ContactResponse(
