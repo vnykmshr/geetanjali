@@ -203,7 +203,7 @@ export default function Home() {
                   <Link
                     key={case_.id}
                     to={`/cases/${case_.id}`}
-                    className="flex items-center justify-between gap-4 p-3 bg-white rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50/50 transition-all group"
+                    className="flex items-center justify-between gap-4 p-3 bg-amber-50/50 rounded-lg border border-amber-200 hover:border-orange-300 hover:bg-orange-50 transition-all group"
                   >
                     <h3 className="font-medium text-gray-900 text-sm sm:text-base truncate group-hover:text-orange-700 transition-colors min-w-0">
                       {case_.title}

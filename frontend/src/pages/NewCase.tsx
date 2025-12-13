@@ -279,7 +279,7 @@ export default function NewCase() {
                 value={formData.context}
                 onChange={handleChange}
                 rows={2}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm border border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm border border-amber-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-amber-50/50"
                 placeholder="What makes this difficult? Competing values, fears, past experiences..."
               />
             </div>
@@ -313,7 +313,7 @@ export default function NewCase() {
                         className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-full border transition-colors ${
                           selectedRoles.has(opt.value)
                             ? "bg-orange-100 border-orange-300 text-orange-700"
-                            : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                            : "bg-amber-50/50 border-amber-200 text-gray-600 hover:bg-amber-100"
                         }`}
                       >
                         {selectedRoles.has(opt.value) && (
@@ -339,7 +339,7 @@ export default function NewCase() {
                         className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-full border transition-colors ${
                           selectedStakeholders.has(opt.value)
                             ? "bg-orange-100 border-orange-300 text-orange-700"
-                            : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                            : "bg-amber-50/50 border-amber-200 text-gray-600 hover:bg-amber-100"
                         }`}
                       >
                         {selectedStakeholders.has(opt.value) && (
