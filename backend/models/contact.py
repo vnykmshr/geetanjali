@@ -39,13 +39,12 @@ class ContactMessage(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    # Content - use existing postgres enum 'contacttype' with lowercase values
+    # Content - use existing postgres enum 'contacttype' with uppercase values (FEEDBACK, QUESTION, etc.)
     message_type: Mapped[ContactType] = mapped_column(
         SQLEnum(
             ContactType,
             name="contacttype",
             create_type=False,
-            values_callable=lambda x: [e.value for e in x],
         ),
         nullable=False,
         default=ContactType.FEEDBACK,
