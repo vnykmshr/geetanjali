@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import { api } from "../lib/api";
 import { validateContent } from "../lib/contentFilter";
@@ -20,12 +21,27 @@ interface ContactForm {
 }
 
 export default function About() {
+  const location = useLocation();
+
   useSEO({
     title: "About",
     description:
       "Learn about Geetanjali - ancient wisdom from the Bhagavad Geeta for modern ethical decisions. Free, open source, and privacy-focused.",
     canonical: "/about",
   });
+
+  // Scroll to hash fragment (e.g., #contact) when navigating from another page
+  useEffect(() => {
+    if (location.hash) {
+      const element = document.querySelector(location.hash);
+      if (element) {
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: "smooth" });
+        }, 100);
+      }
+    }
+  }, [location.hash]);
 
   const [formData, setFormData] = useState<ContactForm>({
     name: "",
