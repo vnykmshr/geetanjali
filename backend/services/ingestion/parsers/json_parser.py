@@ -330,18 +330,23 @@ class JSONParser:
             if not default_text and trans_list:
                 default_text = trans_list[0]["text"]
 
-            parsed.append(
-                {
-                    "canonical_id": canonical_id,
-                    "chapter": chapter,
-                    "verse": verse_num,
-                    "translation_en": default_text,  # Primary translation for verse table
-                    "translations": trans_list,  # All translations (sorted by priority) for translations table
-                    "source": source_config.get("url", ""),
-                    "license": source_config.get("license", ""),
-                    "_is_translation_data": True,  # Flag for pipeline to handle differently
-                }
-            )
+            # Build verse data dict
+            verse_entry = {
+                "canonical_id": canonical_id,
+                "chapter": chapter,
+                "verse": verse_num,
+                "translations": trans_list,  # All translations (sorted by priority) for translations table
+                "source": source_config.get("url", ""),
+                "license": source_config.get("license", ""),
+                "_is_translation_data": True,  # Flag for pipeline to handle differently
+            }
+
+            # Only set translation_en for English language sources
+            # This prevents Hindi from overwriting English in the main verse table
+            if target_language_code == "en":
+                verse_entry["translation_en"] = default_text
+
+            parsed.append(verse_entry)
 
         logger.info(
             f"Parsed translations for {len(parsed)} verses from {len(translations)} records"
