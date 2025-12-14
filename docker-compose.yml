@@ -171,6 +171,8 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    # Resource limits
+    pids_limit: 256
     depends_on:
       postgres:
         condition: service_healthy

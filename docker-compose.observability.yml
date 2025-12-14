@@ -1,7 +1,5 @@
 # Observability Stack - Prometheus + Grafana
-# Use with: docker-compose -f docker-compose.yml -f docker-compose.observability.yml up -d
-
-version: '3.8'
+# Use with: docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 
 services:
   # Prometheus runs as 'nobody' (UID 65534) by default - safe

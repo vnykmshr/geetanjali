@@ -127,15 +127,15 @@ services:
 
 | Container | Runs As | Capabilities | PID Limit | Extra Hardening |
 |-----------|---------|--------------|-----------|-----------------|
-| postgres | postgres (non-root) | no-new-privileges | - | - |
-| redis | redis (non-root) | cap_drop: ALL | 64 | read-only FS, tmpfs /data |
-| chromadb | chromauser (uid 1000) | cap_drop: ALL | 128 | - |
-| backend | appuser (uid 1000) | cap_drop: ALL | 256 | - |
-| worker | appuser (uid 1000) | cap_drop: ALL | 128 | - |
-| frontend | nginx (workers) | NET_BIND_SERVICE, SETUID, SETGID, CHOWN | 64 | - |
-| ollama | default | no-new-privileges | - | - |
-| prometheus | nobody (uid 65534) | cap_drop: ALL | 64 | - |
-| grafana | grafana (uid 472) | cap_drop: ALL | 64 | - |
+| postgres | postgres (non-root) | cap_drop: ALL + minimal cap_add | - | no-new-privileges |
+| redis | redis (uid 999) | cap_drop: ALL | 64 | read-only FS, tmpfs /data, no-new-privileges |
+| chromadb | chromauser (uid 1000) | cap_drop: ALL | 128 | no-new-privileges |
+| backend | appuser (uid 1000) | cap_drop: ALL | 256 | no-new-privileges |
+| worker | appuser (uid 1000) | cap_drop: ALL | 128 | no-new-privileges, internal-only network |
+| frontend | nginx | cap_drop: ALL + NET_BIND_SERVICE, SETUID, SETGID, CHOWN | 64 | no-new-privileges |
+| ollama | root (required) | cap_drop: ALL + minimal cap_add | - | no-new-privileges, internal-only |
+| prometheus | nobody (uid 65534) | cap_drop: ALL | 64 | no-new-privileges |
+| grafana | grafana (uid 472) | cap_drop: ALL | 64 | no-new-privileges |
 
 ### no-new-privileges
 
@@ -174,7 +174,10 @@ All services communicate via an internal Docker bridge network (`geetanjali-netw
 - Redis (6379)
 - ChromaDB (8000)
 - Backend API (8000)
+- Worker API (8001) - Prometheus scrapes internally
 - Ollama (11434)
+- Prometheus (9090)
+- Grafana (3000) - Accessed via nginx reverse proxy
 
 ### Redis Authentication
 
