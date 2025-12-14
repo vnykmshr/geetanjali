@@ -5,6 +5,7 @@
  * - Back button (navigate to previous page)
  * - Chapter name (full on desktop, abbreviated on mobile)
  * - Verse position (e.g., "Verse 47 of 72" or "47/72")
+ * - Progress bar showing position in chapter
  *
  * Used by: VerseDetail, Reading Mode
  */
@@ -14,6 +15,7 @@ import {
   getChapterInfo,
   getVerseProgress,
 } from "../constants/chapters";
+import { ProgressBar } from "./ProgressBar";
 
 interface ChapterContextBarProps {
   chapter: number;
@@ -70,6 +72,15 @@ export function ChapterContextBar({ chapter, verse }: ChapterContextBarProps) {
             {progress.position}/{progress.total}
           </span>
         </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-2">
+        <ProgressBar
+          percentage={progress.percentage}
+          height={3}
+          ariaLabel={`Chapter ${chapter} progress: ${progress.position} of ${progress.total} verses (${progress.percentage}%)`}
+        />
       </div>
     </div>
   );

@@ -23,6 +23,7 @@ export { FloatingActionButton } from "./FloatingActionButton";
 export { ContentNotFound } from "./ContentNotFound";
 export { SkipLink } from "./SkipLink";
 export { ChapterContextBar } from "./ChapterContextBar";
+export { ProgressBar } from "./ProgressBar";
 
 // Case-related components
 export {
