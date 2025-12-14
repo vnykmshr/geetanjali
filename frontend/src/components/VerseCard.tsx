@@ -132,7 +132,7 @@ export const VerseCard = memo(function VerseCard({
               {/* Subtle divider */}
               <div className="my-2 sm:my-3 border-t border-amber-200/50" />
               {/* Translation with CSS line-clamp */}
-              <p className="text-xs sm:text-sm text-gray-600 text-center leading-relaxed line-clamp-3">
+              <p className="text-xs sm:text-sm text-gray-600 text-center leading-relaxed line-clamp-2 sm:line-clamp-3">
                 "{translationText}"
               </p>
             </>
