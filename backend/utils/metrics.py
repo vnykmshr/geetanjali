@@ -115,17 +115,9 @@ ollama_models_loaded = Gauge(
     "Number of models loaded in Ollama",
 )
 
-llm_requests_total = Counter(
-    "geetanjali_llm_requests_total",
-    "Total LLM requests by provider and status",
-    ["provider", "status"],
-)
-
-llm_tokens_total = Counter(
-    "geetanjali_llm_tokens_total",
-    "Total LLM tokens by provider and type",
-    ["provider", "token_type"],
-)
+# LLM request/token metrics are defined in metrics_llm.py
+# Re-export for backward compatibility with existing imports
+from utils.metrics_llm import llm_requests_total, llm_tokens_total  # noqa: E402, F401
 
 # ChromaDB/Vector Store Metrics
 chromadb_up = Gauge(

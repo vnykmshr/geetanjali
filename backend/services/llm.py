@@ -22,7 +22,7 @@ except ImportError:
 from config import settings
 from services.mock_llm import MockLLMService
 from utils.exceptions import LLMError, RetryableLLMError
-from utils.metrics import llm_requests_total, llm_tokens_total
+from utils.metrics_llm import llm_requests_total, llm_tokens_total
 
 logger = logging.getLogger(__name__)
 

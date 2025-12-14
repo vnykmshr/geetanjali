@@ -18,9 +18,9 @@ from api.dependencies import verify_admin_api_key
 from config import settings
 from services.cache import get_redis_client
 
-# Import metrics module to ensure all custom metrics are registered
-# before the Instrumentator exposes them via /metrics endpoint
-import utils.metrics  # noqa: F401
+# Import LLM metrics only - worker should not expose backend business metrics
+# This ensures only LLM request/token counters are registered for this service
+import utils.metrics_llm  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
