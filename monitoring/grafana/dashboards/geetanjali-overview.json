@@ -2333,7 +2333,8 @@
                 "value": null
               }
             ]
-          }
+          },
+          "unit": "Bps"
         }
       },
       "gridPos": {
@@ -2358,11 +2359,11 @@
           "sort": "desc"
         }
       },
-      "title": "In-Flight Requests",
+      "title": "Response Throughput",
       "type": "timeseries",
       "targets": [
         {
-          "expr": "http_requests_in_progress{job=\"backend\"}",
+          "expr": "sum(rate(http_response_size_bytes_sum{job=\"backend\"}[5m])) by (handler)",
           "legendFormat": "{{handler}}",
           "refId": "A"
         }
