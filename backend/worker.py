@@ -7,6 +7,10 @@ The worker will automatically reconnect if Redis connection is lost.
 """
 
 import sys
+import threading
+from typing import Optional
+
+import uvicorn
 
 from config import settings
 from utils.logging import setup_logging
@@ -17,6 +21,42 @@ init_sentry(service_name="worker")
 
 # Setup logging
 logger = setup_logging()
+
+# HTTP port for worker API (different from backend's 8000)
+WORKER_API_PORT = 8001
+
+# Global reference for graceful shutdown
+_api_server: Optional[uvicorn.Server] = None
+
+
+def start_api_server() -> uvicorn.Server:
+    """Start the FastAPI server for worker in a background thread."""
+    global _api_server
+    from worker_api import app
+
+    config = uvicorn.Config(
+        app,
+        host="0.0.0.0",
+        port=WORKER_API_PORT,
+        log_level="warning",  # Reduce noise from health checks
+        access_log=False,
+    )
+    server = uvicorn.Server(config)
+    _api_server = server
+
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    logger.info(f"Worker API server started on port {WORKER_API_PORT}")
+    return server
+
+
+def shutdown_api_server() -> None:
+    """Gracefully shutdown the API server."""
+    global _api_server
+    if _api_server:
+        logger.info("Shutting down Worker API server...")
+        _api_server.should_exit = True
+        _api_server = None
 
 
 def run_worker():
@@ -29,6 +69,9 @@ def run_worker():
         logger.error("RQ_ENABLED is False, worker not needed")
         sys.exit(1)
 
+    # Start the FastAPI server for health checks and metrics
+    start_api_server()
+
     try:
         from redis import Redis
         from rq import Worker, Queue
@@ -37,7 +80,12 @@ def run_worker():
 
         # Test connection
         redis_conn.ping()
-        logger.info(f"Connected to Redis at {settings.REDIS_URL}")
+        # Mask password in log output
+        from urllib.parse import urlparse
+        parsed = urlparse(settings.REDIS_URL)
+        db_path = parsed.path.lstrip("/") if parsed.path else "0"
+        safe_url = f"{parsed.scheme}://{parsed.hostname}:{parsed.port or 6379}/{db_path}"
+        logger.info(f"Connected to Redis at {safe_url}")
 
         queues = [Queue(settings.RQ_QUEUE_NAME, connection=redis_conn)]
 
@@ -53,8 +101,10 @@ def run_worker():
 
     except KeyboardInterrupt:
         logger.info("Worker stopped by user")
+        shutdown_api_server()
     except Exception as e:
         logger.error(f"Worker failed: {e}")
+        shutdown_api_server()
         sys.exit(1)
 
 

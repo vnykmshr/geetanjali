@@ -13,7 +13,6 @@ Geetanjali uses a layered Docker Compose configuration for different environment
 | File | Purpose | Use Case |
 |------|---------|----------|
 | `docker-compose.yml` | **Base configuration** | Core services for all environments |
-| `docker-compose.prod.yml` | Production overrides | Security hardening, resource limits |
 | `docker-compose.observability.yml` | Monitoring stack | Prometheus + Grafana dashboards |
 | `docker-compose.override.yml` | Local dev overrides | Auto-loaded, exposes ports for debugging |
 | `docker-compose.minimal.yml` | Standalone minimal | Backend + Postgres only (no Ollama) |
@@ -38,24 +37,23 @@ Services exposed:
 
 ### Production Deployment
 
+Production settings are controlled via the `.env` file (decrypted from `.env.enc` during deployment):
+
 ```bash
-# Production with security hardening
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Deploy to production (uses scripts/deploy.sh)
+make deploy
 
 # With monitoring (recommended)
-docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d
-
-# Or use Makefile
-make prod-up
-make obs-up  # Add observability to running stack
+make obs-up
 ```
 
-Production overrides:
-- Removes dev volume mounts
-- Sets `APP_ENV=production`
-- Enables `COOKIE_SECURE=true`
-- Adds CPU/memory limits
-- Sets `restart: always`
+Production is configured via `.env`:
+- `APP_ENV=production`
+- `DEBUG=false`
+- `LOG_LEVEL=WARNING`
+- `COOKIE_SECURE=true`
+
+See [Deployment Guide](deployment.md) for full deployment workflow.
 
 ### Monitoring Stack
 
@@ -100,31 +98,6 @@ The base configuration defines all services:
 - Non-root users where possible
 - Internal Docker network (no external ports except frontend)
 - Resource limits (memory reservations)
-
-### docker-compose.prod.yml (Production)
-
-Overrides for production:
-
-```yaml
-services:
-  backend:
-    environment:
-      APP_ENV: production
-      DEBUG: "false"
-      COOKIE_SECURE: "true"
-    volumes: []  # Remove dev mount
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-```
-
-**Key differences:**
-- No source code volume mounts
-- Strict environment settings
-- CPU limits
-- `restart: always` for all services
 
 ### docker-compose.observability.yml (Monitoring)
 
@@ -250,10 +223,9 @@ make logs           # Tail all logs
 make logs-backend   # Tail backend logs
 
 # Production
-make prod-up        # Start production stack
-make prod-down      # Stop production stack
-make obs-up         # Add observability stack
-make obs-down       # Remove observability stack
+make deploy         # Deploy to production server
+make obs-up         # Start with observability stack
+make obs-down       # Stop observability stack
 
 # Database
 make db-shell       # PostgreSQL shell

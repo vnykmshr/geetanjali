@@ -35,39 +35,17 @@ restart: ## Restart all containers
 	$(COMPOSE) restart
 
 # =============================================================================
-# Production
-# =============================================================================
-
-prod-up: ## Start production environment
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml up -d
-
-prod-down: ## Stop production environment
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml down
-
-prod-build: ## Build production images
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml build
-
-prod-logs: ## Show production logs
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml logs -f
-
-# =============================================================================
 # Observability (Prometheus + Grafana)
 # =============================================================================
 
-obs-up: ## Add observability stack to running environment
-	$(COMPOSE) -f docker-compose.observability.yml up -d
+obs-up: ## Start with observability stack (Prometheus + Grafana)
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.observability.yml up -d
 
-obs-down: ## Remove observability stack
-	$(COMPOSE) -f docker-compose.observability.yml down
+obs-down: ## Stop observability stack
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.observability.yml down
 
 obs-logs: ## Show observability logs
 	$(COMPOSE) -f docker-compose.observability.yml logs -f
-
-prod-full-up: ## Start production with observability
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml up -d
-
-prod-full-down: ## Stop production with observability
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.observability.yml down
 
 # =============================================================================
 # Testing

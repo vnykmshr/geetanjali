@@ -171,7 +171,6 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    # Resource limits (pids limit set in docker-compose.prod.yml)
     depends_on:
       postgres:
         condition: service_healthy
@@ -203,6 +202,8 @@ services:
       SKIP_MIGRATIONS: "true"
     volumes:
       - ./backend:/app
+    ports:
+      - "8001:8001"  # Worker API (health, metrics, admin)
     # Security hardening
     cap_drop:
       - ALL
@@ -210,13 +211,13 @@ services:
       - no-new-privileges:true
     # Resource limits
     pids_limit: 128
-    # Healthcheck via Redis connectivity (worker must connect to function)
+    # Healthcheck via HTTP endpoint (checks Redis connectivity)
     healthcheck:
-      test: ["CMD", "python", "healthcheck.py"]
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health/ready"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
     depends_on:
       redis:
         condition: service_healthy
