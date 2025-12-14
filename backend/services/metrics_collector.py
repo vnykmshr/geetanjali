@@ -15,6 +15,7 @@ from models.user import User
 from models.case import Case
 from models.output import Output
 from models.verse import Verse
+from models.message import Message
 from services.cache import get_redis_client
 from utils.metrics import (
     consultations_total,
@@ -25,6 +26,8 @@ from utils.metrics import (
     consultations_24h,
     signups_24h,
     consultation_completion_rate,
+    exports_24h,
+    avg_messages_per_case,
     redis_connections,
     redis_memory_usage_percent,
     queue_depth,
@@ -122,6 +125,26 @@ def _collect_business_metrics() -> None:
             consultation_completion_rate.set(round(completion_rate, 3))
         else:
             consultation_completion_rate.set(0)
+
+        # Exports in last 24 hours
+        exports_24h_count = (
+            db.query(func.count(Output.id))
+            .filter(Output.created_at >= yesterday)
+            .scalar()
+            or 0
+        )
+        exports_24h.set(exports_24h_count)
+
+        # Average messages per case (completed cases only)
+        total_messages = db.query(func.count(Message.id)).scalar() or 0
+        cases_with_messages = (
+            db.query(func.count(func.distinct(Message.case_id))).scalar() or 0
+        )
+        if cases_with_messages > 0:
+            avg_msgs = total_messages / cases_with_messages
+            avg_messages_per_case.set(round(avg_msgs, 1))
+        else:
+            avg_messages_per_case.set(0)
 
         logger.debug(
             f"Business metrics: consultations={consultation_count}, "

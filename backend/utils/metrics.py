@@ -44,6 +44,16 @@ consultation_completion_rate = Gauge(
     "Ratio of completed to total consultations (0-1)",
 )
 
+exports_24h = Gauge(
+    "geetanjali_exports_24h",
+    "Number of exports generated in the last 24 hours",
+)
+
+avg_messages_per_case = Gauge(
+    "geetanjali_avg_messages_per_case",
+    "Average number of messages per consultation",
+)
+
 # Infrastructure Metrics
 redis_connections = Gauge(
     "geetanjali_redis_connections",
