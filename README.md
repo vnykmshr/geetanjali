@@ -132,6 +132,7 @@ Full API documentation at `/docs` when running.
 - [Content Moderation](docs/content-moderation.md) - Multi-layer filtering, abuse detection
 - [Observability](docs/observability.md) - Monitoring, metrics, Grafana dashboards
 - [Security](docs/security.md) - Container hardening, secrets management
+- [SEO](docs/seo.md) - Search engine setup, meta tags, crawlability trade-offs
 - [Data Sources](docs/data.md) - Geeta content, licensing, ingestion
 - [Building Geetanjali](docs/building-geetanjali.md) - Deep dive into the RAG system design
 
