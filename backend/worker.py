@@ -36,7 +36,7 @@ def start_api_server() -> uvicorn.Server:
 
     config = uvicorn.Config(
         app,
-        host="0.0.0.0",
+        host="0.0.0.0",  # nosec B104 - Safe: Docker container, no public port exposure
         port=WORKER_API_PORT,
         log_level="warning",  # Reduce noise from health checks
         access_log=False,
