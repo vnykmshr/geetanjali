@@ -5,9 +5,15 @@ import { formatSanskritLines, isSpeakerIntro } from "../lib/sanskritFormatter";
 import { PRINCIPLE_TAXONOMY } from "../constants/principles";
 import { getTranslatorPriority } from "../constants/translators";
 import type { Verse, Translation } from "../types";
-import { Navbar, ContentNotFound, Footer, ChapterContextBar } from "../components";
+import {
+  Navbar,
+  ContentNotFound,
+  Footer,
+  ChapterContextBar,
+  StickyBottomNav,
+} from "../components";
 import { errorMessages } from "../lib/errorMessages";
-import { useSEO } from "../hooks";
+import { useSEO, useAdjacentVerses } from "../hooks";
 
 // Sort translations by priority
 function sortTranslations(translations: Translation[]): Translation[] {
@@ -70,6 +76,13 @@ export default function VerseDetail() {
 
     loadVerseDetails();
   }, [canonicalId, canonicalUppercase]);
+
+  // Fetch adjacent verses for navigation preview
+  // Hook must be called unconditionally, but will only fetch when verse is loaded
+  const { prevVerse, nextVerse } = useAdjacentVerses(
+    verse?.chapter ?? 0,
+    verse?.verse ?? 0
+  );
 
   if (loading) {
     return (
@@ -282,34 +295,38 @@ export default function VerseDetail() {
             </div>
           )}
 
-          {/* Navigation to adjacent verses */}
-          <div className="mt-4 sm:mt-6 lg:mt-8 flex justify-between items-center text-sm sm:text-base">
-            {verse.verse > 1 ? (
+          {/* Desktop Navigation (hidden on mobile) */}
+          <div className="hidden sm:flex mt-6 lg:mt-8 justify-between items-center text-base">
+            {prevVerse ? (
               <Link
-                to={`/verses/BG_${verse.chapter}_${verse.verse - 1}`}
-                className="text-orange-600 hover:text-orange-700 font-medium"
+                to={`/verses/${prevVerse.canonical_id}`}
+                className="text-amber-700 hover:text-amber-800 font-medium transition-colors"
               >
-                ← <span className="hidden sm:inline">Previous Verse</span>
-                <span className="sm:hidden">Prev</span>
+                ← Previous Verse
               </Link>
             ) : verse.chapter > 1 ? (
               <Link
                 to={`/verses?chapter=${verse.chapter - 1}`}
-                className="text-orange-600 hover:text-orange-700 font-medium"
+                className="text-amber-700 hover:text-amber-800 font-medium transition-colors"
               >
-                ← <span className="hidden sm:inline">Previous Chapter</span>
-                <span className="sm:hidden">Prev Ch.</span>
+                ← Previous Chapter
               </Link>
             ) : (
               <div />
             )}
-            {verse.chapter < 18 ? (
+            {nextVerse ? (
               <Link
-                to={`/verses/BG_${verse.chapter}_${verse.verse + 1}`}
-                className="text-orange-600 hover:text-orange-700 font-medium"
+                to={`/verses/${nextVerse.canonical_id}`}
+                className="text-amber-700 hover:text-amber-800 font-medium transition-colors"
               >
-                <span className="hidden sm:inline">Next Verse</span>
-                <span className="sm:hidden">Next</span> →
+                Next Verse →
+              </Link>
+            ) : verse.chapter < 18 ? (
+              <Link
+                to={`/verses?chapter=${verse.chapter + 1}`}
+                className="text-amber-700 hover:text-amber-800 font-medium transition-colors"
+              >
+                Next Chapter →
               </Link>
             ) : (
               <div />
@@ -318,8 +335,16 @@ export default function VerseDetail() {
         </div>
       </div>
 
-      {/* Bottom padding for FAB on mobile */}
-      <div className="h-16 sm:hidden" />
+      {/* Mobile Sticky Bottom Navigation */}
+      <StickyBottomNav
+        prevVerse={prevVerse}
+        nextVerse={nextVerse}
+        currentChapter={verse.chapter}
+        currentVerse={verse.verse}
+      />
+
+      {/* Bottom padding for sticky nav on mobile */}
+      <div className="h-20 sm:hidden" />
 
       {/* Footer */}
       <Footer />

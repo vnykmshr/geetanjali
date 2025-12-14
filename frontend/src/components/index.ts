@@ -24,6 +24,7 @@ export { ContentNotFound } from "./ContentNotFound";
 export { SkipLink } from "./SkipLink";
 export { ChapterContextBar } from "./ChapterContextBar";
 export { ProgressBar } from "./ProgressBar";
+export { StickyBottomNav } from "./StickyBottomNav";
 
 // Case-related components
 export {
