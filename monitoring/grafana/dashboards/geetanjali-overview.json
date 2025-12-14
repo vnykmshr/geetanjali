@@ -201,7 +201,7 @@
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "title": "Error Rate",
       "type": "stat",
-      "targets": [{ "expr": "sum(rate(http_requests_total{job=\"backend\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{job=\"backend\"}[5m]))", "refId": "A" }]
+      "targets": [{ "expr": "sum(rate(http_requests_total{job=\"backend\",status=\"5xx\"}[5m])) / sum(rate(http_requests_total{job=\"backend\"}[5m])) or vector(0)", "refId": "A" }]
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -218,7 +218,7 @@
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "title": "Success Rate",
       "type": "stat",
-      "targets": [{ "expr": "1 - (sum(rate(http_requests_total{job=\"backend\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{job=\"backend\"}[5m])))", "refId": "A" }]
+      "targets": [{ "expr": "1 - (sum(rate(http_requests_total{job=\"backend\",status=\"5xx\"}[5m])) / sum(rate(http_requests_total{job=\"backend\"}[5m])) or vector(0))", "refId": "A" }]
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
