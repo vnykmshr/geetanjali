@@ -25,6 +25,7 @@ export { SkipLink } from "./SkipLink";
 export { ChapterContextBar } from "./ChapterContextBar";
 export { ProgressBar } from "./ProgressBar";
 export { StickyBottomNav } from "./StickyBottomNav";
+export { FloatingNavArrow } from "./FloatingNavArrow";
 
 // Case-related components
 export {

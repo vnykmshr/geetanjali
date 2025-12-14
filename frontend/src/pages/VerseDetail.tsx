@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { versesApi } from "../lib/api";
 import { formatSanskritLines, isSpeakerIntro } from "../lib/sanskritFormatter";
 import { PRINCIPLE_TAXONOMY } from "../constants/principles";
@@ -11,6 +11,7 @@ import {
   Footer,
   ChapterContextBar,
   StickyBottomNav,
+  FloatingNavArrow,
 } from "../components";
 import { errorMessages } from "../lib/errorMessages";
 import { useSEO, useAdjacentVerses } from "../hooks";
@@ -121,9 +122,26 @@ export default function VerseDetail() {
     englishTranslations.find((t) => t.translator === "Swami Gambirananda") ||
     englishTranslations[0];
 
+  // Determine if at boundaries of Geeta
+  const isAtStart = verse.chapter === 1 && verse.verse === 1;
+  const isAtEnd = verse.chapter === 18 && verse.verse === 78;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
       <Navbar />
+
+      {/* Desktop Floating Navigation Arrows */}
+      <FloatingNavArrow
+        direction="prev"
+        verse={prevVerse}
+        isAtBoundary={isAtStart}
+      />
+      <FloatingNavArrow
+        direction="next"
+        verse={nextVerse}
+        isAtBoundary={isAtEnd}
+      />
+
       <div className="flex-1 py-4 sm:py-6 lg:py-8">
         <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6">
           {/* Chapter Context Bar */}
@@ -295,43 +313,6 @@ export default function VerseDetail() {
             </div>
           )}
 
-          {/* Desktop Navigation (hidden on mobile) */}
-          <div className="hidden sm:flex mt-6 lg:mt-8 justify-between items-center text-base">
-            {prevVerse ? (
-              <Link
-                to={`/verses/${prevVerse.canonical_id}`}
-                className="text-amber-700 hover:text-amber-800 font-medium transition-colors"
-              >
-                ← Previous Verse
-              </Link>
-            ) : verse.chapter > 1 ? (
-              <Link
-                to={`/verses?chapter=${verse.chapter - 1}`}
-                className="text-amber-700 hover:text-amber-800 font-medium transition-colors"
-              >
-                ← Previous Chapter
-              </Link>
-            ) : (
-              <div />
-            )}
-            {nextVerse ? (
-              <Link
-                to={`/verses/${nextVerse.canonical_id}`}
-                className="text-amber-700 hover:text-amber-800 font-medium transition-colors"
-              >
-                Next Verse →
-              </Link>
-            ) : verse.chapter < 18 ? (
-              <Link
-                to={`/verses?chapter=${verse.chapter + 1}`}
-                className="text-amber-700 hover:text-amber-800 font-medium transition-colors"
-              >
-                Next Chapter →
-              </Link>
-            ) : (
-              <div />
-            )}
-          </div>
         </div>
       </div>
 
