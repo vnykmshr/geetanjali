@@ -22,6 +22,9 @@ from utils.metrics import (
     exports_total,
     registered_users_total,
     active_users_24h,
+    consultations_24h,
+    signups_24h,
+    consultation_completion_rate,
     redis_connections,
     redis_memory_usage_percent,
     queue_depth,
@@ -87,10 +90,45 @@ def _collect_business_metrics() -> None:
         )
         active_users_24h.set(active_count)
 
+        # Consultations completed in last 24 hours
+        consultations_24h_count = (
+            db.query(func.count(Case.id))
+            .filter(Case.status == "completed")
+            .filter(Case.is_deleted.is_(False))
+            .filter(Case.updated_at >= yesterday)
+            .scalar()
+            or 0
+        )
+        consultations_24h.set(consultations_24h_count)
+
+        # New signups in last 24 hours
+        signups_24h_count = (
+            db.query(func.count(User.id))
+            .filter(User.created_at >= yesterday)
+            .scalar()
+            or 0
+        )
+        signups_24h.set(signups_24h_count)
+
+        # Consultation completion rate (completed / total non-deleted)
+        total_cases = (
+            db.query(func.count(Case.id))
+            .filter(Case.is_deleted.is_(False))
+            .scalar()
+            or 0
+        )
+        if total_cases > 0:
+            completion_rate = consultation_count / total_cases
+            consultation_completion_rate.set(round(completion_rate, 3))
+        else:
+            consultation_completion_rate.set(0)
+
         logger.debug(
             f"Business metrics: consultations={consultation_count}, "
             f"verses={verse_count}, exports={export_count}, "
-            f"users={user_count}, active_24h={active_count}"
+            f"users={user_count}, active_24h={active_count}, "
+            f"consultations_24h={consultations_24h_count}, signups_24h={signups_24h_count}, "
+            f"completion_rate={completion_rate if total_cases > 0 else 0}"
         )
     except Exception as e:
         logger.error(f"Failed to collect business metrics: {e}")

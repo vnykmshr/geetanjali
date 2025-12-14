@@ -29,6 +29,21 @@ active_users_24h = Gauge(
     "Number of users active in the last 24 hours",
 )
 
+consultations_24h = Gauge(
+    "geetanjali_consultations_24h",
+    "Number of consultations completed in the last 24 hours",
+)
+
+signups_24h = Gauge(
+    "geetanjali_signups_24h",
+    "Number of new user registrations in the last 24 hours",
+)
+
+consultation_completion_rate = Gauge(
+    "geetanjali_consultation_completion_rate",
+    "Ratio of completed to total consultations (0-1)",
+)
+
 # Infrastructure Metrics
 redis_connections = Gauge(
     "geetanjali_redis_connections",
