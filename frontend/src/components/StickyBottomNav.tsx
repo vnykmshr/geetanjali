@@ -2,14 +2,12 @@
  * StickyBottomNav - Fixed footer navigation for mobile
  *
  * Shows previous/next verse navigation at the bottom of the screen,
- * always visible without scrolling. Includes verse number and
- * paraphrase preview for context.
+ * always visible without scrolling.
  *
  * Features:
  * - Fixed position at bottom (thumb zone)
  * - Touch-friendly tap targets (min 44px)
- * - Truncated paraphrase preview
- * - Graceful fallback if no preview data
+ * - Graceful fallback at boundaries
  * - Hidden on desktop (sm:hidden)
  *
  * Used by: VerseDetail (mobile only)
@@ -30,27 +28,9 @@ interface StickyBottomNavProps {
 }
 
 /**
- * Truncate text to a maximum length at word boundary
- */
-function truncateText(text: string | null | undefined, maxLength: number): string {
-  if (!text) return "";
-  if (text.length <= maxLength) return text;
-
-  // Find the last space before maxLength
-  const truncated = text.slice(0, maxLength);
-  const lastSpace = truncated.lastIndexOf(" ");
-
-  // If no space found, just cut at maxLength
-  if (lastSpace === -1) return truncated + "...";
-
-  return truncated.slice(0, lastSpace) + "...";
-}
-
-/**
  * Format verse reference (e.g., "2.46")
  */
-function formatVerseRef(verse: Verse | null): string {
-  if (!verse) return "";
+function formatVerseRef(verse: Verse): string {
   return `${verse.chapter}.${verse.verse}`;
 }
 
@@ -75,30 +55,23 @@ export function StickyBottomNav({
         {prevVerse ? (
           <Link
             to={`/verses/${prevVerse.canonical_id}`}
-            className="flex-1 flex flex-col items-start justify-center p-3 min-h-[72px]
+            className="flex-1 flex items-center justify-start gap-2 p-4 min-h-[56px]
                        hover:bg-amber-50 active:bg-amber-100 transition-colors
                        focus:outline-none focus-visible:ring-2 focus-visible:ring-inset
                        focus-visible:ring-amber-500"
             aria-label={`Previous verse: ${formatVerseRef(prevVerse)}`}
           >
-            <div className="flex items-center gap-1 text-amber-700 font-medium text-sm">
-              <span aria-hidden="true">←</span>
-              <span>{formatVerseRef(prevVerse)}</span>
-            </div>
-            <p className="text-xs text-gray-600 leading-tight mt-1 text-left">
-              {truncateText(prevVerse.paraphrase_en, 45)}
-            </p>
+            <span aria-hidden="true" className="text-amber-700 text-lg">←</span>
+            <span className="text-amber-700 font-medium">{formatVerseRef(prevVerse)}</span>
           </Link>
         ) : (
           <div
-            className={`flex-1 flex flex-col items-start justify-center p-3 min-h-[72px]
+            className={`flex-1 flex items-center justify-start gap-2 p-4 min-h-[56px]
                         ${isAtStart ? "text-gray-300" : "text-gray-400"}`}
             aria-disabled="true"
           >
-            <div className="flex items-center gap-1 font-medium text-sm">
-              <span aria-hidden="true">←</span>
-              <span>{isAtStart ? "Start" : "..."}</span>
-            </div>
+            <span aria-hidden="true" className="text-lg">←</span>
+            <span className="font-medium">{isAtStart ? "Start" : "..."}</span>
           </div>
         )}
 
@@ -109,30 +82,23 @@ export function StickyBottomNav({
         {nextVerse ? (
           <Link
             to={`/verses/${nextVerse.canonical_id}`}
-            className="flex-1 flex flex-col items-end justify-center p-3 min-h-[72px]
+            className="flex-1 flex items-center justify-end gap-2 p-4 min-h-[56px]
                        hover:bg-amber-50 active:bg-amber-100 transition-colors
                        focus:outline-none focus-visible:ring-2 focus-visible:ring-inset
                        focus-visible:ring-amber-500"
             aria-label={`Next verse: ${formatVerseRef(nextVerse)}`}
           >
-            <div className="flex items-center gap-1 text-amber-700 font-medium text-sm">
-              <span>{formatVerseRef(nextVerse)}</span>
-              <span aria-hidden="true">→</span>
-            </div>
-            <p className="text-xs text-gray-600 leading-tight mt-1 text-right">
-              {truncateText(nextVerse.paraphrase_en, 45)}
-            </p>
+            <span className="text-amber-700 font-medium">{formatVerseRef(nextVerse)}</span>
+            <span aria-hidden="true" className="text-amber-700 text-lg">→</span>
           </Link>
         ) : (
           <div
-            className={`flex-1 flex flex-col items-end justify-center p-3 min-h-[72px]
+            className={`flex-1 flex items-center justify-end gap-2 p-4 min-h-[56px]
                         ${isAtEnd ? "text-gray-300" : "text-gray-400"}`}
             aria-disabled="true"
           >
-            <div className="flex items-center gap-1 font-medium text-sm">
-              <span>{isAtEnd ? "End" : "..."}</span>
-              <span aria-hidden="true">→</span>
-            </div>
+            <span className="font-medium">{isAtEnd ? "End" : "..."}</span>
+            <span aria-hidden="true" className="text-lg">→</span>
           </div>
         )}
       </div>

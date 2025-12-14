@@ -32,7 +32,7 @@ export default function VerseDetail() {
   const [translations, setTranslations] = useState<Translation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showAllTranslations, setShowAllTranslations] = useState(true);
+  const [showAllTranslations, setShowAllTranslations] = useState(false);
 
   // Redirect to canonical uppercase URL if case doesn't match
   const canonicalUppercase = canonicalId?.toUpperCase();
@@ -101,26 +101,12 @@ export default function VerseDetail() {
         return;
       }
 
-      switch (event.key) {
-        case "ArrowLeft":
-          // Navigate to previous verse
-          if (prevVerse) {
-            event.preventDefault();
-            navigate(`/verses/${prevVerse.canonical_id}`);
-          }
-          break;
-        case "ArrowRight":
-          // Navigate to next verse
-          if (nextVerse) {
-            event.preventDefault();
-            navigate(`/verses/${nextVerse.canonical_id}`);
-          }
-          break;
-        case "Escape":
-          // Go back to previous page
-          event.preventDefault();
-          navigate(-1);
-          break;
+      if (event.key === "ArrowLeft" && prevVerse) {
+        event.preventDefault();
+        navigate(`/verses/${prevVerse.canonical_id}`);
+      } else if (event.key === "ArrowRight" && nextVerse) {
+        event.preventDefault();
+        navigate(`/verses/${nextVerse.canonical_id}`);
       }
     };
 
@@ -231,6 +217,11 @@ export default function VerseDetail() {
     englishTranslations.find((t) => t.translator === "Swami Gambirananda") ||
     englishTranslations[0];
 
+  // Filter out primary translations for "More Translations" section
+  const otherTranslations = translations.filter(
+    (t) => t.id !== primaryHindi?.id && t.id !== primaryEnglish?.id
+  );
+
   // Determine if at boundaries of Geeta
   const isAtStart = verse.chapter === 1 && verse.verse === 1;
   const isAtEnd = verse.chapter === 18 && verse.verse === 78;
@@ -310,7 +301,7 @@ export default function VerseDetail() {
                       return (
                         <Link
                           key={principleId}
-                          to={`/verses?principles=${principleId}`}
+                          to={`/verses?topic=${principleId}`}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2
                                      bg-amber-100 text-amber-800 rounded-full text-sm sm:text-base
                                      font-medium shadow-sm
@@ -371,16 +362,16 @@ export default function VerseDetail() {
             </div>
           </div>
 
-          {/* Translations Section - Toggle Switch */}
-          {translations.length > 0 && (
+          {/* More Translations Section - Toggle Switch */}
+          {otherTranslations.length > 0 && (
             <div className="animate-fade-in bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8" style={{ animationDelay: "100ms" }}>
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                  Translations
+                  More Translations
                 </h2>
                 <button
                   onClick={() => setShowAllTranslations(!showAllTranslations)}
-                  aria-label={showAllTranslations ? "Hide translations" : "Show translations"}
+                  aria-label={showAllTranslations ? "Hide more translations" : "Show more translations"}
                   aria-pressed={showAllTranslations}
                   className={`relative inline-flex h-7 sm:h-8 w-12 sm:w-14 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 ${
                     showAllTranslations ? "bg-amber-600" : "bg-gray-300"
@@ -398,7 +389,7 @@ export default function VerseDetail() {
 
               {showAllTranslations && (
                 <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-in fade-in duration-200">
-                  {translations.map((translation, index) => (
+                  {otherTranslations.map((translation, index) => (
                     <div key={translation.id}>
                       <div className="border-l-4 border-amber-300 pl-4 sm:pl-6 py-2 sm:py-3">
                         <p className="text-base sm:text-lg text-gray-800 leading-relaxed mb-2 sm:mb-3">
@@ -415,7 +406,7 @@ export default function VerseDetail() {
                           )}
                         </div>
                       </div>
-                      {index < translations.length - 1 && (
+                      {index < otherTranslations.length - 1 && (
                         <div className="mt-4 sm:mt-6 border-b border-gray-100" />
                       )}
                     </div>
@@ -428,6 +419,12 @@ export default function VerseDetail() {
         </div>
       </div>
 
+      {/* Footer */}
+      <Footer />
+
+      {/* Bottom padding for sticky nav on mobile */}
+      <div className="h-16 sm:hidden" />
+
       {/* Mobile Sticky Bottom Navigation */}
       <StickyBottomNav
         prevVerse={prevVerse}
@@ -435,12 +432,6 @@ export default function VerseDetail() {
         currentChapter={verse.chapter}
         currentVerse={verse.verse}
       />
-
-      {/* Bottom padding for sticky nav on mobile */}
-      <div className="h-20 sm:hidden" />
-
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }

@@ -63,10 +63,13 @@ export function FloatingActionButton({
   // Also hide if we're on a specific case view (to avoid clutter during reading)
   const isOnCaseView = location.pathname.match(/^\/cases\/[^/]+$/);
 
+  // Hide on verse detail (conflicts with sticky bottom nav, reading context)
+  const isOnVerseDetail = location.pathname.match(/^\/verses\/[^/]+$/);
+
   // Hide when inline CTA is visible on homepage
   const hideOnHomepage = isHomepage && ctaInView;
 
-  if (shouldHide || isOnCaseView || hideOnHomepage) {
+  if (shouldHide || isOnCaseView || isOnVerseDetail || hideOnHomepage) {
     return null;
   }
 
