@@ -179,31 +179,36 @@ export function IntroCard(props: IntroCardProps) {
           aria-label={showDetails ? "Hide details" : "Show details"}
         >
           {/* Om symbol */}
-          <div className="text-3xl sm:text-4xl text-amber-400/50 mb-3 sm:mb-4 lg:mb-6 font-light">
+          <div className="text-3xl sm:text-4xl text-amber-400/50 mb-2 sm:mb-3 font-light">
             ॐ
           </div>
 
           {/* Chapter badge */}
-          <div className="text-sm text-amber-600/60 uppercase tracking-widest mb-3">
+          <div className="text-sm text-amber-600/60 uppercase tracking-widest mb-2">
             Chapter {chapter.chapter_number}
           </div>
 
           {/* Sanskrit name - hero display */}
           <div
             lang="sa"
-            className={`${FONT_SIZE_CLASSES[fontSize]} font-serif text-amber-900/70 leading-relaxed tracking-wide mb-3 sm:mb-4`}
+            className={`${FONT_SIZE_CLASSES[fontSize]} font-serif text-amber-900/70 leading-relaxed tracking-wide mb-2 sm:mb-3`}
           >
-            <p className="mb-1 sm:mb-2">{chapter.sanskrit_name}</p>
+            <p>{chapter.sanskrit_name}</p>
           </div>
 
           {/* Transliteration */}
-          <div className="text-amber-700/60 text-base sm:text-lg font-serif italic mb-4">
+          <div className="text-amber-700/60 text-base sm:text-lg font-serif italic mb-2">
             {chapter.transliteration}
           </div>
 
           {/* English title */}
-          <div className="text-amber-600/70 text-base sm:text-lg font-serif mb-4">
+          <div className="text-amber-600/70 text-base sm:text-lg font-serif mb-1">
             ॥ {chapter.english_title} ॥
+          </div>
+
+          {/* Verse count - moved up for visibility */}
+          <div className="text-sm text-amber-500/70 mb-2">
+            {chapter.verse_count} verses
           </div>
 
           {/* Hints (only show when details hidden) */}
@@ -223,44 +228,39 @@ export function IntroCard(props: IntroCardProps) {
       {/* Details panel - expands downward */}
       <div
         className={`flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${
-          showDetails ? "max-h-[1000px] opacity-100 mt-6" : "max-h-0 opacity-0 mt-0"
+          showDetails ? "max-h-[1000px] opacity-100 mt-4" : "max-h-0 opacity-0 mt-0"
         }`}
       >
-        <div className="border-t border-amber-200/50 pt-6 space-y-4">
+        <div className="border-t border-amber-200/50 pt-4 space-y-3">
           {/* Subtitle if present */}
           {chapter.subtitle && (
-            <div className="bg-amber-100/30 rounded-xl p-4 border border-amber-200/30">
-              <p className="text-base text-amber-800/80 leading-relaxed italic font-serif text-center">
+            <div className="bg-amber-100/30 rounded-xl p-3 border border-amber-200/30">
+              <p className="text-sm sm:text-base text-amber-800/80 leading-relaxed italic font-serif text-center">
                 "{chapter.subtitle}"
               </p>
             </div>
           )}
 
           {/* Summary */}
-          <div className="bg-white/70 rounded-xl p-4 border border-amber-200/50">
-            <p className="text-base text-gray-800 leading-relaxed">
+          <div className="bg-white/70 rounded-xl p-3 border border-amber-200/50">
+            <p className="text-sm sm:text-base text-gray-800 leading-relaxed">
               {chapter.summary}
             </p>
           </div>
 
           {/* Key themes */}
           {chapter.key_themes && chapter.key_themes.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-1.5">
               {chapter.key_themes.map((theme, index) => (
                 <span
                   key={index}
-                  className="px-3 py-1 bg-amber-100 text-amber-700 text-xs rounded-full"
+                  className="px-2.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full"
                 >
                   {theme}
                 </span>
               ))}
             </div>
           )}
-
-          {/* Verse count */}
-          <div className="text-center text-sm text-amber-600/70">
-            {chapter.verse_count} verses
-          </div>
         </div>
       </div>
     </div>
