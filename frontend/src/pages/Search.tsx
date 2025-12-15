@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback, useRef, FormEvent } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { Navbar, Footer } from "../components";
 import { useSearch, useSEO } from "../hooks";
+import { versesApi } from "../lib/api";
 import { SearchIcon, SpinnerIcon, StarIcon, CloseIcon } from "../components/icons";
-import { getPrincipleShortLabel } from "../constants/principles";
+import { getPrincipleShortLabel, PRINCIPLE_TAXONOMY, type PrincipleId } from "../constants/principles";
 import { CHAPTERS, TOTAL_CHAPTERS } from "../constants/chapters";
-import type { SearchResult } from "../types";
+import { formatSanskritLines } from "../lib/sanskritFormatter";
+import type { SearchResult, Verse } from "../types";
 
 // Generate chapter options array from CHAPTERS object
 const CHAPTER_OPTIONS = Array.from({ length: TOTAL_CHAPTERS }, (_, i) => {
@@ -17,6 +19,23 @@ const CHAPTER_OPTIONS = Array.from({ length: TOTAL_CHAPTERS }, (_, i) => {
 // localStorage key for recent searches
 const RECENT_SEARCHES_KEY = "geetanjali:recentSearches";
 const MAX_RECENT_SEARCHES = 5;
+
+// Popular topics for quick exploration
+const POPULAR_TOPICS: { id: PrincipleId; icon: string }[] = [
+  { id: "duty_focus", icon: "⚖️" },
+  { id: "detachment", icon: "🪷" },
+  { id: "self_control", icon: "🧘" },
+  { id: "compassion", icon: "💙" },
+  { id: "ethical_character", icon: "✨" },
+  { id: "self_responsibility", icon: "🎯" },
+];
+
+// Search type examples for educational hints
+const SEARCH_EXAMPLES = [
+  { query: "2.47", label: "By verse", description: "Direct verse reference" },
+  { query: "कर्म", label: "Sanskrit", description: "Devanagari text" },
+  { query: "duty", label: "Keyword", description: "English search" },
+];
 
 /**
  * Get recent searches from localStorage
@@ -39,7 +58,6 @@ function saveRecentSearch(query: string): void {
     if (!trimmed) return;
 
     const recent = getRecentSearches();
-    // Remove if already exists, add to front
     const filtered = recent.filter((s) => s.toLowerCase() !== trimmed.toLowerCase());
     const updated = [trimmed, ...filtered].slice(0, MAX_RECENT_SEARCHES);
     localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
@@ -94,7 +112,6 @@ function getMatchTypeLabel(type: string): string {
 function HighlightedText({ text }: { text: string }) {
   if (!text) return null;
 
-  // Split on <mark> tags and render
   const parts = text.split(/(<mark>.*?<\/mark>)/g);
 
   return (
@@ -128,7 +145,6 @@ function SearchResultCard({
 
   return (
     <div className="relative bg-amber-50 rounded-xl p-3 sm:p-4 border border-amber-200 shadow-sm hover:shadow-md hover:border-amber-300 hover:-translate-y-0.5 transition-all duration-150">
-      {/* Stretched link for card navigation */}
       <Link
         to={`/verses/${result.canonical_id}`}
         className="absolute inset-0 z-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
@@ -136,7 +152,6 @@ function SearchResultCard({
       />
 
       <div className="relative z-10 pointer-events-none">
-        {/* Header: Verse ref + Featured badge + Match type */}
         <div className="flex items-start justify-between mb-2">
           <div className="text-amber-600 font-serif font-medium text-xs sm:text-sm">
             ॥ {result.chapter}.{result.verse} ॥
@@ -153,7 +168,6 @@ function SearchResultCard({
           </div>
         </div>
 
-        {/* Sanskrit text */}
         {result.sanskrit_devanagari && (
           <div
             lang="sa"
@@ -163,7 +177,6 @@ function SearchResultCard({
           </div>
         )}
 
-        {/* Match highlight or translation preview */}
         <div className="my-2 border-t border-amber-200/50" />
         <p className="text-xs sm:text-sm text-gray-600 text-center leading-relaxed line-clamp-3">
           {match.highlight ? (
@@ -173,7 +186,6 @@ function SearchResultCard({
           )}
         </p>
 
-        {/* Match context */}
         {match.field && match.field !== "canonical_id" && (
           <div className="mt-2 text-center">
             <span className="text-[10px] text-gray-400">
@@ -183,7 +195,6 @@ function SearchResultCard({
         )}
       </div>
 
-      {/* Principle tags - clickable */}
       {result.principles && result.principles.length > 0 && (
         <div className="mt-2 sm:mt-3 flex flex-wrap justify-center gap-1 relative z-10">
           {result.principles.slice(0, 2).map((principle) => (
@@ -245,7 +256,7 @@ function ConsultationBanner({
 function SearchSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="h-4 w-48 bg-gray-200 rounded mb-6" />
+      <div className="h-4 w-48 bg-amber-200/50 rounded mb-6" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div
@@ -264,6 +275,221 @@ function SearchSkeleton() {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Featured verse spotlight for starter content
+ */
+function StarterVerseSpotlight({
+  verse,
+  loading,
+}: {
+  verse: Verse | null;
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 rounded-xl sm:rounded-2xl p-6 sm:p-8 border border-amber-200/50 shadow-lg animate-pulse">
+        <div className="text-center space-y-4">
+          <div className="h-8 w-8 bg-amber-200/50 rounded-full mx-auto" />
+          <div className="h-6 w-48 bg-amber-200/50 rounded mx-auto" />
+          <div className="h-20 bg-amber-200/40 rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!verse) return null;
+
+  const verseRef = `${verse.chapter}.${verse.verse}`;
+  const sanskritLines = formatSanskritLines(verse.sanskrit_devanagari || "", {
+    mode: "compact",
+  });
+
+  return (
+    <Link
+      to={`/verses/${verse.canonical_id}`}
+      className="block"
+    >
+      <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 rounded-xl sm:rounded-2xl p-6 sm:p-8 border border-amber-200/50 shadow-lg hover:shadow-xl hover:border-amber-300 transition-all">
+        {/* Om Symbol */}
+        <div className="text-center mb-4">
+          <div className="text-2xl sm:text-3xl text-amber-400/60 font-light">ॐ</div>
+        </div>
+
+        {/* Sanskrit */}
+        {verse.sanskrit_devanagari && (
+          <div className="text-center mb-4">
+            <div
+              lang="sa"
+              className="text-base sm:text-lg md:text-xl font-serif text-amber-900 leading-relaxed tracking-wide space-y-0.5"
+            >
+              {sanskritLines.map((line, idx) => (
+                <p key={idx} className="mb-0">
+                  {line}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Verse Reference */}
+        <div className="text-center mb-4">
+          <span className="text-amber-700/70 font-serif text-sm sm:text-base">
+            ॥ {verseRef} ॥
+          </span>
+        </div>
+
+        {/* Translation Preview */}
+        {verse.paraphrase_en && (
+          <p className="text-center text-sm sm:text-base text-gray-600 leading-relaxed max-w-lg mx-auto line-clamp-2">
+            "{verse.paraphrase_en}"
+          </p>
+        )}
+
+        {/* View prompt */}
+        <div className="text-center mt-4">
+          <span className="text-xs sm:text-sm text-orange-600 font-medium">
+            Explore this verse →
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+/**
+ * Search starter content - shown when no search has been performed
+ */
+function SearchStarterContent({
+  onSearch,
+  onTopicClick,
+  featuredVerse,
+  verseLoading,
+  recentSearches,
+  onRecentSelect,
+  onClearRecent,
+}: {
+  onSearch: (query: string) => void;
+  onTopicClick: (topic: string) => void;
+  featuredVerse: Verse | null;
+  verseLoading: boolean;
+  recentSearches: string[];
+  onRecentSelect: (query: string) => void;
+  onClearRecent: () => void;
+}) {
+  return (
+    <div className="space-y-8 sm:space-y-10">
+      {/* Hero Section */}
+      <div className="text-center">
+        <div className="text-3xl sm:text-4xl text-amber-400/50 mb-3">ॐ</div>
+        <h2 className="text-xl sm:text-2xl font-serif text-gray-900 mb-2">
+          Discover Timeless Wisdom
+        </h2>
+        <p className="text-sm sm:text-base text-gray-600 max-w-md mx-auto">
+          Search the Bhagavad Geeta by verse, Sanskrit text, keywords, or describe what you're seeking.
+        </p>
+      </div>
+
+      {/* Search Type Examples */}
+      <div className="max-w-2xl mx-auto">
+        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 text-center">
+          Try these searches
+        </h3>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          {SEARCH_EXAMPLES.map((example) => (
+            <button
+              key={example.query}
+              onClick={() => onSearch(example.query)}
+              className="bg-white rounded-xl p-3 sm:p-4 border border-amber-200 hover:border-orange-300 hover:shadow-md transition-all text-center group"
+            >
+              <div className="text-base sm:text-lg font-medium text-gray-900 group-hover:text-orange-700 transition-colors mb-1">
+                {example.query}
+              </div>
+              <div className="text-[10px] sm:text-xs text-gray-500">
+                {example.label}
+              </div>
+            </button>
+          ))}
+        </div>
+        <p className="text-center text-xs text-gray-400 mt-3">
+          Or describe what you're seeking: "how to handle difficult decisions"
+        </p>
+      </div>
+
+      {/* Featured Verse */}
+      <div className="max-w-xl mx-auto">
+        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 text-center">
+          Verse Spotlight
+        </h3>
+        <StarterVerseSpotlight verse={featuredVerse} loading={verseLoading} />
+      </div>
+
+      {/* Browse by Topic */}
+      <div className="max-w-2xl mx-auto">
+        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 text-center">
+          Browse by Topic
+        </h3>
+        <div className="flex flex-wrap justify-center gap-2">
+          {POPULAR_TOPICS.map((topic) => {
+            const principle = PRINCIPLE_TAXONOMY[topic.id];
+            return (
+              <button
+                key={topic.id}
+                onClick={() => onTopicClick(topic.id)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-full text-sm font-medium border border-amber-200 hover:border-amber-300 transition-all"
+              >
+                <span>{topic.icon}</span>
+                <span>{principle.shortLabel}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Recent Searches */}
+      {recentSearches.length > 0 && (
+        <div className="max-w-xl mx-auto">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Recent Searches
+            </h3>
+            <button
+              onClick={onClearRecent}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Clear
+            </button>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            {recentSearches.map((query, index) => (
+              <button
+                key={index}
+                onClick={() => onRecentSelect(query)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-full text-sm border border-gray-200 hover:border-gray-300 transition-all"
+              >
+                <SearchIcon className="w-3 h-3 text-gray-400" />
+                <span>{query}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Bottom CTA */}
+      <div className="text-center pt-4">
+        <Link
+          to="/verses"
+          className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium transition-colors"
+        >
+          <span>Or browse all 700 verses</span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
       </div>
     </div>
   );
@@ -296,9 +522,33 @@ export default function Search() {
   const hasSearchedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Recent searches state - initialize from localStorage
+  // Featured verse for starter content
+  const [featuredVerse, setFeaturedVerse] = useState<Verse | null>(null);
+  const [verseLoading, setVerseLoading] = useState(true);
+
+  // Recent searches state
   const [recentSearches, setRecentSearches] = useState<string[]>(() => getRecentSearches());
   const [showRecent, setShowRecent] = useState(false);
+
+  // Load featured verse on mount
+  useEffect(() => {
+    let cancelled = false;
+    versesApi
+      .getRandom()
+      .then((data) => {
+        if (!cancelled) setFeaturedVerse(data);
+      })
+      .catch(() => {
+        // Silent fail
+      })
+      .finally(() => {
+        if (!cancelled) setVerseLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Keyboard shortcut: Cmd/Ctrl+K to focus search
   useEffect(() => {
@@ -352,13 +602,24 @@ export default function Search() {
     [inputValue, selectedChapter, search, setSearchParams]
   );
 
+  // Handle quick search (from example buttons)
+  const handleQuickSearch = useCallback(
+    (query: string) => {
+      setInputValue(query);
+      setSearchParams({ q: query });
+      saveRecentSearch(query);
+      setRecentSearches(getRecentSearches());
+      search(query);
+    },
+    [search, setSearchParams]
+  );
+
   // Handle selecting a recent search
   const handleRecentSelect = useCallback(
     (query: string) => {
       setInputValue(query);
       setShowRecent(false);
 
-      // Update URL and search
       const newParams = new URLSearchParams();
       newParams.set("q", query);
       if (selectedChapter) newParams.set("chapter", String(selectedChapter));
@@ -379,7 +640,6 @@ export default function Search() {
     (chapter: number | undefined) => {
       setSelectedChapter(chapter);
 
-      // If we have a query, re-search with new filter
       if (inputValue.trim()) {
         const newParams = new URLSearchParams();
         newParams.set("q", inputValue.trim());
@@ -390,7 +650,15 @@ export default function Search() {
     [inputValue, setSearchParams]
   );
 
-  // Handle principle tag click - navigate to verses with filter
+  // Handle topic click - navigate to verses with filter
+  const handleTopicClick = useCallback(
+    (topic: string) => {
+      navigate(`/verses?topic=${topic}`);
+    },
+    [navigate]
+  );
+
+  // Handle principle tag click in results
   const handlePrincipleClick = useCallback(
     (principle: string) => {
       navigate(`/verses?topic=${principle}`);
@@ -406,6 +674,9 @@ export default function Search() {
     clear();
   }, [clear, setSearchParams]);
 
+  // Determine if we should show starter content
+  const showStarterContent = !loading && !data && !error;
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-orange-50 to-red-50">
       <Navbar />
@@ -413,10 +684,6 @@ export default function Search() {
       <div className="flex-grow container mx-auto px-4 py-6 sm:py-8">
         {/* Search Header */}
         <div className="max-w-2xl mx-auto mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 text-center">
-            Search Verses
-          </h1>
-
           {/* Search Form */}
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="relative">
@@ -427,23 +694,23 @@ export default function Search() {
                 onChange={(e) => setInputValue(e.target.value)}
                 onFocus={() => setShowRecent(true)}
                 onBlur={() => setTimeout(() => setShowRecent(false), 200)}
-                placeholder="Search by verse (2.47), Sanskrit, or keywords..."
-                className="w-full pl-10 pr-20 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-400"
+                placeholder="Search verses, topics, or references..."
+                className="w-full pl-10 pr-20 py-3 sm:py-3.5 border border-amber-200 rounded-full bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-400 shadow-sm hover:shadow-md focus:shadow-md transition-shadow"
                 aria-label="Search query"
               />
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500" />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                 {inputValue ? (
                   <button
                     type="button"
                     onClick={handleClear}
-                    className="text-gray-400 hover:text-gray-600 p-1"
+                    className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
                     aria-label="Clear search"
                   >
                     <CloseIcon className="w-4 h-4" />
                   </button>
                 ) : (
-                  <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs text-gray-400 bg-gray-100 rounded border border-gray-200">
+                  <kbd className="hidden sm:inline-flex items-center px-2 py-1 text-xs text-amber-600 bg-amber-50 rounded-md border border-amber-200">
                     ⌘K
                   </kbd>
                 )}
@@ -451,8 +718,8 @@ export default function Search() {
 
               {/* Recent Searches Dropdown */}
               {showRecent && recentSearches.length > 0 && !inputValue && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
-                  <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-amber-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-amber-100 bg-amber-50/50">
                     <span className="text-xs font-medium text-gray-500">Recent searches</span>
                     <button
                       type="button"
@@ -468,9 +735,9 @@ export default function Search() {
                         <button
                           type="button"
                           onClick={() => handleRecentSelect(query)}
-                          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-orange-50 flex items-center gap-2"
+                          className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-orange-50 flex items-center gap-3 transition-colors"
                         >
-                          <SearchIcon className="w-4 h-4 text-gray-400" />
+                          <SearchIcon className="w-4 h-4 text-amber-400" />
                           {query}
                         </button>
                       </li>
@@ -481,8 +748,7 @@ export default function Search() {
             </div>
 
             {/* Filters Row */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Chapter Filter */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <select
                 value={selectedChapter || ""}
                 onChange={(e) =>
@@ -490,7 +756,7 @@ export default function Search() {
                     e.target.value ? parseInt(e.target.value, 10) : undefined
                   )
                 }
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="px-3 py-2 border border-amber-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 aria-label="Filter by chapter"
               >
                 <option value="">All Chapters</option>
@@ -501,21 +767,20 @@ export default function Search() {
                 ))}
               </select>
 
-              {/* Search Button */}
               <button
                 type="submit"
                 disabled={loading || !inputValue.trim()}
-                className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                className="px-5 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-sm hover:shadow-md"
               >
                 {loading ? (
                   <>
                     <SpinnerIcon className="w-4 h-4 animate-spin" />
-                    Searching...
+                    <span className="hidden sm:inline">Searching...</span>
                   </>
                 ) : (
                   <>
                     <SearchIcon className="w-4 h-4" />
-                    Search
+                    <span>Search</span>
                   </>
                 )}
               </button>
@@ -523,7 +788,7 @@ export default function Search() {
           </form>
         </div>
 
-        {/* Results Section */}
+        {/* Content Section */}
         <div className="max-w-6xl mx-auto">
           {/* Error State */}
           {error && (
@@ -567,7 +832,7 @@ export default function Search() {
                   )}
                 </p>
                 {data.total > 0 && (
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  <span className="text-xs text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full font-medium">
                     {getStrategyLabel(data.strategy)}
                   </span>
                 )}
@@ -585,62 +850,59 @@ export default function Search() {
                   ))}
                 </div>
               ) : (
-                /* Empty State */
-                <div className="text-center py-12">
-                  <p className="text-gray-500 mb-4">
-                    No verses found matching your search.
+                /* Empty Results State */
+                <div className="text-center py-12 bg-white/50 rounded-2xl border border-amber-100">
+                  <div className="text-4xl text-amber-300/60 mb-4">ॐ</div>
+                  <h3 className="text-lg font-serif text-gray-700 mb-2">
+                    No verses found
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
+                    Try different keywords, a verse reference (e.g., "2.47"), or remove the chapter filter.
                   </p>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <p>Try:</p>
-                    <ul className="list-disc list-inside">
-                      <li>Using different keywords</li>
-                      <li>Searching by verse reference (e.g., "2.47")</li>
-                      <li>Removing chapter filter</li>
-                    </ul>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <button
+                      onClick={() => handleQuickSearch("karma")}
+                      className="px-3 py-1.5 bg-amber-100 text-amber-800 text-sm rounded-full hover:bg-amber-200 transition-colors"
+                    >
+                      Try "karma"
+                    </button>
+                    <button
+                      onClick={() => handleQuickSearch("2.47")}
+                      className="px-3 py-1.5 bg-amber-100 text-amber-800 text-sm rounded-full hover:bg-amber-200 transition-colors"
+                    >
+                      Try "2.47"
+                    </button>
+                    <Link
+                      to="/verses"
+                      className="px-3 py-1.5 bg-orange-100 text-orange-700 text-sm rounded-full hover:bg-orange-200 transition-colors"
+                    >
+                      Browse all verses
+                    </Link>
                   </div>
-                  <Link
-                    to="/verses"
-                    className="inline-block mt-6 text-orange-600 hover:text-orange-700 font-medium"
-                  >
-                    Browse all verses →
-                  </Link>
                 </div>
               )}
             </>
           )}
 
-          {/* Initial State (no search yet) */}
-          {!loading && !data && !error && (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🔍</div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Search the Bhagavad Geeta
-              </h2>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Find verses by reference (2.47), Sanskrit text, keywords, or
-                describe what you're looking for.
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {["karma yoga", "detachment", "2.47", "duty"].map((example) => (
-                  <button
-                    key={example}
-                    onClick={() => {
-                      setInputValue(example);
-                      search(example);
-                      setSearchParams({ q: example });
-                    }}
-                    className="px-3 py-1.5 bg-amber-100 text-amber-800 text-sm rounded-full hover:bg-amber-200 transition-colors"
-                  >
-                    {example}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* Starter Content (no search yet) */}
+          {showStarterContent && (
+            <SearchStarterContent
+              onSearch={handleQuickSearch}
+              onTopicClick={handleTopicClick}
+              featuredVerse={featuredVerse}
+              verseLoading={verseLoading}
+              recentSearches={recentSearches}
+              onRecentSelect={handleRecentSelect}
+              onClearRecent={handleClearRecent}
+            />
           )}
         </div>
       </div>
 
       <Footer />
+
+      {/* Bottom padding for FAB on mobile */}
+      <div className="h-20 sm:hidden" />
     </div>
   );
 }
