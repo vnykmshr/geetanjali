@@ -369,13 +369,6 @@ function StarterVerseSpotlight({
             "{verse.paraphrase_en}"
           </p>
         )}
-
-        {/* View prompt */}
-        <div className="text-center mt-4">
-          <span className="text-xs sm:text-sm text-orange-600 font-medium">
-            Explore this verse →
-          </span>
-        </div>
       </div>
     </Link>
   );
