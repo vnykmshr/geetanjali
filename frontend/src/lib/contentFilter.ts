@@ -366,6 +366,33 @@ export function getViolationType(text: string): ViolationType {
 // ============================================================================
 // Search-Specific Validation
 // ============================================================================
+// Search queries for sacred text need stricter rules than consultation:
+// - Block ANY profanity (not just directed)
+// - Block explicit content (sexual, violence)
+// - Lenient gibberish for short queries (1-3 words)
+
+// Explicit content patterns (aligned with backend)
+const EXPLICIT_PATTERNS = [
+  // Sexual content
+  /\b(sex|sexual)\s+(act|position|fantasy|slave)/i,
+  /\b(orgasm|climax|masturbat|jerk\s*off)/i,
+  /\b(penis|vagina|genitals?|cock|dick|pussy|cunt)\b/i,
+  /\b(erotic|pornograph|xxx)\b/i,
+  /\b(naked|nude)\s+(photo|pic|image|video)/i,
+  /\b(blow\s*job|hand\s*job)\b/i,
+  /\b(incest|bestiality|pedophil)/i,
+  // Violence/harm
+  /\b(kill|murder|assassinate)\s+(someone|him|her|them|people)\b/i,
+  /\b(torture|mutilate|dismember)\b/i,
+  /\bhow\s+to\s+(make|build)\s+(bomb|weapon|poison)\b/i,
+  /\b(rape|sexual\s+assault)\s+(her|him|someone)\b/i,
+];
+
+// Spam patterns (aligned with backend)
+const SPAM_PATTERNS = [
+  /(.)\1{10,}/, // Same character repeated 10+ times
+  /[^a-zA-Z\s]{20,}/, // 20+ consecutive non-letter chars
+];
 
 /**
  * Check if text contains profanity (for search queries).
@@ -391,11 +418,64 @@ function containsProfanity(text: string): boolean {
 }
 
 /**
- * Validate search query with relaxed gibberish check but strict profanity filter.
+ * Check if text contains explicit content (sexual, violence).
+ */
+function containsExplicitContent(text: string): boolean {
+  for (const pattern of EXPLICIT_PATTERNS) {
+    if (pattern.test(text)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Check if text is spam (repeated characters, etc.).
+ */
+function isSpam(text: string): boolean {
+  for (const pattern of SPAM_PATTERNS) {
+    if (pattern.test(text)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Check if search query is gibberish (lenient for short queries).
  *
- * Search-specific rules:
- * - Skip gibberish check for short queries (1-2 words) to allow "karma", "duty", etc.
- * - Always block profanity, even single words like "fuck"
+ * Aligned with backend _is_search_gibberish:
+ * - Skip for 1-3 word queries (allows "karma", "duty dharma", etc.)
+ * - For 4+ words, require at least one common word
+ */
+function isSearchGibberish(text: string): boolean {
+  const words = text.toLowerCase().match(/[a-z]+/g) || [];
+
+  // No alphabetic words - allow short inputs
+  if (words.length === 0) {
+    return text.trim().length > 15;
+  }
+
+  // Short queries (1-3 words): skip gibberish check
+  if (words.length <= 3) {
+    return false;
+  }
+
+  // For longer queries (4+ words), require at least one common word
+  const foundCommon = words.filter((word) => COMMON_WORDS.has(word));
+  return foundCommon.length < 1;
+}
+
+/**
+ * Validate search query for sacred text search.
+ *
+ * Aligned with backend check_search_query():
+ * - Block explicit content (sexual, violence)
+ * - Block ALL profanity (stricter than consultation)
+ * - Block spam (repeated chars)
+ * - Lenient gibberish: skip for 1-3 words, light check for 4+
+ *
+ * Frontend provides instant feedback; backend is authoritative.
  *
  * @param query - The search query to validate
  * @returns ValidationResult with valid flag and optional reason
@@ -408,7 +488,15 @@ export function validateSearchQuery(query: string): ValidationResult {
     return { valid: true };
   }
 
-  // Always check for profanity (even single words)
+  // Check explicit content (sexual, violence)
+  if (containsExplicitContent(trimmed)) {
+    return {
+      valid: false,
+      reason: "Please use appropriate search terms.",
+    };
+  }
+
+  // Check profanity (strict - any profanity blocked for sacred text)
   if (containsProfanity(trimmed)) {
     return {
       valid: false,
@@ -416,14 +504,16 @@ export function validateSearchQuery(query: string): ValidationResult {
     };
   }
 
-  // Skip gibberish check for short queries (1-2 words)
-  const wordCount = trimmed.split(/\s+/).length;
-  if (wordCount <= 2) {
-    return { valid: true };
+  // Check spam patterns
+  if (isSpam(trimmed)) {
+    return {
+      valid: false,
+      reason: "Please enter a valid search term.",
+    };
   }
 
-  // For longer queries, check gibberish
-  if (isGibberish(trimmed)) {
+  // Check gibberish (lenient for search - aligned with backend)
+  if (isSearchGibberish(trimmed)) {
     return {
       valid: false,
       reason: "Please enter a clearer search term.",
