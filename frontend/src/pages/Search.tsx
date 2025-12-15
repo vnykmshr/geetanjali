@@ -410,111 +410,101 @@ function SearchStarterContent({
   onClearRecent: () => void;
 }) {
   return (
-    <div className="space-y-8 sm:space-y-10">
-      {/* Hero Section */}
-      <div className="text-center">
-        <div className="text-3xl sm:text-4xl text-amber-400/50 mb-3">ॐ</div>
-        <h2 className="text-xl sm:text-2xl font-serif text-gray-900 mb-2">
-          Discover Timeless Wisdom
-        </h2>
-        <p className="text-sm sm:text-base text-gray-600 max-w-md mx-auto">
-          Search the Bhagavad Geeta by verse, Sanskrit text, keywords, or describe what you're seeking.
-        </p>
-      </div>
-
-      {/* Search Type Examples */}
-      <div className="max-w-2xl mx-auto">
-        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 text-center">
-          Try these searches
-        </h3>
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          {SEARCH_EXAMPLES.map((example) => (
-            <button
-              key={example.query}
-              onClick={() => onSearch(example.query)}
-              className="bg-white rounded-xl p-3 sm:p-4 border border-amber-200 hover:border-orange-300 hover:shadow-md transition-all text-center group"
-            >
-              <div className="text-base sm:text-lg font-medium text-gray-900 group-hover:text-orange-700 transition-colors mb-1">
-                {example.query}
-              </div>
-              <div className="text-[10px] sm:text-xs text-gray-500">
-                {example.label}
-              </div>
-            </button>
-          ))}
-        </div>
-        <p className="text-center text-xs text-gray-400 mt-3">
-          Or describe what you're seeking: "how to handle difficult decisions"
-        </p>
-      </div>
-
-      {/* Featured Verse */}
-      <div className="max-w-xl mx-auto">
-        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 text-center">
-          Verse Spotlight
-        </h3>
-        <StarterVerseSpotlight verse={featuredVerse} loading={verseLoading} />
-      </div>
-
-      {/* Browse by Topic */}
-      <div className="max-w-2xl mx-auto">
-        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 text-center">
-          Browse by Topic
-        </h3>
-        <div className="flex flex-wrap justify-center gap-2">
-          {POPULAR_TOPICS.map((topic) => {
-            const principle = PRINCIPLE_TAXONOMY[topic.id];
-            return (
-              <button
-                key={topic.id}
-                onClick={() => onTopicClick(topic.id)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-full text-sm font-medium border border-amber-200 hover:border-amber-300 transition-all"
-              >
-                <span>{topic.icon}</span>
-                <span>{principle.shortLabel}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Recent Searches */}
-      {recentSearches.length > 0 && (
-        <div className="max-w-xl mx-auto">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Recent Searches
+    <div className="space-y-6">
+      {/* Two-column layout on desktop: Left (examples + topics), Right (featured verse) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        {/* Left Column: Discovery Options */}
+        <div className="space-y-5">
+          {/* Search Type Examples */}
+          <div>
+            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+              Try these searches
             </h3>
-            <button
-              onClick={onClearRecent}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              Clear
-            </button>
+            <div className="grid grid-cols-3 gap-2">
+              {SEARCH_EXAMPLES.map((example) => (
+                <button
+                  key={example.query}
+                  onClick={() => onSearch(example.query)}
+                  className="bg-white rounded-lg p-2.5 sm:p-3 border border-amber-200 hover:border-orange-300 hover:shadow-md transition-all text-center group"
+                >
+                  <div className="text-sm sm:text-base font-medium text-gray-900 group-hover:text-orange-700 transition-colors">
+                    {example.query}
+                  </div>
+                  <div className="text-[10px] text-gray-500">{example.label}</div>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex flex-wrap justify-center gap-2">
-            {recentSearches.map((query, index) => (
-              <button
-                key={index}
-                onClick={() => onRecentSelect(query)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-full text-sm border border-gray-200 hover:border-gray-300 transition-all"
-              >
-                <SearchIcon className="w-3 h-3 text-gray-400" />
-                <span>{query}</span>
-              </button>
-            ))}
+
+          {/* Browse by Topic */}
+          <div>
+            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+              Browse by Topic
+            </h3>
+            <div className="flex flex-wrap gap-1.5">
+              {POPULAR_TOPICS.map((topic) => {
+                const principle = PRINCIPLE_TAXONOMY[topic.id];
+                return (
+                  <button
+                    key={topic.id}
+                    onClick={() => onTopicClick(topic.id)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-full text-xs sm:text-sm font-medium border border-amber-200 hover:border-amber-300 transition-all"
+                  >
+                    <span>{topic.icon}</span>
+                    <span>{principle.shortLabel}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {/* Recent Searches */}
+          {recentSearches.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Recent
+                </h3>
+                <button
+                  onClick={onClearRecent}
+                  className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {recentSearches.map((query, index) => (
+                  <button
+                    key={index}
+                    onClick={() => onRecentSelect(query)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-full text-xs sm:text-sm border border-gray-200 hover:border-gray-300 transition-all"
+                  >
+                    <SearchIcon className="w-3 h-3 text-gray-400" />
+                    <span>{query}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Right Column: Featured Verse */}
+        <div>
+          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+            Verse Spotlight
+          </h3>
+          <StarterVerseSpotlight verse={featuredVerse} loading={verseLoading} />
+        </div>
+      </div>
 
       {/* Bottom CTA */}
-      <div className="text-center pt-4">
+      <div className="text-center">
         <Link
           to="/verses"
-          className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors"
         >
-          <span>Or browse all 700 verses</span>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <span>Browse all 700 verses</span>
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </Link>
