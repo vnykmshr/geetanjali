@@ -111,8 +111,8 @@ class SearchService:
         is_sanskrit = self.parser.is_sanskrit_query(query)
         is_situational = self.parser.is_situational_query(query)
 
-        # Content moderation (skip for canonical references)
-        moderation = self._check_moderation(query, canonical_ref)
+        # Content moderation (skip for canonical references, Sanskrit, short queries)
+        moderation = self._check_moderation(query, canonical_ref, is_sanskrit)
         if moderation and moderation.get("blocked"):
             return SearchResponse(
                 query=query,
@@ -170,21 +170,37 @@ class SearchService:
         self,
         query: str,
         canonical_ref: Optional[tuple],
+        is_sanskrit: bool = False,
     ) -> Optional[Dict[str, Any]]:
         """Check query against content moderation.
 
-        Skips moderation for canonical verse references (e.g., "BG 2.47")
-        since these are known-safe lookups.
+        Skips moderation for:
+        - Canonical verse references (e.g., "BG 2.47")
+        - Short queries (1-2 words) - these are common search terms like
+          "karma", "dharma", "satya" that would be false-positive flagged
+        - Sanskrit queries (Devanagari text)
 
         Args:
             query: Search query to check
             canonical_ref: Parsed canonical reference if any
+            is_sanskrit: Whether query contains Sanskrit/Devanagari
 
         Returns:
             Moderation result dict or None if passed
         """
         # Skip moderation for canonical references
         if canonical_ref:
+            return None
+
+        # Skip moderation for Sanskrit queries (Devanagari text)
+        if is_sanskrit:
+            return None
+
+        # Skip moderation for short queries (1-2 words)
+        # These are common search terms that the gibberish detector
+        # incorrectly flags (e.g., "karma", "dharma", "satya", "yoga")
+        word_count = len(query.split())
+        if word_count <= 2:
             return None
 
         result: ContentCheckResult = check_blocklist(query)
