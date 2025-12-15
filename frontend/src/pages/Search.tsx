@@ -1,21 +1,13 @@
-import { useState, useEffect, useCallback, useRef, useMemo, FormEvent } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type FormEvent } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { Navbar, Footer } from "../components";
 import { useSearch, useSEO } from "../hooks";
 import { versesApi } from "../lib/api";
 import { SearchIcon, SpinnerIcon, StarIcon, CloseIcon } from "../components/icons";
 import { getPrincipleShortLabel, PRINCIPLE_TAXONOMY, type PrincipleId } from "../constants/principles";
-import { CHAPTERS, TOTAL_CHAPTERS } from "../constants/chapters";
 import { formatSanskritLines } from "../lib/sanskritFormatter";
 import { validateSearchQuery } from "../lib/contentFilter";
 import type { SearchResult, Verse } from "../types";
-
-// Generate chapter options array from CHAPTERS object
-const CHAPTER_OPTIONS = Array.from({ length: TOTAL_CHAPTERS }, (_, i) => {
-  const num = i + 1;
-  const chapter = CHAPTERS[num as keyof typeof CHAPTERS];
-  return { number: num, name: chapter.shortName };
-});
 
 // localStorage key for recent searches
 const RECENT_SEARCHES_KEY = "geetanjali:recentSearches";
@@ -520,22 +512,15 @@ export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Get initial values from URL
+  // Get initial query from URL
   const initialQuery = searchParams.get("q") || "";
-  const initialChapter = searchParams.get("chapter")
-    ? parseInt(searchParams.get("chapter")!, 10)
-    : undefined;
 
   const [inputValue, setInputValue] = useState(initialQuery);
-  const [selectedChapter, setSelectedChapter] = useState<number | undefined>(
-    initialChapter
-  );
 
   // Responsive page size: 16 for desktop, 12 for mobile
   const pageSize = useMemo(() => getResultsPerPage(), []);
 
   const { data, loading, loadingMore, error, hasMore, search, loadMore, clear } = useSearch({
-    chapter: selectedChapter,
     limit: pageSize,
   });
 
@@ -626,10 +611,7 @@ export default function Search() {
       }
 
       // Update URL
-      const newParams = new URLSearchParams();
-      newParams.set("q", trimmed);
-      if (selectedChapter) newParams.set("chapter", String(selectedChapter));
-      setSearchParams(newParams);
+      setSearchParams({ q: trimmed });
 
       // Save to recent searches
       saveRecentSearch(trimmed);
@@ -639,7 +621,7 @@ export default function Search() {
       // Execute search
       search(trimmed);
     },
-    [inputValue, selectedChapter, search, setSearchParams, clear]
+    [inputValue, search, setSearchParams, clear]
   );
 
   // Handle quick search (from example buttons)
@@ -659,14 +641,10 @@ export default function Search() {
     (query: string) => {
       setInputValue(query);
       setShowRecent(false);
-
-      const newParams = new URLSearchParams();
-      newParams.set("q", query);
-      if (selectedChapter) newParams.set("chapter", String(selectedChapter));
-      setSearchParams(newParams);
+      setSearchParams({ q: query });
       search(query);
     },
-    [selectedChapter, search, setSearchParams]
+    [search, setSearchParams]
   );
 
   // Handle clearing recent searches
@@ -674,21 +652,6 @@ export default function Search() {
     clearRecentSearches();
     setRecentSearches([]);
   }, []);
-
-  // Handle chapter change
-  const handleChapterChange = useCallback(
-    (chapter: number | undefined) => {
-      setSelectedChapter(chapter);
-
-      if (inputValue.trim()) {
-        const newParams = new URLSearchParams();
-        newParams.set("q", inputValue.trim());
-        if (chapter) newParams.set("chapter", String(chapter));
-        setSearchParams(newParams);
-      }
-    },
-    [inputValue, setSearchParams]
-  );
 
   // Handle topic click - navigate to verses with filter
   const handleTopicClick = useCallback(
@@ -709,7 +672,6 @@ export default function Search() {
   // Handle clear
   const handleClear = useCallback(() => {
     setInputValue("");
-    setSelectedChapter(undefined);
     setSearchParams({});
     clear();
   }, [clear, setSearchParams]);
@@ -790,26 +752,8 @@ export default function Search() {
               )}
             </div>
 
-            {/* Filters Row */}
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <select
-                value={selectedChapter || ""}
-                onChange={(e) =>
-                  handleChapterChange(
-                    e.target.value ? parseInt(e.target.value, 10) : undefined
-                  )
-                }
-                className="px-3 py-2 border border-amber-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                aria-label="Filter by chapter"
-              >
-                <option value="">All Chapters</option>
-                {CHAPTER_OPTIONS.map((ch) => (
-                  <option key={ch.number} value={ch.number}>
-                    Ch. {ch.number}: {ch.name}
-                  </option>
-                ))}
-              </select>
-
+            {/* Search Button */}
+            <div className="flex justify-center">
               <button
                 type="submit"
                 disabled={loading || !inputValue.trim()}
@@ -983,7 +927,7 @@ export default function Search() {
                     </>
                   ) : (
                     <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
-                      Try different keywords, a verse reference (e.g., "2.47"), or remove the chapter filter.
+                      Try different keywords or a verse reference (e.g., "2.47").
                     </p>
                   )}
 

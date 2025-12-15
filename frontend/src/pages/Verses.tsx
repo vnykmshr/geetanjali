@@ -1,5 +1,5 @@
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
-import { useEffect, useState, useCallback, useMemo, FormEvent } from "react";
+import { useEffect, useState, useCallback, useMemo, type FormEvent } from "react";
 import { versesApi } from "../lib/api";
 import type { Verse } from "../types";
 import { Navbar } from "../components";
