@@ -57,9 +57,7 @@ def _count_keyword_matches(text: str, keywords: List[str]) -> int:
 
 
 def _get_best_match_count(verse: Verse, keywords: List[str]) -> Tuple[int, str]:
-    """Get the best match count across all searchable fields.
-
-    Checks translation_en, paraphrase_en, and translations.
+    """Get the best match count across translations and paraphrase.
 
     Args:
         verse: Verse to check
@@ -69,27 +67,21 @@ def _get_best_match_count(verse: Verse, keywords: List[str]) -> Tuple[int, str]:
         Tuple of (best_match_count, field_name)
     """
     best_count = 0
-    best_field = "translation_en"
+    best_field = "translation"
 
-    # Check translation_en
-    count = _count_keyword_matches(verse.translation_en, keywords)
-    if count > best_count:
-        best_count = count
-        best_field = "translation_en"
-
-    # Check paraphrase_en
-    count = _count_keyword_matches(verse.paraphrase_en, keywords)
-    if count > best_count:
-        best_count = count
-        best_field = "paraphrase_en"
-
-    # Check translations
+    # Check translations (includes the text that's copied to translation_en)
     if hasattr(verse, 'translations') and verse.translations:
         for trans in verse.translations:
             count = _count_keyword_matches(trans.text, keywords)
             if count > best_count:
                 best_count = count
                 best_field = "translation"
+
+    # Check paraphrase_en (unique leadership content)
+    count = _count_keyword_matches(verse.paraphrase_en, keywords)
+    if count > best_count:
+        best_count = count
+        best_field = "paraphrase_en"
 
     return best_count, best_field
 
@@ -135,17 +127,18 @@ def keyword_search(
     if config.chapter:
         base_query = base_query.filter(Verse.chapter == config.chapter)
 
-    # Search in Translation model first (higher priority per alignment)
+    # Search in Translation model (covers all scholar translations)
     _search_translations(
         db, base_query, query, keywords, keyword_patterns, config, results, seen_ids
     )
 
-    # Search in Verse.translation_en
+    # Search in Verse.translation_en as fallback
+    # (translation_en is copied from Translation, but join limits may miss some)
     _search_verse_translation(
         base_query, query, keywords, keyword_patterns, config, results, seen_ids
     )
 
-    # Search in Verse.paraphrase_en (lower priority)
+    # Search in Verse.paraphrase_en (unique leadership content)
     _search_paraphrase(
         base_query, query, keywords, keyword_patterns, config, results, seen_ids
     )
@@ -219,30 +212,21 @@ def _search_verse_translation(
     results: List[SearchResult],
     seen_ids: Set[str],
 ) -> None:
-    """Search in Verse.translation_en (primary translation) with OR logic."""
-    # Build OR clause for any keyword match
+    """Search in Verse.translation_en as fallback with OR logic."""
     or_conditions = [Verse.translation_en.ilike(pattern) for pattern in keyword_patterns]
 
-    direct_translation_verses = (
+    verses = (
         base_query.filter(or_(*or_conditions))
         .limit(config.limit * 2)
         .all()
     )
 
-    for verse in direct_translation_verses:
+    for verse in verses:
         if verse.canonical_id in seen_ids:
             continue
         seen_ids.add(verse.canonical_id)
 
-        # Count keyword matches
-        match_count = _count_keyword_matches(verse.translation_en, keywords)
-
-        # Also check paraphrase to get best match count
-        paraphrase_count = _count_keyword_matches(verse.paraphrase_en, keywords)
-        if paraphrase_count > match_count:
-            match_count = paraphrase_count
-
-        # Score based on match ratio
+        match_count, best_field = _get_best_match_count(verse, keywords)
         match_ratio = match_count / len(keywords) if keywords else 0
         base_score = 0.6 + (0.4 * match_ratio)
 
