@@ -19,6 +19,7 @@ const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const About = lazy(() => import("./pages/About"));
 const PublicCaseView = lazy(() => import("./pages/PublicCaseView"));
+const ReadingMode = lazy(() => import("./pages/ReadingMode"));
 
 // Loading fallback component
 function PageLoader() {
@@ -75,6 +76,7 @@ function App() {
             <Route path="/consultations" element={<Consultations />} />
             <Route path="/verses" element={<Verses />} />
             <Route path="/verses/:canonicalId" element={<VerseDetail />} />
+            <Route path="/read" element={<ReadingMode />} />
             <Route path="/about" element={<About />} />
 
             {/* Public shared consultation view */}
