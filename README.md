@@ -29,6 +29,7 @@ The system uses retrieval-augmented generation (RAG) to ground responses in actu
 - **Case Analysis** - Submit ethical dilemmas, get structured recommendations
 - **Follow-up Conversations** - Ask clarifying questions after initial consultation
 - **Verse Browser** - Explore 701 verses across 18 chapters with translations
+- **Reading Mode** - Distraction-free sequential reading with Sanskrit-first display
 - **Confidence Scoring** - Low-confidence responses flagged for review
 - **User Feedback** - Rate outputs to improve recommendations
 - **Session Tracking** - Anonymous users can save and revisit cases
