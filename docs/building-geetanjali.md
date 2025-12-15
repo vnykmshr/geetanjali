@@ -1,91 +1,236 @@
 ---
 layout: default
-title: Building Geetanjali - A RAG System for Ethical Decision Support
-description: How we built a RAG system that grounds ethical guidance in the Bhagavad Geeta. Architecture, LLM strategy, deployment, and design decisions.
+title: Building Geetanjali
+description: Architecture and design of a system that brings Bhagavad Geeta wisdom to modern decision-making through RAG-powered guidance and immersive scripture exploration.
 ---
 
-# Building Geetanjali: A RAG System for Ethical Decision Support
+# Building Geetanjali
 
-## The Problem
+Geetanjali is a web app that makes the Bhagavad Geeta useful for modern life. It does two things: helps you think through ethical dilemmas, and lets you explore the scripture at your own pace.
 
-Leaders face ethical dilemmas without easy answers. Layoffs versus gradual restructuring. Whistleblowing versus internal resolution. Stakeholder conflicts where every choice carries moral weight.
+Built with a **local-first, mobile-first** approach—runs entirely self-hosted, works offline, and feels native on phones.
 
-Traditional decision frameworks (cost-benefit analysis, stakeholder mapping) help structure thinking but don't address the underlying ethical dimensions. Meanwhile, general-purpose LLMs can generate advice but without grounding in established wisdom traditions, their output tends toward generic platitudes.
+## Two Journeys
 
-Geetanjali addresses this gap: provide structured ethical guidance grounded in the Bhagavad Geeta's 701 verses, with explicit citations and confidence scores.
-
-## Why RAG for Ethical Guidance
-
-Retrieval-Augmented Generation solves two problems:
-
-1. **Grounding** - Instead of hallucinating advice, the LLM receives relevant verses as context. Every recommendation traces back to specific scripture.
-
-2. **Transparency** - Users see which verses informed the guidance. They can verify interpretations, explore further, or disagree.
-
-A naive approach would fine-tune an LLM on Geeta content. RAG avoids this because:
-- Scripture interpretation evolves; RAG allows updating the knowledge base without retraining
-- Citations matter; RAG naturally preserves source attribution
-- The corpus is small (701 verses); fine-tuning would likely overfit
-
-With this architecture in mind, let's look at where Geetanjali fits—and where it doesn't.
-
-## When to Use Geetanjali
-
-**Good fit:**
-- Leadership ethical dilemmas requiring structured analysis
-- Situations where traditional wisdom provides perspective
-- Decisions benefiting from multiple options with tradeoffs
-- Cases where citation and transparency matter
-
-**Not a good fit:**
-- Legal or medical decisions (requires professional advice)
-- Situations requiring real-time or emergency response
-- Contexts where Bhagavad Geeta framework doesn't apply
-
-## Usage Example
-
-### API Request
-
-```bash
-curl -X POST http://localhost:8000/api/v1/cases \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Whistleblowing dilemma",
-    "description": "I discovered financial irregularities at my company.
-                    Reporting internally has failed. Do I go public?",
-    "role": "Senior Manager",
-    "stakeholders": ["employees", "shareholders", "regulators"],
-    "constraints": ["NDA", "career risk"]
-  }'
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         GEETANJALI                              │
+├────────────────────────────┬────────────────────────────────────┤
+│     CONSULTATION           │          DISCOVERY                 │
+│     JOURNEY                │          JOURNEY                   │
+├────────────────────────────┼────────────────────────────────────┤
+│                            │                                    │
+│  "I face a dilemma"        │  "I want to learn"                 │
+│         ↓                  │         ↓                          │
+│  Describe situation        │  Browse 701 verses                 │
+│         ↓                  │         ↓                          │
+│  RAG retrieves relevant    │  Filter by chapter, topic          │
+│  verses from 701           │         ↓                          │
+│         ↓                  │  Read sequentially or              │
+│  LLM generates structured  │  explore by interest               │
+│  guidance with citations   │         ↓                          │
+│         ↓                  │  Sanskrit text, translations,      │
+│  Three options with        │  leadership insights               │
+│  pros, cons, verse refs    │                                    │
+│                            │                                    │
+├────────────────────────────┼────────────────────────────────────┤
+│  Output: Consulting brief  │  Output: Scripture comprehension   │
+│  with confidence score     │  with personal reading progress    │
+└────────────────────────────┴────────────────────────────────────┘
 ```
 
-### API Response (Simplified)
+| Journey | User Intent | Experience |
+|---------|-------------|------------|
+| **Consultation** | "Help me decide" | RAG-powered analysis with cited verses |
+| **Discovery** | "Help me learn" | Browse, filter, read at your pace |
+
+Both journeys use the same data: 701 verses across 18 chapters, with Sanskrit text, transliterations, multiple translations, and modern paraphrases.
+
+---
+
+## Consultation Journey
+
+Leaders face ethical dilemmas without easy answers. Layoffs versus gradual restructuring. Whistleblowing versus internal resolution. Stakeholder conflicts where every choice has moral weight.
+
+Regular LLMs can give advice, but without grounding in real wisdom, you get vague feel-good responses. Geetanjali uses RAG (Retrieval-Augmented Generation) to tie every recommendation back to specific verses from the Bhagavad Geeta.
+
+### Why RAG
+
+1. **Grounding** — The LLM gets relevant verses as context. Every recommendation traces back to scripture.
+2. **Transparency** — You see which verses informed the guidance. You can verify, dig deeper, or disagree.
+3. **Updatable** — Interpretations evolve. The knowledge base updates without retraining the model.
+
+### The Pipeline
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    participant Embedder
+    participant ChromaDB
+    participant LLM
+    participant Validator
+
+    User->>API: Submit dilemma
+    API->>Embedder: Encode description
+    Embedder->>ChromaDB: Vector search (top-k verses)
+    ChromaDB-->>API: Relevant verses + scores
+    API->>API: Construct prompt with context
+    API->>LLM: Generate consulting brief
+    LLM-->>Validator: Structured JSON
+    Validator-->>User: Brief with citations
+```
+
+**Step by step:**
+
+1. **Embed** — Case description encoded using `all-MiniLM-L6-v2` (~14ms, runs locally)
+2. **Retrieve** — ChromaDB finds similar verses (cosine similarity, top-5)
+3. **Construct** — Prompt combines user's dilemma with retrieved verses and their paraphrases
+4. **Generate** — LLM produces structured output: summary, three options, recommendation, reflection prompts
+5. **Validate** — Check for completeness. Low-confidence cases get flagged for review.
+
+### Output Structure
 
 ```json
 {
-  "executive_summary": "This case presents a classic tension between loyalty and truth-telling...",
+  "executive_summary": "This case presents a tension between loyalty and truth-telling...",
   "options": [
-    {"title": "Internal Escalation", "sources": ["BG_18_63"]},
-    {"title": "External Disclosure", "sources": ["BG_2_47"]},
-    {"title": "Document and Wait", "sources": ["BG_3_19"]}
+    {
+      "title": "Internal Escalation",
+      "pros": ["Preserves relationships", "Allows correction"],
+      "cons": ["May be ignored", "Delays resolution"],
+      "sources": ["BG_18_63"]
+    }
   ],
   "recommended_action": {
     "option": 1,
-    "steps": ["Request audit committee meeting", "Present documented evidence", "Set timeline"]
+    "reasoning": "Aligns with dharmic principle of giving others opportunity to correct...",
+    "steps": ["Request audit committee meeting", "Present evidence", "Set timeline"]
   },
-  "sources": [{"canonical_id": "BG_18_63", "paraphrase": "Choose with knowledge and freedom.", "relevance": 0.92}],
-  "confidence": 0.84
+  "reflection_prompts": [
+    "What outcome would you regret most?",
+    "Who else is affected by inaction?"
+  ],
+  "sources": [
+    {"canonical_id": "BG_18_63", "relevance": 0.92}
+  ],
+  "confidence": 0.84,
+  "scholar_review_flag": false
 }
 ```
 
-Each option includes pros, cons, and verse citations. The full response includes reflection prompts and a scholar review flag for low-confidence cases.
+Each option includes verse citations. Users can click through to read the full verse with translations.
+
+### When It Fits
+
+**Good fit:**
+- Leadership dilemmas needing structured analysis
+- Situations where traditional wisdom adds perspective
+- Decisions that benefit from seeing multiple options with tradeoffs
+
+**Not a good fit:**
+- Legal or medical decisions (get professional advice)
+- Emergencies needing immediate action
+- Contexts where the Bhagavad Geeta framework doesn't make sense
+
+---
+
+## Discovery Journey
+
+Not everyone shows up with a dilemma. Many want to learn, reflect, or just browse. The Discovery Journey handles this through two modes.
+
+### Verse Browser
+
+Grid-based exploration for research and discovery.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  [Featured] [All]    [Chapter ▼]    [Topic Pills...]         │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐        │
+│   │ ★ 2.47      │   │   3.19      │   │ ★ 2.48      │        │
+│   │  Sanskrit   │   │  Sanskrit   │   │  Sanskrit   │        │
+│   │ Translation │   │ Translation │   │ Translation │        │
+│   │ [tag] [tag] │   │ [tag] [tag] │   │ [tag] [tag] │        │
+│   └─────────────┘   └─────────────┘   └─────────────┘        │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- **Featured/All toggle** — Curated highlights or all 701 verses
+- **Chapter filter** — 18 chapters in a grid selector
+- **Topic pills** — Filter by principle (karma yoga, detachment, duty)
+- **Clickable tags** — Quick filtering from any card
+- **Responsive grid** — 1-4 columns depending on screen size
+
+### Verse Detail
+
+One verse, full context.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  [<-]  Chapter 2: Sankhya Yoga              Verse 47 of 72   │
+│  ========================================-----------------   │
+├──────────────────────────────────────────────────────────────┤
+│                             om                               │
+│              [Sanskrit Devanagari text]                      │
+│                        || 2.47 ||                            │
+│                                                              │
+│   +- Leadership Insight --------------------------------+    │
+│   | Focus on your duty without attachment to outcomes.  |    │
+│   +-----------------------------------------------------+    │
+│                                                              │
+│   [Karma Yoga]  [Detachment]  [Nishkama Karma]               │
+│                                                              │
+│   Hindi: [Hindi translation text...]                         │
+│   English: You have the right to work only...                │
+│                                                              │
+│   [< Prev]                                       [Next >]    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- **Chapter context** — Progress bar, verse count, back navigation
+- **Sanskrit spotlight** — Big Devanagari text with verse marks
+- **Leadership Insight** — Modern paraphrase for practical use
+- **Principle tags** — Click to filter related verses
+- **Multiple translations** — Hindi, English, expandable for more
+- **Keyboard navigation** — Arrow keys, J/K for vim users
+
+### Reading Mode
+
+Sequential reading, minimal distractions.
+
+```mermaid
+flowchart LR
+    A[Book Cover] -->|Begin| B[Chapter Intro]
+    B --> C[Verse 1]
+    C -->|Swipe/Key| D[Verse 2]
+    D -->|...| E[Chapter End]
+    E --> F[Next Chapter]
+```
+
+**Design choices:**
+- **Sanskrit-first** — Large Devanagari as the hero text
+- **Progressive disclosure** — Tap to reveal translations
+- **Flow state** — Minimal UI, no distractions
+- **Mobile-native** — Swipe to navigate
+
+**What gets saved:**
+- Reading position (automatically)
+- Font size preference
+- Section visibility (IAST, Hindi, English) across sessions
+- Pick up where you left off, or deep-link to any verse
+
+---
 
 ## Architecture
 
 ```mermaid
 flowchart TB
-    subgraph Client
-        UI[React Frontend]
+    subgraph Client["Frontend (React)"]
+        UI[Pages & Components]
+        Router[React Router]
     end
 
     subgraph Edge["Nginx"]
@@ -94,20 +239,13 @@ flowchart TB
     end
 
     subgraph API["FastAPI Backend"]
-        Cases["/api/v1/cases"]
-        Analysis["/api/v1/cases/{id}/analyze"]
-        Verses["/api/v1/verses"]
+        Cases[Cases API]
+        Verses[Verses API]
+        Reading[Reading API]
     end
 
     subgraph Worker["Background Worker"]
-        Async[Async Analysis]
-    end
-
-    subgraph RAG["RAG Pipeline"]
-        Embed[Embedding Service]
-        Search[Vector Search]
-        Generate[LLM Generation]
-        Validate[Output Validation]
+        RAG[RAG Pipeline]
     end
 
     subgraph Storage
@@ -116,321 +254,171 @@ flowchart TB
         Redis[(Redis)]
     end
 
-    subgraph LLM["LLM Layer (configurable)"]
-        Ollama[Ollama - local]
-        Claude[Anthropic Claude]
+    subgraph LLM["LLM Layer"]
+        Ollama[Ollama]
+        External[External LLM]
     end
 
     UI --> Proxy
-    Proxy --> API
     Proxy --> Static
+    Proxy --> API
 
     Cases --> PG
-    Analysis --> Worker
-    Worker --> RAG
+    Cases --> Worker
     Verses --> PG
+    Verses --> Chroma
+    Reading --> PG
 
-    Embed --> Chroma
-    Search --> Chroma
-    Generate --> LLM
-
+    RAG --> Chroma
+    RAG --> LLM
     RAG --> PG
+
     Redis --> API
 ```
 
-### Component Responsibilities
+### Components
 
-| Component | Purpose |
-|-----------|---------|
-| Nginx | Reverse proxy, TLS termination, static assets, rate limiting |
-| PostgreSQL | Cases, users, outputs, verses with translations |
-| ChromaDB | 384-dimensional verse embeddings for semantic search |
-| Redis | Response caching, session storage, rate limit state |
-| Ollama | Local LLM for self-hosted deployments |
-| Anthropic Claude | Cloud LLM option when local resources are limited |
+| Component | What it does |
+|-----------|--------------|
+| **React Frontend** | Consultation form, verse browser, reading mode, case history |
+| **Nginx** | TLS, static assets (1yr cache), rate limiting |
+| **FastAPI** | REST API for cases, verses, reading progress |
+| **Background Worker** | Async RAG processing (15-30s for local LLM) |
+| **PostgreSQL** | Cases, users, verses, translations, outputs |
+| **ChromaDB** | 384-dim verse embeddings for semantic search |
+| **Redis** | Caching, sessions, rate limit state |
+| **Ollama** | Local LLM (default—no API costs, works offline) |
+| **External LLM** | Cloud fallback (any provider—useful when local hardware is limited) |
 
-## The RAG Pipeline
+### Data Model
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant API
-    participant Filter
-    participant Embedder
-    participant ChromaDB
-    participant LLM
-    participant Validator
-
-    User->>API: POST /cases/{id}/analyze
-    API->>Filter: Layer 1: Blocklist check
-    alt Content blocked
-        Filter-->>User: 422 + Educational message
-    end
-    Filter->>Embedder: Encode case description
-    Embedder->>ChromaDB: Vector similarity search (top-k)
-    ChromaDB-->>API: Retrieved verses with scores
-    API->>API: Enrich verses with translations
-    API->>API: Construct prompt with context
-    API->>LLM: Generate consulting brief
-    LLM-->>Filter: Layer 2: Refusal detection
-    alt LLM refused
-        Filter-->>API: Policy violation response
-    end
-    Filter->>Validator: Validate structure
-    Validator-->>API: Validated output
-    API->>User: Consulting brief with citations
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   verses    │     │    cases    │     │   outputs   │
+├─────────────┤     ├─────────────┤     ├─────────────┤
+│ canonical_id│     │ id          │     │ id          │
+│ chapter     │     │ title       │     │ case_id     │────┐
+│ verse       │     │ description │     │ brief_json  │    │
+│ sanskrit    │     │ user_id     │     │ confidence  │    │
+│ translations│     │ session_id  │     │ sources[]   │    │
+│ paraphrase  │     │ created_at  │     │ created_at  │    │
+│ principles[]│     └─────────────┘     └─────────────┘    │
+└─────────────┘            │                   │           │
+       │                   └───────────────────┘           │
+       │                                                   │
+       └───────────────────────────────────────────────────┘
+                    (sources reference verses)
 ```
 
-### Step 1: Embedding
-
-User case descriptions are embedded using `sentence-transformers/all-MiniLM-L6-v2`. We chose this model for its balance of speed (~14ms per sentence), compact size (384 dimensions), and strong semantic similarity performance. It runs locally without API calls.
-
-### Step 2: Retrieval
-
-ChromaDB finds semantically similar verses using cosine similarity. Each verse is stored with metadata including `canonical_id` (e.g., BG_2_47), a modern English `paraphrase`, extracted `principles`, and thematic tags. The top-k results (default 5) are returned with relevance scores.
-
-### Step 3: Context Construction
-
-Retrieved verses are formatted into a structured prompt that presents the user's dilemma alongside relevant scripture. The prompt template includes the case title, role, description, stakeholders, and constraints, followed by the retrieved verses with their paraphrases.
-
-### Step 4: LLM Generation
-
-The LLM receives the constructed prompt with a system message defining the expected JSON structure:
-
-```python
-def generate_brief(self, prompt: str, retrieved_verses: List[Dict]) -> Dict:
-    result = self.llm_service.generate(
-        prompt=prompt,
-        system_prompt=SYSTEM_PROMPT,
-        temperature=0.7,
-        fallback_prompt=build_ollama_prompt(case_data, retrieved_verses),
-        fallback_system=OLLAMA_SYSTEM_PROMPT
-    )
-    return json.loads(result["response"])
-```
-
-The system prompt enforces structure: executive summary, three options with pros/cons/sources, recommended action with steps, reflection prompts, cited sources with relevance scores, confidence score, and a scholar review flag.
-
-### Step 5: Validation and Fallback
-
-Output validation ensures completeness. Missing fields get sensible defaults. Low-confidence responses (below threshold) are flagged for scholar review. The pipeline never fails completely—if verse retrieval fails, it continues without verses; if LLM generation fails, it returns a graceful fallback response.
-
-## LLM Provider Strategy
-
-```mermaid
-flowchart TD
-    Request[Generate Request] --> Config{LLM_PROVIDER}
-
-    Config -->|ollama| Ollama[Local Ollama]
-    Config -->|anthropic| Claude[Anthropic Claude]
-
-    Ollama -->|Success| PostProcess[Post-Process JSON]
-    Ollama -->|Failure| Fallback{Fallback?}
-
-    Claude -->|Success| Response[JSON Response]
-    Claude -->|Failure| Fallback
-
-    Fallback -->|Enabled| Secondary[Fallback Provider]
-    Fallback -->|Disabled| Error[Return Error]
-
-    Secondary --> Response
-    PostProcess --> Response
-```
-
-### Local-First Design
-
-The system is designed to run entirely self-hosted:
-
-1. **Ollama** (Default)
-   - Runs locally, no API costs
-   - Works offline
-   - Full Docker deployment
-   - Prompt optimized for smaller models
-
-2. **Anthropic Claude** (Alternative)
-   - Higher quality structured output
-   - Faster response times
-   - Useful when local GPU resources are limited
-
-Configuration via environment:
-```bash
-LLM_PROVIDER=ollama           # or "anthropic"
-LLM_FALLBACK_PROVIDER=anthropic
-LLM_FALLBACK_ENABLED=true
-```
-
-The Ollama prompt is optimized for smaller models:
-
-```python
-OLLAMA_SYSTEM_PROMPT = """You are an ethical leadership consultant.
-Output JSON with: executive_summary, options (3), recommended_action,
-reflection_prompts (2), sources, confidence, scholar_flag.
-Use verse IDs like BG_2_47. Output ONLY valid JSON."""
-```
-
-## Data Pipeline
-
-```mermaid
-flowchart LR
-    subgraph Sources
-        Geeta[gita/gita repo]
-        Vedic[VedicScriptures API]
-    end
-
-    subgraph Ingestion
-        Parse[JSON Parser]
-        Validate[Validator]
-        Enrich[Enricher]
-    end
-
-    subgraph Storage
-        PG[(PostgreSQL)]
-        Chroma[(ChromaDB)]
-    end
-
-    Geeta --> Parse
-    Vedic --> Parse
-    Parse --> Validate
-    Validate --> Enrich
-    Enrich --> PG
-    Enrich --> Chroma
-```
-
-### Verse Data Structure
-
-```json
-{
-  "canonical_id": "BG_2_47",
-  "chapter": 2,
-  "verse": 47,
-  "sanskrit_devanagari": "कर्मण्येवाधिकारस्ते...",
-  "sanskrit_iast": "karmaṇy-evādhikāras te...",
-  "translations": [
-    {
-      "author": "Swami Sivananda",
-      "text": "Your right is to work only..."
-    }
-  ],
-  "paraphrase": "Act focused on duty, not fruits.",
-  "principles": ["detachment", "duty", "action"]
-}
-```
-
-### Embedding Strategy
-
-Each verse is embedded as concatenated text:
-- Sanskrit IAST transliteration
-- Primary English translation
-- Modern paraphrase
-
-This captures both the original language's semantic content and accessible interpretation.
+---
 
 ## Key Design Decisions
 
-### Session-Based Anonymous Access
+### Anonymous Access
 
-Anonymous users can create cases using session IDs:
+You can explore and create cases without signing up. Session IDs let you see your case history without an account.
 
 ```python
-@router.post("", response_model=CaseResponse)
-async def create_case(
-    case_data: CaseCreate,
-    current_user: Optional[User] = Depends(get_optional_user),
-    session_id: Optional[str] = Depends(get_session_id)
-):
-    case_dict["user_id"] = current_user.id if current_user else None
-    case_dict["session_id"] = session_id
+case_dict["user_id"] = current_user.id if current_user else None
+case_dict["session_id"] = session_id  # Enables anonymous history
 ```
 
-This lowers friction for first-time users while allowing authenticated users to build persistent history.
+Less friction for first-time users. If you sign up, you get history across devices.
 
-### Content Moderation
+### Local-First, Mobile-First
 
-A two-layer system handles inappropriate content while maintaining focus on genuine ethical dilemmas:
+Two principles guide the design:
 
-```
-User Input → [Layer 1: Blocklist] → LLM → [Layer 2: Refusal Detection] → Response
-```
+**Local-First** — The whole thing runs self-hosted by default. No external API calls required.
 
-**Layer 1 (Pre-submission):** Regex blocklist catches explicit content before database write. Returns HTTP 422 with educational message suggesting how to rephrase.
+- **Ollama** — Local inference, no API costs, works offline
+- **External LLM** — Optional cloud fallback when local hardware is limited (lower-spec machines, no GPU, etc.)
 
-**Layer 2 (Post-LLM):** Detects when the LLM refuses to process content (pattern matching on "I can't assist...", "This request contains..."). Returns a policy violation response with guidance on rephrasing.
+Config: `LLM_PROVIDER=ollama` or `LLM_PROVIDER=external`
 
-Both layers use educational messaging—helping users understand what Geetanjali is designed for rather than punishing bad requests. No user content is logged; only violation types for monitoring.
-
-Configuration via environment:
-```bash
-CONTENT_FILTER_ENABLED=true              # Master switch
-CONTENT_FILTER_BLOCKLIST_ENABLED=true    # Layer 1
-CONTENT_FILTER_LLM_REFUSAL_DETECTION=true # Layer 2
-```
-
-See [Content Moderation](content-moderation.md) for pattern details and extending the blocklist.
+**Mobile-First** — The UI is designed for phones first, then scaled up. Swipe navigation in Reading Mode, touch-friendly controls, responsive grids that work on any screen.
 
 ### Graceful Degradation
 
-The pipeline never fails completely:
+The pipeline doesn't fail completely:
 
-```python
-def run(self, case_data: Dict, top_k: int = None) -> Dict:
-    # Step 1: Try verse retrieval
-    try:
-        retrieved_verses = self.retrieve_verses(query, top_k)
-    except Exception:
-        retrieved_verses = []  # Continue without verses
+- Verse retrieval fails → Continue without verses
+- LLM generation fails → Return a fallback response
+- Low confidence → Flag for review, still show the output
 
-    # Step 2: Try LLM generation
-    try:
-        output = self.generate_brief(prompt, ...)
-    except Exception:
-        return self._create_fallback_response(case_data, "LLM unavailable")
+### Content Moderation
 
-    # Step 3: Validate (with defaults for missing fields)
-    return self.validate_output(output)
+Two layers keep things focused on real ethical dilemmas:
+
+1. **Pre-submission** — Regex blocklist catches obvious bad content
+2. **Post-LLM** — Detects model refusals, tells user how to rephrase
+
+Both give helpful messages, not error walls.
+
+### Reading Mode Preferences
+
+Section visibility (IAST, Insight, Hindi, English) saves to localStorage:
+
+```javascript
+localStorage.setItem("geetanjali:readingSectionPrefs", JSON.stringify({
+  iast: true,
+  insight: true,
+  hindi: false,
+  english: true
+}));
 ```
+
+Set it once, works across all verses and chapters.
+
+---
 
 ## Operations
 
 ### Deployment
 
-Docker Compose orchestrates seven core services. A single `docker compose up` brings up the full stack: nginx (reverse proxy + static assets), FastAPI backend, RQ worker for async processing, PostgreSQL, Redis, ChromaDB, and Ollama.
+Seven services via Docker Compose:
 
-Key deployment features:
-- Background worker handles long-running RAG jobs (15-30s for local LLM)
-- Nginx serves static assets with aggressive caching (1 year for hashed files)
-- Rate limiting at both nginx and application layers
+```bash
+docker compose up -d  # Full stack
+make deploy           # Production with health checks
+```
 
-### Security
-
-**Container hardening:** Non-root users, minimal Linux capabilities (drop all, add only required), internal services not exposed to host network.
-
-**Secrets management:** SOPS + age encryption for `.env` files. Encrypted secrets committed to git, decrypted at deploy time.
-
-**Application security:** Security headers (HSTS, CSP, X-Frame-Options), rate limiting (60 req/min per IP), session-based anonymous access (no PII required).
-
-See [Security](security.md) for full hardening checklist and incident response procedures.
+- Background worker handles long-running RAG jobs
+- Nginx caches static assets aggressively
+- Rate limiting at nginx and app layers
 
 ### Performance
 
 | Operation | Latency |
 |-----------|---------|
-| Embedding + Vector search | ~40ms |
+| Verse search (embedding + vector) | ~40ms |
+| Page load (cached assets) | <100ms |
 | LLM generation (local) | 15-30s |
 | LLM generation (cloud) | 2-5s |
-| **Total pipeline** | **3-35s** |
+
+### Security
+
+- **Containers** — Non-root users, minimal capabilities
+- **Secrets** — SOPS + age encryption, decrypted at deploy
+- **Headers** — HSTS, CSP, X-Frame-Options
+- **Rate limiting** — 60 req/min per IP
+
+See [Security](security.md) for the full checklist.
 
 ### Observability
 
-Prometheus + Grafana provide optional monitoring. Business metrics track consultations and active users. Infrastructure metrics monitor service health. The stack deploys separately from core services.
+Optional Prometheus + Grafana for tracking consultations, active users, and service health.
 
-See [Observability](observability.md) for metric reference and alerting setup.
-
-## Conclusion
-
-Geetanjali demonstrates that RAG can bring ancient wisdom into modern decision support. The key is treating scripture not as training data but as retrievable context—preserving attribution and enabling verification.
-
-The architecture patterns here (local-first LLM, graceful degradation, confidence scoring) apply broadly to any domain-specific RAG system where grounding and transparency matter.
+See [Observability](observability.md) for details.
 
 ---
 
-**Live:** [geetanjaliapp.com](https://geetanjaliapp.com) · **Source:** [GitHub](https://github.com/geetanjaliapp/geetanjali) · MIT License
+## Wrapping Up
+
+Geetanjali connects ancient text with modern UI. The Consultation Journey uses RAG to ground ethical guidance in scripture—with citations you can verify. The Discovery Journey makes 701 verses browsable and readable without getting in your way.
+
+The technical choices (local-first LLM, graceful degradation, anonymous access) all point at the same goal: make this stuff accessible without hoops to jump through.
+
+---
+
+**Live:** [geetanjaliapp.com](https://geetanjaliapp.com) · **Docs:** [docs.geetanjaliapp.com](https://docs.geetanjaliapp.com) · **Source:** [GitHub](https://github.com/geetanjaliapp/geetanjali)
