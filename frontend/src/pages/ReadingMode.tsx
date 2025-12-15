@@ -14,7 +14,7 @@ import { useSearchParams } from "react-router-dom";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { versesApi, readingApi } from "../lib/api";
 import type { Verse, BookMetadata, ChapterMetadata } from "../types";
-import { Navbar, VerseFocus, ProgressBar, ChapterSelector, CoverPage, ChapterIntro } from "../components";
+import { Navbar, VerseFocus, ProgressBar, ChapterSelector, IntroCard } from "../components";
 import { useSEO, useSwipeNavigation } from "../hooks";
 import {
   getChapterName,
@@ -28,8 +28,11 @@ import { errorMessages } from "../lib/errorMessages";
 const READING_POSITION_KEY = "geetanjali:readingPosition";
 const READING_SETTINGS_KEY = "geetanjali:readingSettings";
 const ONBOARDING_SEEN_KEY = "geetanjali:readingOnboardingSeen";
-const COVER_SEEN_KEY = "geetanjali:coverSeen";
-const CHAPTER_INTROS_SEEN_KEY = "geetanjali:chapterIntrosSeen";
+
+// Special page indices for intro cards
+// -2 = book cover, -1 = chapter intro, >= 0 = verse index
+const PAGE_BOOK_COVER = -2;
+const PAGE_CHAPTER_INTRO = -1;
 
 interface ReadingPosition {
   chapter: number;
@@ -106,61 +109,11 @@ function savePosition(chapter: number, verse: number): void {
 }
 
 /**
- * Check if cover page has been seen
- */
-function hasCoverBeenSeen(): boolean {
-  try {
-    return localStorage.getItem(COVER_SEEN_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Mark cover page as seen
- */
-function markCoverSeen(): void {
-  try {
-    localStorage.setItem(COVER_SEEN_KEY, "1");
-  } catch {
-    // Ignore
-  }
-}
-
-/**
- * Get set of chapter numbers whose intros have been seen
- */
-function getSeenChapterIntros(): Set<number> {
-  try {
-    const saved = localStorage.getItem(CHAPTER_INTROS_SEEN_KEY);
-    if (saved) {
-      return new Set(JSON.parse(saved) as number[]);
-    }
-  } catch {
-    // Ignore
-  }
-  return new Set();
-}
-
-/**
- * Mark a chapter intro as seen
- */
-function markChapterIntroSeen(chapter: number): void {
-  try {
-    const seen = getSeenChapterIntros();
-    seen.add(chapter);
-    localStorage.setItem(CHAPTER_INTROS_SEEN_KEY, JSON.stringify([...seen]));
-  } catch {
-    // Ignore
-  }
-}
-
-/**
  * Reading mode state
  */
 interface ReadingState {
   chapter: number;
-  verseIndex: number; // 0-based index into chapterVerses array
+  pageIndex: number; // -2 = book cover, -1 = chapter intro, >= 0 = verse index
   chapterVerses: Verse[];
   isLoading: boolean;
   error: string | null;
@@ -206,9 +159,14 @@ export default function ReadingMode() {
     return 1; // Default to verse 1
   };
 
+  // Determine if we should start with book cover or jump to a specific verse
+  const urlHasVerse = searchParams.get("v") !== null;
+  const urlHasChapter = searchParams.get("c") !== null;
+
   const [state, setState] = useState<ReadingState>({
     chapter: getInitialChapter(),
-    verseIndex: 0,
+    // Start at book cover unless URL specifies a verse/chapter
+    pageIndex: (urlHasVerse || urlHasChapter) ? PAGE_CHAPTER_INTRO : PAGE_BOOK_COVER,
     chapterVerses: [],
     isLoading: true,
     error: null,
@@ -225,12 +183,9 @@ export default function ReadingMode() {
     }
   });
 
-  // Book and chapter metadata states
+  // Book and chapter metadata for intro cards
   const [bookMetadata, setBookMetadata] = useState<BookMetadata | null>(null);
   const [chapterMetadata, setChapterMetadata] = useState<ChapterMetadata | null>(null);
-  const [showCoverPage, setShowCoverPage] = useState(() => !hasCoverBeenSeen());
-  const [showChapterIntro, setShowChapterIntro] = useState(false);
-  const [seenChapters] = useState(() => getSeenChapterIntros());
 
   // Dismiss onboarding and remember
   const dismissOnboarding = useCallback(() => {
@@ -241,23 +196,6 @@ export default function ReadingMode() {
       // Ignore
     }
   }, []);
-
-  // Dismiss cover page and mark as seen
-  const dismissCoverPage = useCallback(() => {
-    setShowCoverPage(false);
-    markCoverSeen();
-    // Show chapter intro for the first chapter (if not yet seen)
-    if (!seenChapters.has(state.chapter)) {
-      setShowChapterIntro(true);
-    }
-  }, [seenChapters, state.chapter]);
-
-  // Dismiss chapter intro and mark as seen
-  const dismissChapterIntro = useCallback(() => {
-    setShowChapterIntro(false);
-    markChapterIntroSeen(state.chapter);
-    seenChapters.add(state.chapter);
-  }, [state.chapter, seenChapters]);
 
   // Cycle font size: small → medium → large → small
   const cycleFontSize = useCallback(() => {
@@ -273,11 +211,16 @@ export default function ReadingMode() {
   const prefetchCache = useRef<Map<number, Verse[]>>(new Map());
   const prefetchingRef = useRef<Set<number>>(new Set());
 
-  // Current verse from the chapter verses array
+  // Current verse from the chapter verses array (only when pageIndex >= 0)
   const currentVerse =
-    state.chapterVerses.length > 0
-      ? state.chapterVerses[state.verseIndex]
+    state.pageIndex >= 0 && state.chapterVerses.length > 0
+      ? state.chapterVerses[state.pageIndex]
       : null;
+
+  // Determine what type of page we're showing
+  const isBookCover = state.pageIndex === PAGE_BOOK_COVER;
+  const isChapterIntro = state.pageIndex === PAGE_CHAPTER_INTRO;
+  const isVerse = state.pageIndex >= 0;
 
   // Progress calculation
   const progress = currentVerse
@@ -393,40 +336,33 @@ export default function ReadingMode() {
     loadChapter(state.chapter);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch book metadata for cover page
+  // Fetch book metadata on mount (for cover page)
   useEffect(() => {
-    if (showCoverPage) {
-      readingApi.getBookMetadata()
-        .then(setBookMetadata)
-        .catch(() => {
-          // If book metadata fails to load, skip the cover page
-          setShowCoverPage(false);
-          markCoverSeen();
-        });
-    }
-  }, [showCoverPage]);
+    readingApi.getBookMetadata()
+      .then(setBookMetadata)
+      .catch(() => {
+        // If book metadata fails, skip to chapter intro
+        if (state.pageIndex === PAGE_BOOK_COVER) {
+          setState((prev) => ({ ...prev, pageIndex: PAGE_CHAPTER_INTRO }));
+        }
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch chapter metadata when chapter changes
   useEffect(() => {
     readingApi.getChapter(state.chapter)
-      .then((meta) => {
-        setChapterMetadata(meta);
-        // Show chapter intro if this chapter hasn't been seen
-        if (!seenChapters.has(state.chapter) && !showCoverPage) {
-          setShowChapterIntro(true);
-        }
-      })
+      .then(setChapterMetadata)
       .catch(() => {
-        // Silently fail - chapter intros are optional
+        // Silently fail - will use fallback in UI
         setChapterMetadata(null);
       });
-  }, [state.chapter, seenChapters, showCoverPage]);
+  }, [state.chapter]);
 
   // Prefetch adjacent chapters when near boundaries (80%/20%)
   useEffect(() => {
-    if (state.chapterVerses.length === 0) return;
+    if (state.chapterVerses.length === 0 || state.pageIndex < 0) return;
 
-    const progressInChapter = (state.verseIndex + 1) / state.chapterVerses.length;
+    const progressInChapter = (state.pageIndex + 1) / state.chapterVerses.length;
 
     // Near end (80%+) - prefetch next chapter
     if (progressInChapter >= 0.8 && state.chapter < TOTAL_CHAPTERS) {
@@ -437,36 +373,37 @@ export default function ReadingMode() {
     if (progressInChapter <= 0.2 && state.chapter > 1) {
       prefetchChapter(state.chapter - 1);
     }
-  }, [state.verseIndex, state.chapterVerses.length, state.chapter, prefetchChapter]);
+  }, [state.pageIndex, state.chapterVerses.length, state.chapter, prefetchChapter]);
 
   // Track if we've done the initial setup (only once per component mount)
   const initialSetupDoneRef = useRef(false);
 
-  // Set initial verse index once chapter loads (only on first load)
+  // Set initial verse index once chapter loads (only on first load, and only if URL specified a verse)
   useEffect(() => {
     if (state.chapterVerses.length > 0 && !initialSetupDoneRef.current) {
-      // Handle initial verse from URL
-      if (initialVerse > 1) {
+      // Handle initial verse from URL (skip cover and chapter intro)
+      if (initialVerse > 1 && (urlHasVerse || urlHasChapter)) {
         const index = state.chapterVerses.findIndex(
           (v) => v.verse === initialVerse
         );
         if (index !== -1) {
-          setState((prev) => ({ ...prev, verseIndex: index }));
+          setState((prev) => ({ ...prev, pageIndex: index }));
         }
       }
       initialSetupDoneRef.current = true;
     }
-  }, [state.chapterVerses, initialVerse]);
+  }, [state.chapterVerses, initialVerse, urlHasVerse, urlHasChapter]);
 
   // Handle "start at end" case when navigating to previous chapter
+  // pageIndex of -3 signals "start at last verse of chapter"
   useEffect(() => {
-    if (state.chapterVerses.length > 0 && state.verseIndex === -1) {
+    if (state.chapterVerses.length > 0 && state.pageIndex === -3) {
       setState((prev) => ({
         ...prev,
-        verseIndex: prev.chapterVerses.length - 1,
+        pageIndex: prev.chapterVerses.length - 1,
       }));
     }
-  }, [state.chapterVerses, state.verseIndex]);
+  }, [state.chapterVerses, state.pageIndex]);
 
   // Update URL and save position when verse changes
   useEffect(() => {
@@ -490,7 +427,8 @@ export default function ReadingMode() {
         setState((prev) => ({
           ...prev,
           chapter,
-          verseIndex: startAtEnd ? -1 : 0, // -1 signals "start at end", will be resolved after load
+          // -3 signals "start at end", -1 is chapter intro
+          pageIndex: startAtEnd ? -3 : PAGE_CHAPTER_INTRO,
           chapterVerses: [],
         }));
         loadChapter(chapter);
@@ -504,13 +442,21 @@ export default function ReadingMode() {
   goToChapterRef.current = goToChapter;
 
   // Navigation functions - use refs to avoid stale closures
-  const nextVerse = useCallback(() => {
+  const nextPage = useCallback(() => {
     setState((prev) => {
-      // If not at end of chapter, go to next verse
-      if (prev.verseIndex < prev.chapterVerses.length - 1) {
-        return { ...prev, verseIndex: prev.verseIndex + 1 };
+      // Book cover → chapter intro
+      if (prev.pageIndex === PAGE_BOOK_COVER) {
+        return { ...prev, pageIndex: PAGE_CHAPTER_INTRO };
       }
-      // At end of chapter - advance to next chapter
+      // Chapter intro → first verse
+      if (prev.pageIndex === PAGE_CHAPTER_INTRO) {
+        return { ...prev, pageIndex: 0 };
+      }
+      // If not at end of chapter, go to next verse
+      if (prev.pageIndex < prev.chapterVerses.length - 1) {
+        return { ...prev, pageIndex: prev.pageIndex + 1 };
+      }
+      // At end of chapter - advance to next chapter (will show chapter intro)
       if (prev.chapter < TOTAL_CHAPTERS) {
         setTimeout(() => goToChapterRef.current(prev.chapter + 1), 0);
       }
@@ -518,31 +464,43 @@ export default function ReadingMode() {
     });
   }, []);
 
-  const prevVerse = useCallback(() => {
+  const prevPage = useCallback(() => {
     setState((prev) => {
-      // If not at start of chapter, go to previous verse
-      if (prev.verseIndex > 0) {
-        return { ...prev, verseIndex: prev.verseIndex - 1 };
+      // First verse → chapter intro
+      if (prev.pageIndex === 0) {
+        return { ...prev, pageIndex: PAGE_CHAPTER_INTRO };
       }
-      // At start of chapter - go to previous chapter (at end)
-      if (prev.chapter > 1) {
+      // Chapter intro → book cover (only for chapter 1)
+      if (prev.pageIndex === PAGE_CHAPTER_INTRO && prev.chapter === 1) {
+        return { ...prev, pageIndex: PAGE_BOOK_COVER };
+      }
+      // Chapter intro → go to previous chapter (at end)
+      if (prev.pageIndex === PAGE_CHAPTER_INTRO && prev.chapter > 1) {
         setTimeout(() => goToChapterRef.current(prev.chapter - 1, true), 0);
+        return prev;
+      }
+      // If not at start of chapter, go to previous verse
+      if (prev.pageIndex > 0) {
+        return { ...prev, pageIndex: prev.pageIndex - 1 };
       }
       return prev;
     });
   }, []);
 
   // Check navigation boundaries
-  const canGoPrev = state.verseIndex > 0 || state.chapter > 1;
+  // Can go prev: not at book cover
+  const canGoPrev = state.pageIndex > PAGE_BOOK_COVER;
+  // Can go next: not at last verse of last chapter
   const canGoNext =
-    state.verseIndex < state.chapterVerses.length - 1 ||
+    state.pageIndex < 0 || // on intro pages
+    state.pageIndex < state.chapterVerses.length - 1 ||
     state.chapter < TOTAL_CHAPTERS;
 
   // Swipe navigation for mobile
   const swipeRef = useSwipeNavigation<HTMLElement>({
-    onNext: canGoNext ? nextVerse : undefined,
-    onPrev: canGoPrev ? prevVerse : undefined,
-    enabled: !state.isLoading && !!currentVerse,
+    onNext: canGoNext ? nextPage : undefined,
+    onPrev: canGoPrev ? prevPage : undefined,
+    enabled: !state.isLoading,
   });
 
   // Keyboard navigation for desktop
@@ -561,16 +519,16 @@ export default function ReadingMode() {
       // Arrow keys and J/K for navigation
       if ((event.key === "ArrowLeft" || event.key === "k" || event.key === "K") && canGoPrev) {
         event.preventDefault();
-        prevVerse();
+        prevPage();
       } else if ((event.key === "ArrowRight" || event.key === "j" || event.key === "J") && canGoNext) {
         event.preventDefault();
-        nextVerse();
+        nextPage();
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [canGoPrev, canGoNext, prevVerse, nextVerse]);
+  }, [canGoPrev, canGoNext, prevPage, nextPage]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex flex-col">
@@ -644,14 +602,20 @@ export default function ReadingMode() {
               Try Again
             </button>
           </div>
+        ) : isBookCover && bookMetadata ? (
+          // Book cover page
+          <IntroCard key="book-cover" type="book" book={bookMetadata} fontSize={settings.fontSize} />
+        ) : isChapterIntro && chapterMetadata ? (
+          // Chapter intro page
+          <IntroCard key={`chapter-${state.chapter}-intro`} type="chapter" chapter={chapterMetadata} fontSize={settings.fontSize} />
         ) : currentVerse ? (
           // Verse display with tap-to-reveal translations
           <VerseFocus key={currentVerse.canonical_id} verse={currentVerse} fontSize={settings.fontSize} />
         ) : (
-          // No verses loaded
+          // Fallback: No content available
           <div className="text-center">
             <div className="text-4xl text-amber-300/60 mb-4">ॐ</div>
-            <p className="text-amber-600/70">No verses found in this chapter</p>
+            <p className="text-amber-600/70">Loading...</p>
           </div>
         )}
       </main>
@@ -665,14 +629,14 @@ export default function ReadingMode() {
           <div className="flex items-center justify-between">
             {/* Previous button */}
             <button
-              onClick={prevVerse}
+              onClick={prevPage}
               disabled={!canGoPrev}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                 canGoPrev
                   ? "text-amber-700 hover:bg-amber-50 active:bg-amber-100"
                   : "text-gray-300 cursor-not-allowed"
               }`}
-              aria-label="Previous verse"
+              aria-label="Previous"
             >
               <span className="text-lg">←</span>
               <span className="text-sm font-medium">Prev</span>
@@ -708,14 +672,14 @@ export default function ReadingMode() {
 
             {/* Next button */}
             <button
-              onClick={nextVerse}
+              onClick={nextPage}
               disabled={!canGoNext}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                 canGoNext
                   ? "text-amber-700 hover:bg-amber-50 active:bg-amber-100"
                   : "text-gray-300 cursor-not-allowed"
               }`}
-              aria-label="Next verse"
+              aria-label="Next"
             >
               <span className="text-sm font-medium">Next</span>
               <span className="text-lg">→</span>
@@ -794,23 +758,6 @@ export default function ReadingMode() {
         </>
       )}
 
-      {/* Book Cover Page - shown on first visit */}
-      {bookMetadata && (
-        <CoverPage
-          book={bookMetadata}
-          onStart={dismissCoverPage}
-          isVisible={showCoverPage}
-        />
-      )}
-
-      {/* Chapter Intro - shown when entering a new chapter */}
-      {chapterMetadata && (
-        <ChapterIntro
-          chapter={chapterMetadata}
-          onContinue={dismissChapterIntro}
-          isVisible={showChapterIntro}
-        />
-      )}
     </div>
   );
 }
