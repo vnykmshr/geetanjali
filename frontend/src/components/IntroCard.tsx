@@ -88,26 +88,31 @@ export function IntroCard(props: IntroCardProps) {
             aria-label={showDetails ? "Hide details" : "Show details"}
           >
             {/* Om symbol */}
-            <div className="text-3xl sm:text-4xl text-amber-400/50 mb-3 sm:mb-4 lg:mb-6 font-light">
+            <div className="text-3xl sm:text-4xl text-amber-400/50 mb-2 sm:mb-3 font-light">
               ॐ
             </div>
 
             {/* Sanskrit title - hero display */}
             <div
               lang="sa"
-              className={`${FONT_SIZE_CLASSES[fontSize]} font-serif text-amber-900/70 leading-relaxed tracking-wide mb-3 sm:mb-4`}
+              className={`${FONT_SIZE_CLASSES[fontSize]} font-serif text-amber-900/70 leading-relaxed tracking-wide mb-2 sm:mb-3`}
             >
-              <p className="mb-1 sm:mb-2">{book.sanskrit_title}</p>
+              <p>{book.sanskrit_title}</p>
             </div>
 
             {/* Transliteration */}
-            <div className="text-amber-700/60 text-base sm:text-lg font-serif italic mb-4">
+            <div className="text-amber-700/60 text-base sm:text-lg font-serif italic mb-2">
               {book.transliteration}
             </div>
 
             {/* English title with stats */}
-            <div className="text-amber-600/70 text-base sm:text-lg font-serif mb-4">
+            <div className="text-amber-600/70 text-base sm:text-lg font-serif mb-1">
               ॥ {book.english_title} ॥
+            </div>
+
+            {/* Stats - moved up for visibility */}
+            <div className="text-sm text-amber-500/70 mb-2">
+              {book.chapter_count} Chapters · {book.verse_count} Verses
             </div>
 
             {/* Hints (only show when details hidden) */}
@@ -127,23 +132,23 @@ export function IntroCard(props: IntroCardProps) {
         {/* Details panel - expands downward */}
         <div
           className={`flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${
-            showDetails ? "max-h-[1000px] opacity-100 mt-6" : "max-h-0 opacity-0 mt-0"
+            showDetails ? "max-h-[1000px] opacity-100 mt-4" : "max-h-0 opacity-0 mt-0"
           }`}
         >
-          <div className="border-t border-amber-200/50 pt-6 space-y-4">
+          <div className="border-t border-amber-200/50 pt-4 space-y-3">
             {/* Tagline */}
-            <div className="bg-amber-100/30 rounded-xl p-4 border border-amber-200/30">
-              <p className="text-base text-amber-800/80 leading-relaxed italic font-serif text-center">
+            <div className="bg-amber-100/30 rounded-xl p-3 border border-amber-200/30">
+              <p className="text-sm sm:text-base text-amber-800/80 leading-relaxed italic font-serif text-center">
                 "{book.tagline}"
               </p>
             </div>
 
             {/* Begin Journey CTA */}
             {onBegin && (
-              <div className="text-center pt-2">
+              <div className="text-center">
                 <button
                   onClick={onBegin}
-                  className="px-8 py-3 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-medium rounded-xl transition-colors shadow-md hover:shadow-lg"
+                  className="px-8 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-medium rounded-xl transition-colors shadow-md hover:shadow-lg"
                 >
                   Begin Journey
                 </button>
@@ -151,15 +156,10 @@ export function IntroCard(props: IntroCardProps) {
             )}
 
             {/* Intro text */}
-            <div className="bg-white/70 rounded-xl p-4 border border-amber-200/50">
-              <p className="text-base text-gray-800 leading-relaxed">
+            <div className="bg-white/70 rounded-xl p-3 border border-amber-200/50">
+              <p className="text-sm sm:text-base text-gray-800 leading-relaxed">
                 {book.intro_text}
               </p>
-            </div>
-
-            {/* Stats */}
-            <div className="text-center text-sm text-amber-600/70">
-              {book.chapter_count} Chapters · {book.verse_count} Verses
             </div>
           </div>
         </div>
