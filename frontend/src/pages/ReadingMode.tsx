@@ -287,10 +287,11 @@ export default function ReadingMode() {
     }
   }, []);
 
-  // Reset reading progress - clear saved position and start over
+  // Reset reading progress - clear saved position, settings, and start over
   const resetProgress = useCallback(() => {
     try {
       localStorage.removeItem(READING_POSITION_KEY);
+      localStorage.removeItem(READING_SETTINGS_KEY);
     } catch {
       // Ignore
     }
@@ -304,6 +305,8 @@ export default function ReadingMode() {
       chapterVerses: [],
     }));
     setTargetVerse(null);
+    // Reset font size to default
+    setSettings(DEFAULT_SETTINGS);
     loadChapter(1);
   }, [setSearchParams, loadChapter]);
 
