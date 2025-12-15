@@ -57,22 +57,16 @@ export function DesktopNav({
           <UserMenu user={user} onLogout={onLogout} variant="desktop" />
         </div>
       ) : (
-        <div className="flex items-center gap-2 ml-2 pl-3 border-l border-gray-200">
+        <div className="ml-2 pl-3 border-l border-gray-200">
           <Link
             to="/login"
             className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 ${
-              pathname === "/login"
+              pathname === "/login" || pathname === "/signup"
                 ? "text-orange-700 bg-orange-100 shadow-sm"
                 : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
             }`}
           >
             Login
-          </Link>
-          <Link
-            to="/signup"
-            className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
-          >
-            Sign Up
           </Link>
         </div>
       )}

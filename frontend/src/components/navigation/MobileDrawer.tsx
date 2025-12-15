@@ -160,22 +160,13 @@ export function MobileDrawer({
                 </button>
               </div>
             ) : (
-              <div className="space-y-2">
-                <Link
-                  to="/login"
-                  onClick={onClose}
-                  className="block w-full px-4 py-2.5 text-center text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/signup"
-                  onClick={onClose}
-                  className="block w-full px-4 py-2.5 text-center text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-all duration-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
-                >
-                  Sign Up
-                </Link>
-              </div>
+              <Link
+                to="/login"
+                onClick={onClose}
+                className="block w-full px-4 py-2.5 text-center text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+              >
+                Login
+              </Link>
             )}
           </div>
         </div>
