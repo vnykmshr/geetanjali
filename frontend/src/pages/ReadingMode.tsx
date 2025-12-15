@@ -644,7 +644,14 @@ export default function ReadingMode() {
           <IntroCard key="book-cover" type="book" book={bookMetadata} fontSize={settings.fontSize} onBegin={nextPage} />
         ) : isChapterIntro && chapterMetadata ? (
           // Chapter intro page
-          <IntroCard key={`chapter-${state.chapter}-intro`} type="chapter" chapter={chapterMetadata} fontSize={settings.fontSize} />
+          <IntroCard
+            key={`chapter-${state.chapter}-intro`}
+            type="chapter"
+            chapter={chapterMetadata}
+            fontSize={settings.fontSize}
+            onBegin={nextPage}
+            resumeVerse={targetVerse}
+          />
         ) : currentVerse ? (
           // Verse display with tap-to-reveal translations
           <VerseFocus key={currentVerse.canonical_id} verse={currentVerse} fontSize={settings.fontSize} />

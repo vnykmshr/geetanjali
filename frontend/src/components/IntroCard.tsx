@@ -36,6 +36,8 @@ interface ChapterIntroProps {
   chapter: ChapterMetadata;
   book?: never;
   fontSize?: FontSize;
+  onBegin?: () => void;
+  resumeVerse?: number | null; // If set, shows "Resume at verse X" instead of "Begin"
 }
 
 type IntroCardProps = BookIntroProps | ChapterIntroProps;
@@ -168,7 +170,7 @@ export function IntroCard(props: IntroCardProps) {
   }
 
   // Chapter intro
-  const chapter = props.chapter;
+  const { chapter, onBegin, resumeVerse } = props;
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col">
       <div className="flex-shrink-0">
@@ -259,6 +261,20 @@ export function IntroCard(props: IntroCardProps) {
                   {theme}
                 </span>
               ))}
+            </div>
+          )}
+
+          {/* Begin/Resume CTA - subdued style */}
+          {onBegin && (
+            <div className="text-center pt-1">
+              <button
+                onClick={onBegin}
+                className="px-6 py-2 text-amber-700 hover:text-amber-800 font-medium border border-amber-300 hover:border-amber-400 hover:bg-amber-50 rounded-lg transition-colors"
+              >
+                {resumeVerse && resumeVerse > 1
+                  ? `Continue from verse ${resumeVerse}`
+                  : "Begin Chapter"}
+              </button>
             </div>
           )}
         </div>
