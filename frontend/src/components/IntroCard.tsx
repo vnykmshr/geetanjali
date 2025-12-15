@@ -45,12 +45,9 @@ type IntroCardProps = BookIntroProps | ChapterIntroProps;
 export function IntroCard(props: IntroCardProps) {
   const { type, fontSize = "medium" } = props;
   // Start with details expanded for better UX
+  // Note: When content changes, ReadingMode provides a new `key` prop which
+  // causes React to remount the component, resetting state to initial value
   const [showDetails, setShowDetails] = useState(true);
-
-  // Keep details expanded when content changes (intro cards should show content by default)
-  useEffect(() => {
-    setShowDetails(true);
-  }, [type, props.type === "book" ? props.book?.book_key : props.chapter?.chapter_number]);
 
   const handleToggle = useCallback(() => {
     setShowDetails((prev) => !prev);

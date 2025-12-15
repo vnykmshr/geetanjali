@@ -216,7 +216,6 @@ export default function ReadingMode() {
   // Determine what type of page we're showing
   const isBookCover = state.pageIndex === PAGE_BOOK_COVER;
   const isChapterIntro = state.pageIndex === PAGE_CHAPTER_INTRO;
-  const isVerse = state.pageIndex >= 0;
 
   // Progress calculation
   const progress = currentVerse
