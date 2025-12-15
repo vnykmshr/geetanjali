@@ -53,10 +53,10 @@ export default function Login() {
               />
             </Link>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Welcome Back
+              Sign In
             </h2>
             <p className="mt-1.5 sm:mt-2 text-sm text-gray-600">
-              Sign in to access your ethical consultations
+              Access your saved consultations and continue your journey
             </p>
           </div>
 
@@ -127,12 +127,12 @@ export default function Login() {
             </div>
 
             <div className="text-center text-sm">
-              <span className="text-gray-600">Don't have an account? </span>
+              <span className="text-gray-600">New here? </span>
               <Link
                 to="/signup"
-                className="font-medium text-orange-600 hover:text-orange-500"
+                className="font-semibold text-orange-600 hover:text-orange-500 hover:underline"
               >
-                Sign up
+                Create an account →
               </Link>
             </div>
           </form>

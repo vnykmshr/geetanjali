@@ -76,10 +76,10 @@ export default function Signup() {
               />
             </Link>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Create Your Account
+              Create Account
             </h2>
             <p className="mt-1.5 sm:mt-2 text-sm text-gray-600">
-              Start your journey with ethical guidance from timeless wisdom
+              Save your consultations and continue your journey anytime
             </p>
           </div>
 
@@ -183,12 +183,12 @@ export default function Signup() {
             </div>
 
             <div className="text-center text-sm">
-              <span className="text-gray-600">Already have an account? </span>
+              <span className="text-gray-600">Already a member? </span>
               <Link
                 to="/login"
-                className="font-medium text-orange-600 hover:text-orange-500"
+                className="font-semibold text-orange-600 hover:text-orange-500 hover:underline"
               >
-                Sign in
+                Sign in →
               </Link>
             </div>
           </form>
