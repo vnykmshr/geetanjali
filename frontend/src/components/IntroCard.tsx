@@ -243,6 +243,20 @@ export function IntroCard(props: IntroCardProps) {
             </div>
           )}
 
+          {/* Begin/Resume CTA - subdued style */}
+          {onBegin && (
+            <div className="text-center">
+              <button
+                onClick={onBegin}
+                className="px-6 py-2 text-amber-700 hover:text-amber-800 font-medium border border-amber-300 hover:border-amber-400 hover:bg-amber-50 rounded-lg transition-colors"
+              >
+                {resumeVerse && resumeVerse > 1
+                  ? `Continue from verse ${resumeVerse}`
+                  : "Begin Chapter"}
+              </button>
+            </div>
+          )}
+
           {/* Summary */}
           <div className="bg-white/70 rounded-xl p-3 border border-amber-200/50">
             <p className="text-sm sm:text-base text-gray-800 leading-relaxed">
@@ -261,20 +275,6 @@ export function IntroCard(props: IntroCardProps) {
                   {theme}
                 </span>
               ))}
-            </div>
-          )}
-
-          {/* Begin/Resume CTA - subdued style */}
-          {onBegin && (
-            <div className="text-center pt-1">
-              <button
-                onClick={onBegin}
-                className="px-6 py-2 text-amber-700 hover:text-amber-800 font-medium border border-amber-300 hover:border-amber-400 hover:bg-amber-50 rounded-lg transition-colors"
-              >
-                {resumeVerse && resumeVerse > 1
-                  ? `Continue from verse ${resumeVerse}`
-                  : "Begin Chapter"}
-              </button>
             </div>
           )}
         </div>
