@@ -33,26 +33,35 @@ Users start by describing their ethical dilemma.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  /case/new                                                   │
+│  /cases/new                                                  │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Describe Your Situation                                     │
-│  ────────────────────────                                    │
+│  What dilemma are you facing?                                │
 │                                                              │
 │   ┌──────────────────────────────────────────────────────┐   │
-│   │                                                      │   │
 │   │  I'm a team lead facing a decision about whether     │   │
 │   │  to report a colleague's minor expense violations... │   │
-│   │                                                      │   │
 │   └──────────────────────────────────────────────────────┘   │
 │                                                              │
-│   [Example Questions ▼]                                      │
+│   ┌─ Example Questions (shown when < 10 chars) ──────────┐   │
+│   │  • My boss asked me to take credit for a colleague's │   │
+│   │    work. What should I do?                           │   │
+│   │  • Should I leave a stable job to pursue something   │   │
+│   │    I'm passionate about?                             │   │
+│   └──────────────────────────────────────────────────────┘   │
 │                                                              │
-│   ┌─ Personalize (Optional) ─────────────────────────────┐   │
+│  Background & constraints (optional)                         │
+│   ┌──────────────────────────────────────────────────────┐   │
+│   │  Competing values, fears, past experiences...        │   │
+│   └──────────────────────────────────────────────────────┘   │
+│                                                              │
+│   ┌─ Personalize your guidance (collapsible) ────────────┐   │
 │   │                                                      │   │
-│   │  Role: [Team Lead ▼]                                 │   │
+│   │  I'm asking as a...                                  │   │
+│   │  [Individual] [Parent] [Manager] [Employee] ...      │   │
 │   │                                                      │   │
-│   │  Stakeholders: [◉ Team] [◉ Organization] [○ Family]  │   │
+│   │  This decision affects...                            │   │
+│   │  [Self] [Family] [Team] [Organization] [Community]   │   │
 │   │                                                      │   │
 │   └──────────────────────────────────────────────────────┘   │
 │                                                              │
@@ -62,16 +71,17 @@ Users start by describing their ethical dilemma.
 ```
 
 **Form Features:**
-- Free-form text input (no templates)
-- Example questions for inspiration
-- Optional personalization (role, stakeholders)
-- Single CTA with clear action
+- Question field (required, min 10 characters)
+- Context field (optional background/constraints)
+- Example questions appear when question < 10 chars (3 random from pool of 8)
+- Collapsible personalization: role selection + stakeholder multi-select
+- Content validation (gibberish/abuse detection)
 
-**Example Questions:**
-Clicking reveals curated prompts users can adapt:
-- "How do I handle a conflict between loyalty and honesty?"
-- "What guidance does the Geeta offer on difficult decisions?"
-- "How should I approach a situation where doing right may hurt someone?"
+**Roles:**
+Individual, Parent, Manager/Leader, Employee, Student, Entrepreneur
+
+**Stakeholders:**
+Self, Family, Team, Organization, Community
 
 ## Analysis Flow
 
@@ -91,11 +101,11 @@ flowchart TD
 
 | State | UI Display | Duration |
 |-------|------------|----------|
-| `created` | Form submitted | Instant |
-| `pending` | "Analyzing..." spinner | ~1s |
-| `processing` | Progress indicator | ~30s |
-| `completed` | Full output | — |
-| `failed` | Error message + retry | — |
+| `pending` | "Analyzing..." with progress stages | ~1s |
+| `processing` | Animated stages + wisdom quotes | 1-3 min |
+| `completed` | Full output with verse citations | — |
+| `failed` | Error message + "Try Again" button | — |
+| `policy_violation` | Educational message + rephrase suggestions | — |
 
 **RAG Pipeline:**
 1. Embed user query using sentence-transformers
@@ -111,63 +121,52 @@ Structured guidance with multiple perspectives.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  /case/:id                                                   │
+│  /cases/:id                                                  │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Your Situation                                              │
-│  ───────────────                                             │
-│  I'm a team lead facing a decision about whether to report   │
-│  a colleague's minor expense violations...                   │
+│  ┌─ Your Question ──────────────────────────────────────┐    │
+│  │  I'm a team lead facing a decision about whether     │    │
+│  │  to report a colleague's expense violations...       │    │
+│  │                                    [Manager] [Team]  │    │
+│  └──────────────────────────────────────────────────────┘    │
 │                                                              │
-├──────────────────────────────────────────────────────────────┤
+│  ┌─ Wisdom from the Geeta ──────────────────────────────┐    │
+│  │                                                      │    │
+│  │  The Geeta emphasizes dharma (righteous duty)        │    │
+│  │  while also recognizing the complexity...            │    │
+│  │                                                      │    │
+│  │  [▼ 3 verse references]                              │    │
+│  │  ┌───────────────────────────────────────────────┐   │    │
+│  │  │ 2 47  "Focus on right action..."  [View →]    │   │    │
+│  │  │ 3 19  "Perform duty without..."   [View →]    │   │    │
+│  │  └───────────────────────────────────────────────┘   │    │
+│  │                                                      │    │
+│  │  [👍] [👎 + comment]                                 │    │
+│  └──────────────────────────────────────────────────────┘    │
 │                                                              │
-│  Guidance                                                    │
-│  ────────                                                    │
+│  ┌─ Paths Before You ───────────────────────────────────┐    │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐     │    │
+│  │  │ Path 1      │ │ Path 2      │ │ Path 3      │     │    │
+│  │  │ Direct talk │ │ Report      │ │ Wait & see  │     │    │
+│  │  │ ✓ Preserves │ │ ✓ Clear     │ │ ✓ Low risk  │     │    │
+│  │  │ ✗ May fail  │ │ ✗ Tension   │ │ ✗ Enables   │     │    │
+│  │  └─────────────┘ └─────────────┘ └─────────────┘     │    │
+│  └──────────────────────────────────────────────────────┘    │
 │                                                              │
-│   ┌─ Summary ────────────────────────────────────────────┐   │
-│   │                                                      │   │
-│   │  The Geeta emphasizes dharma (righteous duty)        │   │
-│   │  while also recognizing the complexity of            │   │
-│   │  interpersonal relationships and loyalty...          │   │
-│   │                                                      │   │
-│   └──────────────────────────────────────────────────────┘   │
+│  ┌─ Recommended Steps ──────────────────────────────────┐    │
+│  │  1. Schedule a private conversation                  │    │
+│  │  2. Focus on impact, not blame                       │    │
+│  │  3. Document the discussion                          │    │
+│  └──────────────────────────────────────────────────────┘    │
 │                                                              │
-│  Options                                                     │
-│  ───────                                                     │
+│  ┌─ Questions for Reflection ───────────────────────────┐    │
+│  │  • What outcome would make you feel at peace?        │    │
+│  │  • What would you advise a friend in this situation? │    │
+│  └──────────────────────────────────────────────────────┘    │
 │                                                              │
-│   ┌─ Option 1: Direct conversation first ────────────────┐   │
-│   │                                                      │   │
-│   │  Approach your colleague privately first.            │   │
-│   │  This honors truth (satya) and compassion (daya).    │   │
-│   │                                                      │   │
-│   │  + Preserves relationship                            │   │
-│   │  + Gives opportunity to self-correct                 │   │
-│   │  - May not resolve if behavior continues             │   │
-│   │                                                      │   │
-│   └──────────────────────────────────────────────────────┘   │
-│                                                              │
-│   ┌─ Option 2: Report through proper channels ───────────┐   │
-│   │  ...                                                 │   │
-│   └──────────────────────────────────────────────────────┘   │
-│                                                              │
-│  Relevant Verses                                             │
-│  ───────────────                                             │
-│                                                              │
-│   ┌──────────────────────────────────────────────────────┐   │
-│   │  BG 2.47 — कर्मण्येवाधिकारस्ते...                     │   │
-│   │                                                      │   │
-│   │  "You have the right to work only, but never to      │   │
-│   │  its fruits..."                                      │   │
-│   │                                                      │   │
-│   │  Relevance: Focus on right action, not outcomes      │   │
-│   │                                     [View Verse →]   │   │
-│   └──────────────────────────────────────────────────────┘   │
-│                                                              │
-│   ┌─ Ask a Follow-up Question ───────────────────────────┐   │
-│   │                                                      │   │
-│   │  [Type your question here...                    ] ↵  │   │
-│   │                                                      │   │
-│   └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐    │
+│  │  [Ask a follow-up question...                   ] ↵  │    │
+│  └──────────────────────────────────────────────────────┘    │
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -176,17 +175,17 @@ Structured guidance with multiple perspectives.
 
 | Section | Purpose |
 |---------|---------|
-| Summary | Executive overview of guidance |
-| Options | 2-3 actionable paths with tradeoffs |
-| Recommendation | Suggested approach (when confident) |
-| Implementation | Concrete next steps |
-| Reflection | Prompts for deeper contemplation |
-| Verses | Supporting citations with links |
+| Guidance | Markdown-formatted wisdom from the Geeta |
+| Verse References | Expandable list of supporting citations with paraphrases |
+| Paths Before You | 2-3 options with benefits/considerations (scrollable cards) |
+| Recommended Steps | Numbered actionable next steps |
+| Questions for Reflection | Prompts for deeper contemplation |
+| Feedback | Thumbs up/down with optional comment |
 
-**Verse Citations:**
-- Clickable links to verse detail pages
-- Shows Sanskrit, translation snippet, relevance
-- Confidence score (hidden from UI, used for flagging)
+**Additional Indicators:**
+- Scholar flag: amber warning for low-confidence responses
+- Role/stakeholder tags: shown on user's question
+- Public sharing toggle: generate shareable link
 
 ## Follow-up Conversations
 
@@ -252,10 +251,11 @@ sequenceDiagram
 ```
 
 **Follow-up Features:**
-- Async processing (non-blocking)
-- Context-aware (uses prior consultation)
-- No full RAG regeneration (lighter processing)
-- Rate limited (30/hour vs 10/hour for analysis)
+- Async processing: HTTP 202 returns user message immediately
+- Context-aware: uses prior consultation without full RAG
+- Animated "Contemplating..." indicator with wisdom quotes
+- Enter to submit, Shift+Enter for newline
+- Each response can have expandable verse sources and feedback
 
 ## User Flow Summary
 
@@ -287,28 +287,31 @@ flowchart TB
 **API Endpoints:**
 ```
 POST /api/v1/cases                    # Create case
-POST /api/v1/cases/{id}/analyze       # Queue analysis
+POST /api/v1/cases/{id}/analyze/async # Queue analysis (returns immediately)
 GET  /api/v1/cases/{id}               # Get case + status
-GET  /api/v1/cases/{id}/output        # Get analysis output
-POST /api/v1/cases/{id}/follow-up     # Submit follow-up
-GET  /api/v1/cases/{id}/messages      # Get conversation
+GET  /api/v1/cases/{id}/outputs       # Get analysis outputs
+POST /api/v1/cases/{id}/follow-up     # Submit follow-up (HTTP 202)
+GET  /api/v1/cases/{id}/messages      # Get conversation history
 POST /api/v1/outputs/{id}/feedback    # Submit feedback
+POST /api/v1/cases/{id}/share         # Toggle public sharing
+POST /api/v1/cases/{id}/retry         # Retry failed analysis
+DELETE /api/v1/cases/{id}             # Soft delete case
 ```
 
 **Processing:**
 - Analysis jobs run via RQ (Redis Queue)
-- Typical processing time: 20-40 seconds
-- Frontend polls every 2 seconds during processing
-- Timeout after 5 minutes with retry option
+- Typical processing time: 1-3 minutes
+- Frontend polls every 5 seconds during processing
+- Progress stages: Preparing → Finding wisdom → Contemplating → Composing
 
 **Content Moderation:**
-- Input validated for harmful content
-- Output checked before display
-- Low-confidence responses flagged
+- Input validated for harmful content (gibberish/abuse detection)
+- Policy violations return educational suggestions
+- Low-confidence responses flagged with "scholar_flag"
 - See [Content Moderation](content-moderation.md) for details
 
 **Accessibility:**
 - Form labels and ARIA attributes
-- Loading state announcements
+- Loading state announcements with progress stages
 - Keyboard navigation throughout
 - Focus management on state changes

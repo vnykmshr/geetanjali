@@ -14,7 +14,7 @@ Geetanjali serves two user modes:
 
 | Mode | User Intent | Experience |
 |------|-------------|------------|
-| **Seeking** | "Find a verse about duty" | Verse Browser — search, filter, explore |
+| **Seeking** | "Find a verse about duty" | Verse Browser — filter, explore |
 | **Reading** | "Read Chapter 2 in order" | Reading Mode — sequential, immersive |
 
 Both modes provide access to 701 verses across 18 chapters with Sanskrit text, transliterations, and translations.
@@ -25,34 +25,34 @@ Grid-based exploration for discovery and research.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  /verses                                                     │
+│  /verses                                       [Reading Mode]│
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  [Chapter ▼]   [Topic Pills...]             [ Grid │ Read ]  │
+│  [Featured] [All]    [Chapter ▼]    [Topic Pills...]         │
 │                                                              │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │    ┌─────────────┐   ┌─────────────┐   ┌─────────────┐       │
+│    │ ★ 2.47      │   │   3.19      │   │ ★ 2.48      │       │
 │    │  Sanskrit   │   │  Sanskrit   │   │  Sanskrit   │       │
-│    │   verse     │   │   verse     │   │   verse     │       │
 │    ├─────────────┤   ├─────────────┤   ├─────────────┤       │
-│    │ Paraphrase  │   │ Paraphrase  │   │ Paraphrase  │       │
+│    │ Translation │   │ Translation │   │ Translation │       │
 │    │ [tag] [tag] │   │ [tag] [tag] │   │ [tag] [tag] │       │
 │    └─────────────┘   └─────────────┘   └─────────────┘       │
 │                                                              │
-│    ┌─────────────┐   ┌─────────────┐   ┌─────────────┐       │
-│    │    ...      │   │    ...      │   │    ...      │       │
-│    └─────────────┘   └─────────────┘   └─────────────┘       │
+│                      [ Continue ]                            │
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 **Features:**
-- Chapter dropdown filter
-- Topic/principle filter pills (Dharma, Karma Yoga, etc.)
+- Featured/All toggle (curated verses vs all 701)
+- Chapter dropdown filter (18 chapters in grid layout)
+- Topic/principle filter pills (scrollable, from taxonomy)
 - Clickable tags for quick filtering
-- Card preview with Sanskrit, paraphrase, and tags
+- Card preview: verse reference, Sanskrit, translation snippet, principle tags
 - Responsive grid (1-4 columns based on viewport)
+- Infinite scroll with "Continue" button
 
 **Card → Detail Flow:**
 
@@ -70,44 +70,47 @@ Single verse deep-dive with full context.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                                                              │
-│  Chapter 2: Sankhya Yoga                  [← Prev] [Next →]  │
-│  Verse 47 of 72                                              │
-│  ████████████████████░░░░░░░░░░ 65%                          │
-│                                                              │
+│  [←]  Chapter 2: Sankhya Yoga              Verse 47 of 72    │
+│       ████████████████████░░░░░░░░░░ 65%                     │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │                            ॐ                                 │
-│                                                              │
 │         कर्मण्येवाधिकारस्ते मा फलेषु कदाचन।                              │
 │         मा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि॥                         │
+│                                  ॥ २.४७ ॥                    │
 │                                                              │
-│   ┌──────────────────────────────────────────────────────┐   │
-│   │ karmaṇy-evādhikāras te mā phaleṣu kadācana           │   │
-│   │ mā karma-phala-hetur bhūr mā te saṅgo stv akarmaṇi   │   │
+│   ┌─ Leadership Insight ─────────────────────────────────┐   │
+│   │ Focus on your duty without attachment to outcomes.   │   │
+│   │ Right action done for its own sake brings clarity.   │   │
 │   └──────────────────────────────────────────────────────┘   │
 │                                                              │
-│   ┌──────────────────────────────────────────────────────┐   │
+│   [Karma Yoga →]  [Detachment →]  [Nishkama Karma →]         │
+│                                                              │
+│   ┌─ Hindi ──────────────────────────────────────────────┐   │
+│   │ कर्म करने में ही तेरा अधिकार है...                             │   │
+│   └──────────────────────────────────────────────────────┘   │
+│                                                              │
+│   ┌─ English ────────────────────────────────────────────┐   │
 │   │ You have the right to work only, but never to its    │   │
-│   │ fruits. Let not the fruits of action be your         │   │
-│   │ motive, nor let your attachment be to inaction.      │   │
-│   │                                                      │   │
-│   │                            — Swami Sivananda         │   │
+│   │ fruits...                — Swami Gambirananda        │   │
 │   └──────────────────────────────────────────────────────┘   │
 │                                                              │
-│   [Karma Yoga]  [Detachment]  [Action]           [📤 Share]   │
+│   [Show More Translations]                                   │
 │                                                              │
+│   [◀ Prev]                                        [Next ▶]   │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 **Features:**
-- Chapter context bar with progress indicator
-- Large Sanskrit display with Om symbol
-- IAST transliteration
-- Multiple translations (Hindi, English)
-- Clickable principle tags → filtered grid
+- Chapter context bar with back button and progress indicator
+- Sanskrit Spotlight: Om symbol, Devanagari text, verse reference with marks
+- Leadership Insight: paraphrase for practical application
+- Consulting Principles: clickable tags → filtered grid
+- Primary translations: Hindi and English (side-by-side on desktop)
+- "More Translations" toggle for additional versions
+- Floating nav arrows (desktop) or sticky bottom nav (mobile)
 - Keyboard navigation (← → arrows)
-- Share functionality
+- Adjacent verse prefetching
 
 ## Reading Mode
 
@@ -147,9 +150,9 @@ flowchart TD
 |-------|--------|---------|
 | Next | Swipe left | → or J |
 | Previous | Swipe right | ← or K |
-| Toggle translation | Tap verse | Space |
+| Toggle translation | Tap verse | Tap verse |
 | Chapter select | Bottom nav button | Bottom nav button |
-| Reset progress | Header reset icon | Header reset icon |
+| Font size | Bottom nav button (cycles small/medium/large) | Same |
 
 **Persistence:**
 
@@ -159,14 +162,16 @@ localStorage
 │   ├── chapter: number
 │   ├── verse: number
 │   └── timestamp: ISO8601
-└── geetanjali:readingSettings
-    └── fontSize: "small" | "medium" | "large"
+├── geetanjali:readingSettings
+│   └── fontSize: "small" | "medium" | "large"
+└── geetanjali:readingOnboardingSeen
+    └── boolean (first-time tips)
 ```
 
 - Position saved automatically on verse change
 - URL syncs with position (`?c=2&v=47`)
-- Translation visibility persists within chapter
-- Reset button clears all saved state
+- Deep links take priority over saved position
+- First-time onboarding overlay with navigation tips
 
 ## User Flow Summary
 
@@ -175,39 +180,39 @@ flowchart TB
     subgraph Discovery["Discovery Journey"]
         H[Homepage] -->|"Explore Verses"| V[Verse Browser]
         V -->|Card click| D[Verse Detail]
-        D -->|"Read Chapter"| R[Reading Mode]
-        V -->|Toggle| R
-        R -->|"View Details"| D
+        V -->|"Reading Mode" link| R[Reading Mode]
         D -->|Tag click| V
+        R -->|Verse link| D
     end
 ```
 
 **Entry Points:**
-- Homepage "Explore Verses" → Grid
-- Navbar "Verses" → Grid
-- Grid toggle → Reading Mode
-- Verse Detail "Read Chapter" → Reading Mode
-- Direct URL `/read?c=2&v=47` → Reading Mode
+- Homepage "Explore Verses" → Verse Browser
+- Navbar "Verses" → Verse Browser
+- Verse Browser "Reading Mode" link → Reading Mode
+- Direct URL `/read?c=2&v=47` → Reading Mode at position
 
 ## Technical Notes
 
 **API Endpoints:**
 ```
-GET /api/v1/verses                    # List with filters
-GET /api/v1/verses/{canonical_id}     # Single verse
-GET /api/v1/verses/{id}/translations  # Verse translations
-GET /api/v1/reading/book              # Book metadata
-GET /api/v1/reading/chapters/{n}      # Chapter metadata
+GET /api/v1/verses                    # List with filters (chapter, featured, principles)
+GET /api/v1/verses/count              # Count with same filters
+GET /api/v1/verses/{canonical_id}     # Single verse details
+GET /api/v1/verses/{id}/translations  # All translations for verse
+GET /api/v1/verses/daily              # Daily featured verse
+GET /api/v1/reading/book              # Book metadata (title, tagline, intro)
+GET /api/v1/reading/chapters/{n}      # Chapter metadata (summary, themes)
 ```
 
 **Performance:**
-- Chapter prefetching at 80% progress
-- Translation lazy loading (fetched on reveal)
-- Verse cache in React state
-- Skeleton loading states
+- Chapter prefetching at 80%/20% progress thresholds
+- Translation lazy loading (fetched on reveal in Reading Mode)
+- Verse cache in React state with prefetch map
+- Skeleton loading states matching final layout
 
 **Accessibility:**
-- Keyboard navigation throughout
-- Screen reader labels
+- Keyboard navigation throughout (arrows, J/K)
+- Screen reader labels and ARIA attributes
 - Focus management on navigation
 - Reduced motion support
