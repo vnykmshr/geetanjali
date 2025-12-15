@@ -12,7 +12,7 @@ Ethical leadership guidance from the Bhagavad Geeta.
 
 ## Overview
 
-- [Building Geetanjali](building-geetanjali.md) — How we built the RAG system, architecture, and design decisions
+- [Building Geetanjali](building-geetanjali.md) — Two journeys (Consultation + Discovery), architecture, design decisions
 
 ## User Journeys
 
