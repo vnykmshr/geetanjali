@@ -55,10 +55,12 @@ export function formatSanskritLines(
   // Break line after speaker intros (वाच = "said/spoke")
   // This handles cases where speaker intro is inline with verse content
   // e.g., "श्रीभगवानुवाचऊर्ध्वमूलम्..." → "श्रीभगवानुवाच\nऊर्ध्वमूलम्..."
-  // Using वाच to catch both standalone "उवाच" and sandhi forms like "भगवानुवाच"
-  // \s* handles both with and without space after वाच
+  //
+  // IMPORTANT: Only match वाच at the START of the verse (before first danda)
+  // वाच appearing later in the verse is regular word content, not speaker cue
+  // Using lookahead to ensure वाच is followed by non-danda content (the actual verse)
   const withSpeakerBreaks = withoutVerseNum.replace(
-    /(वाच)\s*/g,
+    /^([^।]*वाच)\s*(?=[^।])/,
     "$1\n"
   );
 
@@ -73,8 +75,9 @@ export function formatSanskritLines(
 
   // Process each line
   for (const line of lines) {
-    // Check if this line contains speaker intro (contains वाच - said/spoke)
-    if (line.includes("वाच")) {
+    // Check if this line is a speaker intro (ends with वाच - said/spoke)
+    // e.g., "सञ्जय उवाच", "श्रीभगवानुवाच"
+    if (/वाच\s*$/.test(line)) {
       if (shouldIncludeSpeaker) {
         // Include speaker intro as-is
         result.push(line);
@@ -131,11 +134,13 @@ export function formatSanskritLines(
 
 /**
  * Check if a verse line is a speaker introduction
+ * Speaker intros end with वाच (said/spoke) - e.g., "सञ्जय उवाच", "श्रीभगवानुवाच"
  * @param line - The verse line to check
- * @returns True if line contains speaker introduction (contains वाच)
+ * @returns True if line is a speaker introduction (ends with वाच)
  */
 export function isSpeakerIntro(line: string): boolean {
-  return line.includes("वाच");
+  // Speaker intro lines end with वाच (possibly with trailing whitespace)
+  return /वाच\s*$/.test(line);
 }
 
 /**
