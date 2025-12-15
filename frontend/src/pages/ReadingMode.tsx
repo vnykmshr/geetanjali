@@ -14,7 +14,7 @@ import { useSearchParams } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { versesApi } from "../lib/api";
 import type { Verse } from "../types";
-import { Navbar, VerseFocus } from "../components";
+import { Navbar, VerseFocus, ProgressBar } from "../components";
 import { useSEO, useSwipeNavigation } from "../hooks";
 import {
   getChapterName,
@@ -247,19 +247,11 @@ export default function ReadingMode() {
           </div>
 
           {/* Progress bar */}
-          <div
-            className="h-1 bg-amber-200/50 rounded-full overflow-hidden"
-            role="progressbar"
-            aria-valuenow={progress.percentage}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={`Chapter progress: ${progress.percentage}%`}
-          >
-            <div
-              className="h-full bg-amber-500 transition-all duration-300 ease-out"
-              style={{ width: `${progress.percentage}%` }}
-            />
-          </div>
+          <ProgressBar
+            percentage={progress.percentage}
+            height={4}
+            ariaLabel={`Chapter ${state.chapter} progress: ${progress.percentage}%`}
+          />
         </div>
       </header>
 
