@@ -27,20 +27,31 @@ When a user submits an ethical dilemma, the system performs a full RAG (retrieva
 User submits dilemma
         │
         ▼
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│ Content Filter  │────▶│ Vector Search   │────▶│ LLM Generation  │
-│ (validation)    │     │ (find verses)   │     │ (structured)    │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                                                        │
-                                                        ▼
-                                               ┌─────────────────┐
-                                               │ Structured      │
-                                               │ Response        │
-                                               │ - Summary       │
-                                               │ - Options       │
-                                               │ - Steps         │
-                                               │ - Citations     │
-                                               └─────────────────┘
+┌──────────────────┐
+│ Content Filter   │
+│ (validation)     │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Vector Search    │
+│ (find verses)    │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ LLM Generation   │
+│ (structured)     │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Response:        │
+│ - Summary        │
+│ - Options        │
+│ - Steps          │
+│ - Citations      │
+└──────────────────┘
 ```
 
 **Output includes:**
@@ -58,17 +69,29 @@ After receiving guidance, users can ask follow-up questions for clarification or
 User asks follow-up
         │
         ▼
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│ Content Filter  │────▶│ Load Context    │────▶│ LLM Generation  │
-│ (validation)    │     │ (prior output)  │     │ (conversational)│
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                                                        │
-                                                        ▼
-                                               ┌─────────────────┐
-                                               │ Conversational  │
-                                               │ Response        │
-                                               │ (prose format)  │
-                                               └─────────────────┘
+┌──────────────────┐
+│ Content Filter   │
+│ (validation)     │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Load Context     │
+│ (prior output)   │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ LLM Generation   │
+│ (conversational) │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Conversational   │
+│ Response         │
+│ (prose format)   │
+└──────────────────┘
 ```
 
 **Differences from initial consultation:**
@@ -82,15 +105,11 @@ User asks follow-up
 Consultations progress through defined states:
 
 ```
-┌───────┐     ┌─────────┐     ┌────────────┐     ┌───────────┐
-│ DRAFT │────▶│ PENDING │────▶│ PROCESSING │────▶│ COMPLETED │
-└───────┘     └─────────┘     └────────────┘     └───────────┘
-                                    │
-                         ┌──────────┴──────────┐
-                         ▼                     ▼
-                  ┌──────────┐          ┌────────────────┐
-                  │  FAILED  │          │POLICY_VIOLATION│
-                  └──────────┘          └────────────────┘
+DRAFT ──▶ PENDING ──▶ PROCESSING ──▶ COMPLETED
+                           │
+              ┌────────────┴────────────┐
+              ▼                         ▼
+           FAILED              POLICY_VIOLATION
 ```
 
 | State | Meaning |

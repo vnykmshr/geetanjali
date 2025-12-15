@@ -32,30 +32,29 @@ flowchart LR
 Users start by describing their ethical dilemma.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  /case/new                                                   │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Describe Your Situation                                     │
-│  ─────────────────────────                                  │
-│                                                              │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ I'm a team lead facing a decision about whether to      ││
-│  │ report a colleague's minor expense violations...        ││
-│  │                                                         ││
-│  │                                                         ││
-│  └─────────────────────────────────────────────────────────┘│
-│                                                              │
-│  [Example Questions ▼]                                       │
-│                                                              │
-│  ┌─ Personalize (Optional) ─────────────────────────────┐   │
-│  │ Role: [Team Lead ▼]                                   │   │
-│  │ Stakeholders: [◉ Team] [◉ Organization] [○ Family]   │   │
-│  └───────────────────────────────────────────────────────┘   │
-│                                                              │
-│                              [ Get Guidance ]                │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│ /case/new                                        │
+├──────────────────────────────────────────────────┤
+│                                                  │
+│ Describe Your Situation                          │
+│ ───────────────────────                          │
+│                                                  │
+│ ┌──────────────────────────────────────────────┐│
+│ │ I'm a team lead facing a decision about     ││
+│ │ whether to report a colleague's minor       ││
+│ │ expense violations...                       ││
+│ └──────────────────────────────────────────────┘│
+│                                                  │
+│ [Example Questions ▼]                            │
+│                                                  │
+│ ┌─ Personalize (Optional) ────────────────────┐ │
+│ │ Role: [Team Lead ▼]                         │ │
+│ │ Stakeholders: [◉ Team] [◉ Org] [○ Family]  │ │
+│ └─────────────────────────────────────────────┘ │
+│                                                  │
+│                        [ Get Guidance ]          │
+│                                                  │
+└──────────────────────────────────────────────────┘
 ```
 
 **Form Features:**
@@ -107,64 +106,55 @@ flowchart TD
 Structured guidance with multiple perspectives.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  /case/:id                                                   │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Your Situation                                              │
-│  ───────────────                                            │
-│  I'm a team lead facing a decision about whether to         │
-│  report a colleague's minor expense violations...           │
-│                                                              │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Guidance                                                    │
-│  ────────                                                   │
-│                                                              │
-│  ┌─ Summary ──────────────────────────────────────────────┐ │
-│  │ The Geeta emphasizes dharma (righteous duty) while     │ │
-│  │ also recognizing the complexity of interpersonal...    │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                                                              │
-│  Options                                                     │
-│  ───────                                                    │
-│  ┌─ Option 1: Direct conversation first ──────────────────┐ │
-│  │ Approach your colleague privately before escalating.   │ │
-│  │ This honors both truth (satya) and compassion (daya).  │ │
-│  │                                                         │ │
-│  │ Tradeoffs:                                              │ │
-│  │ + Preserves relationship                                │ │
-│  │ + Gives opportunity to self-correct                     │ │
-│  │ - May not resolve if behavior continues                 │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                              │
-│  ┌─ Option 2: Report through proper channels ─────────────┐ │
-│  │ ...                                                     │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                              │
-│  ┌─ Option 3: Seek guidance from a mentor ────────────────┐ │
-│  │ ...                                                     │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                              │
-│  Relevant Verses                                             │
-│  ───────────────                                            │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ BG 2.47 — कर्मण्येवाधिकारस्ते...                         ││
-│  │ "You have the right to work only..."                    ││
-│  │ Relevance: Focus on right action, not outcomes          ││
-│  │                                           [View Verse →]││
-│  └─────────────────────────────────────────────────────────┘│
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ BG 3.35 — स्वधर्मे निधनं श्रेयः...                        ││
-│  │ "Better is one's own dharma, though imperfect..."       ││
-│  │                                           [View Verse →]││
-│  └─────────────────────────────────────────────────────────┘│
-│                                                              │
-│  ┌─ Ask a Follow-up Question ─────────────────────────────┐ │
-│  │ [Type your question here...                        ] ↵ │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│ /case/:id                                        │
+├──────────────────────────────────────────────────┤
+│                                                  │
+│ Your Situation                                   │
+│ ───────────────                                  │
+│ I'm a team lead facing a decision about         │
+│ whether to report a colleague's minor           │
+│ expense violations...                           │
+│                                                  │
+├──────────────────────────────────────────────────┤
+│                                                  │
+│ Guidance                                         │
+│ ────────                                         │
+│                                                  │
+│ ┌─ Summary ────────────────────────────────────┐│
+│ │ The Geeta emphasizes dharma while also      ││
+│ │ recognizing interpersonal complexity...     ││
+│ └──────────────────────────────────────────────┘│
+│                                                  │
+│ Options                                          │
+│ ───────                                          │
+│ ┌─ Option 1: Direct conversation ─────────────┐│
+│ │ Approach colleague privately first.         ││
+│ │ Honors truth (satya) and compassion (daya).││
+│ │                                             ││
+│ │ + Preserves relationship                    ││
+│ │ + Gives opportunity to self-correct         ││
+│ │ - May not resolve if behavior continues     ││
+│ └─────────────────────────────────────────────┘│
+│                                                  │
+│ ┌─ Option 2: Report through channels ─────────┐│
+│ │ ...                                         ││
+│ └─────────────────────────────────────────────┘│
+│                                                  │
+│ Relevant Verses                                  │
+│ ───────────────                                  │
+│ ┌──────────────────────────────────────────────┐│
+│ │ BG 2.47 — कर्मण्येवाधिकारस्ते...              ││
+│ │ "You have the right to work only..."        ││
+│ │ Relevance: Focus on action, not outcomes    ││
+│ │                            [View Verse →]   ││
+│ └──────────────────────────────────────────────┘│
+│                                                  │
+│ ┌─ Ask a Follow-up Question ──────────────────┐│
+│ │ [Type your question here...            ] ↵ ││
+│ └─────────────────────────────────────────────┘│
+│                                                  │
+└──────────────────────────────────────────────────┘
 ```
 
 **Output Components:**
@@ -209,35 +199,35 @@ sequenceDiagram
 
 **Conversation Flow:**
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Conversation                                                │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌─ You ──────────────────────────────────────────────────┐ │
-│  │ What if my colleague refuses to acknowledge the issue? │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                              │
-│  ┌─ Geetanjali ───────────────────────────────────────────┐ │
-│  │ If direct conversation doesn't resolve the situation,  │ │
-│  │ the Geeta's teaching on nishkama karma (desireless     │ │
-│  │ action) suggests focusing on your dharma rather than   │ │
-│  │ the outcome. You've fulfilled your duty by giving      │ │
-│  │ them the opportunity to self-correct...                │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                              │
-│  ┌─ You ──────────────────────────────────────────────────┐ │
-│  │ How do I know when it's time to escalate?              │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                              │
-│  ┌─ Geetanjali ───────────────────────────────────────────┐ │
-│  │ ● ● ●                                                   │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                              │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ [Ask another question...                           ] ↵ ││
-│  └─────────────────────────────────────────────────────────┘│
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│ Conversation                                     │
+├──────────────────────────────────────────────────┤
+│                                                  │
+│ ┌─ You ────────────────────────────────────────┐│
+│ │ What if my colleague refuses to acknowledge ││
+│ │ the issue?                                  ││
+│ └──────────────────────────────────────────────┘│
+│                                                  │
+│ ┌─ Geetanjali ─────────────────────────────────┐│
+│ │ If direct conversation doesn't resolve the  ││
+│ │ situation, the Geeta's teaching on nishkama ││
+│ │ karma suggests focusing on your dharma      ││
+│ │ rather than the outcome...                  ││
+│ └──────────────────────────────────────────────┘│
+│                                                  │
+│ ┌─ You ────────────────────────────────────────┐│
+│ │ How do I know when it's time to escalate?   ││
+│ └──────────────────────────────────────────────┘│
+│                                                  │
+│ ┌─ Geetanjali ─────────────────────────────────┐│
+│ │ ● ● ●                                        ││
+│ └──────────────────────────────────────────────┘│
+│                                                  │
+│ ┌──────────────────────────────────────────────┐│
+│ │ [Ask another question...                ] ↵ ││
+│ └──────────────────────────────────────────────┘│
+│                                                  │
+└──────────────────────────────────────────────────┘
 ```
 
 **Follow-up Features:**
