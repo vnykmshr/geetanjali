@@ -622,6 +622,7 @@ export default function Search() {
       const validation = validateSearchQuery(trimmed);
       if (!validation.valid) {
         setValidationError(validation.reason || "Invalid search query");
+        clear(); // Clear previous results
         return;
       }
 
@@ -639,7 +640,7 @@ export default function Search() {
       // Execute search
       search(trimmed);
     },
-    [inputValue, selectedChapter, search, setSearchParams]
+    [inputValue, selectedChapter, search, setSearchParams, clear]
   );
 
   // Handle quick search (from example buttons)
