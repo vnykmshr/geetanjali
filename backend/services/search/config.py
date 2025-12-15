@@ -55,6 +55,7 @@ class SearchConfig:
     weight_match_type: float = 1.0
     weight_featured: float = 0.15  # Featured verses get this boost
     weight_score: float = 0.5
+    weight_match_count: float = 0.1  # Bonus per matched keyword (for hybrid OR)
 
     # Match type priority scores
     match_type_scores: Dict[MatchType, float] = field(

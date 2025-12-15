@@ -21,6 +21,7 @@ def compute_rank_score(result: SearchResult, config: SearchConfig) -> float:
     Combines:
     - Match type priority (from config.match_type_scores)
     - Raw match quality score
+    - Match count bonus (for hybrid OR search)
     - Featured verse boost
 
     Args:
@@ -36,6 +37,9 @@ def compute_rank_score(result: SearchResult, config: SearchConfig) -> float:
     # Raw match quality (how well it matched within its category)
     raw_score = result.match.score
 
+    # Match count bonus (for hybrid OR - more keyword matches = higher score)
+    match_count_bonus = config.weight_match_count * result.match.match_count
+
     # Featured boost (curated verses rank higher)
     featured_boost = config.weight_featured if result.is_featured else 0.0
 
@@ -43,6 +47,7 @@ def compute_rank_score(result: SearchResult, config: SearchConfig) -> float:
     rank_score = (
         config.weight_match_type * type_score
         + config.weight_score * raw_score
+        + match_count_bonus
         + featured_boost
     )
 

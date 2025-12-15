@@ -47,6 +47,7 @@ class SearchMatch:
     field: str  # canonical_id, sanskrit_iast, translation_en, etc.
     score: float  # 0.0 to 1.0
     highlight: Optional[str] = None  # Matched text with <mark> tags
+    match_count: int = 1  # Number of query keywords matched (for hybrid OR ranking)
 
 
 @dataclass
@@ -135,6 +136,7 @@ def serialize_search_response(response: SearchResponse) -> Dict[str, Any]:
                     "field": r.match.field,
                     "score": r.match.score,
                     "highlight": r.match.highlight,
+                    "match_count": r.match.match_count,
                 },
                 "rank_score": r.rank_score,
             }
