@@ -1,12 +1,12 @@
-import { useSearchParams, Link } from "react-router-dom";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback, useMemo, FormEvent } from "react";
 import { versesApi } from "../lib/api";
 import type { Verse } from "../types";
 import { Navbar } from "../components";
 import { Footer } from "../components/Footer";
 import { VerseCard, VerseCardSkeleton } from "../components/VerseCard";
 import { BackToTopButton } from "../components/BackToTopButton";
-import { CloseIcon, ChevronDownIcon, SpinnerIcon } from "../components/icons";
+import { CloseIcon, ChevronDownIcon, SpinnerIcon, SearchIcon } from "../components/icons";
 import { errorMessages } from "../lib/errorMessages";
 import { useSEO } from "../hooks";
 import { PRINCIPLE_TAXONOMY, getPrincipleShortLabel } from "../constants/principles";
@@ -68,6 +68,8 @@ export default function Verses() {
   const [filterMode, setFilterMode] = useState<FilterMode>(getInitialFilter);
   const [selectedPrinciple, setSelectedPrinciple] = useState<string | null>(getInitialPrinciple);
   const [showChapterDropdown, setShowChapterDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
 
   // Derived state
   const selectedChapter = typeof filterMode === "number" ? filterMode : null;
@@ -202,6 +204,15 @@ export default function Verses() {
     updateSearchParams(filterMode, principle);
   };
 
+  // Handle search submission - navigate to /search
+  const handleSearchSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const trimmed = searchQuery.trim();
+    if (trimmed) {
+      navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
       <Navbar />
@@ -213,9 +224,33 @@ export default function Verses() {
           <h1 className="text-xl sm:text-2xl font-serif text-amber-900 mb-1">
             Explore the Bhagavad Geeta
           </h1>
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm text-gray-600 mb-4">
             701 verses of timeless wisdom
           </p>
+
+          {/* Search Bar */}
+          <form onSubmit={handleSearchSubmit} className="max-w-md mx-auto mb-4">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by verse, Sanskrit, or keywords..."
+                className="w-full pl-10 pr-4 py-2.5 border border-amber-200 rounded-full bg-white/80 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-400 text-sm"
+                aria-label="Search verses"
+              />
+              <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              {searchQuery && (
+                <button
+                  type="submit"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-orange-600 text-white text-xs font-medium rounded-full hover:bg-orange-700 transition-colors"
+                >
+                  Search
+                </button>
+              )}
+            </div>
+          </form>
+
           {/* Reading Mode Entry Point */}
           <Link
             to="/read"
