@@ -26,6 +26,7 @@ export { ChapterContextBar } from "./ChapterContextBar";
 export { ProgressBar } from "./ProgressBar";
 export { StickyBottomNav } from "./StickyBottomNav";
 export { FloatingNavArrow } from "./FloatingNavArrow";
+export { VerseFocus } from "./VerseFocus";
 
 // Case-related components
 export {

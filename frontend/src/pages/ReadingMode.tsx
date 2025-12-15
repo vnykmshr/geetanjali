@@ -14,7 +14,7 @@ import { useSearchParams } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { versesApi } from "../lib/api";
 import type { Verse } from "../types";
-import { Navbar } from "../components/Navbar";
+import { Navbar, VerseFocus } from "../components";
 import { useSEO } from "../hooks";
 import {
   getChapterName,
@@ -250,31 +250,8 @@ export default function ReadingMode() {
             </button>
           </div>
         ) : currentVerse ? (
-          // Verse display (placeholder for VerseFocus component)
-          <div className="w-full max-w-2xl mx-auto text-center">
-            {/* Om symbol */}
-            <div className="text-3xl text-amber-400/60 mb-6">ॐ</div>
-
-            {/* Sanskrit verse - hero display */}
-            <div className="mb-8">
-              <p
-                className="text-2xl sm:text-3xl leading-relaxed font-serif text-amber-900 whitespace-pre-line"
-                lang="sa"
-              >
-                {currentVerse.sanskrit_devanagari || currentVerse.sanskrit_iast}
-              </p>
-            </div>
-
-            {/* Verse reference */}
-            <div className="text-sm text-amber-600/70 mb-4">
-              {state.chapter}.{currentVerse.verse}
-            </div>
-
-            {/* Tap hint (will be replaced with actual translation panel) */}
-            <div className="text-sm text-amber-500/60 italic">
-              Tap for translation
-            </div>
-          </div>
+          // Verse display with tap-to-reveal translations
+          <VerseFocus verse={currentVerse} />
         ) : (
           // No verses loaded
           <div className="text-center">
