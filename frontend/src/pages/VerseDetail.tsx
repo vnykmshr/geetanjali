@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { versesApi } from "../lib/api";
 import { formatSanskritLines, isSpeakerIntro } from "../lib/sanskritFormatter";
 import { PRINCIPLE_TAXONOMY } from "../constants/principles";
@@ -28,6 +28,11 @@ function sortTranslations(translations: Translation[]): Translation[] {
 export default function VerseDetail() {
   const { canonicalId } = useParams<{ canonicalId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Check if user came from reading mode - hide navigation if so
+  const isFromReadingMode = searchParams.get("from") === "read";
+
   const [verse, setVerse] = useState<Verse | null>(null);
   const [translations, setTranslations] = useState<Translation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,8 +93,11 @@ export default function VerseDetail() {
     verse?.verse ?? 0
   );
 
-  // Keyboard navigation for desktop
+  // Keyboard navigation for desktop (disabled when coming from reading mode)
   useEffect(() => {
+    // Skip keyboard nav if user came from reading mode
+    if (isFromReadingMode) return;
+
     const handleKeyDown = (event: KeyboardEvent) => {
       // Don't handle if user is typing in an input
       const target = event.target as HTMLElement;
@@ -112,7 +120,7 @@ export default function VerseDetail() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [navigate, prevVerse, nextVerse]);
+  }, [navigate, prevVerse, nextVerse, isFromReadingMode]);
 
   if (loading) {
     return (
@@ -230,17 +238,21 @@ export default function VerseDetail() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
       <Navbar />
 
-      {/* Desktop Floating Navigation Arrows */}
-      <FloatingNavArrow
-        direction="prev"
-        verse={prevVerse}
-        isAtBoundary={isAtStart}
-      />
-      <FloatingNavArrow
-        direction="next"
-        verse={nextVerse}
-        isAtBoundary={isAtEnd}
-      />
+      {/* Desktop Floating Navigation Arrows (hidden when coming from reading mode) */}
+      {!isFromReadingMode && (
+        <>
+          <FloatingNavArrow
+            direction="prev"
+            verse={prevVerse}
+            isAtBoundary={isAtStart}
+          />
+          <FloatingNavArrow
+            direction="next"
+            verse={nextVerse}
+            isAtBoundary={isAtEnd}
+          />
+        </>
+      )}
 
       <div className="flex-1 py-4 sm:py-6 lg:py-8">
         <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6">
@@ -425,13 +437,15 @@ export default function VerseDetail() {
       {/* Bottom padding for sticky nav on mobile */}
       <div className="h-16 sm:hidden" />
 
-      {/* Mobile Sticky Bottom Navigation */}
-      <StickyBottomNav
-        prevVerse={prevVerse}
-        nextVerse={nextVerse}
-        currentChapter={verse.chapter}
-        currentVerse={verse.verse}
-      />
+      {/* Mobile Sticky Bottom Navigation (hidden when coming from reading mode) */}
+      {!isFromReadingMode && (
+        <StickyBottomNav
+          prevVerse={prevVerse}
+          nextVerse={nextVerse}
+          currentChapter={verse.chapter}
+          currentVerse={verse.verse}
+        />
+      )}
     </div>
   );
 }
