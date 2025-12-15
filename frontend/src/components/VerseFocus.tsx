@@ -18,9 +18,14 @@ import { formatSanskritLines, isSpeakerIntro } from "../lib/sanskritFormatter";
 import { getTranslatorPriority } from "../constants/translators";
 import type { Verse, Translation } from "../types";
 
+/** Font size options for Sanskrit text */
+export type FontSize = "small" | "medium" | "large";
+
 interface VerseFocusProps {
   /** The verse to display */
   verse: Verse;
+  /** Font size for Sanskrit text */
+  fontSize?: FontSize;
   /** Callback when user taps the verse */
   onTap?: () => void;
 }
@@ -36,7 +41,20 @@ function sortTranslations(translations: Translation[]): Translation[] {
   });
 }
 
-export function VerseFocus({ verse, onTap }: VerseFocusProps) {
+// Font size classes mapping
+const FONT_SIZE_CLASSES: Record<FontSize, string> = {
+  small: "text-lg sm:text-xl md:text-2xl",
+  medium: "text-xl sm:text-2xl md:text-3xl",
+  large: "text-2xl sm:text-3xl md:text-4xl",
+};
+
+const SPEAKER_FONT_SIZE_CLASSES: Record<FontSize, string> = {
+  small: "text-sm sm:text-base",
+  medium: "text-base sm:text-lg",
+  large: "text-lg sm:text-xl",
+};
+
+export function VerseFocus({ verse, fontSize = "medium", onTap }: VerseFocusProps) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [translations, setTranslations] = useState<Translation[]>([]);
   const [loadingTranslations, setLoadingTranslations] = useState(false);
@@ -131,14 +149,14 @@ export function VerseFocus({ verse, onTap }: VerseFocusProps) {
           {/* Sanskrit verse - hero display with formatSanskritLines */}
           <div
             lang="sa"
-            className="text-xl sm:text-2xl md:text-3xl font-serif text-amber-900/70 leading-relaxed tracking-wide mb-3 sm:mb-4"
+            className={`${FONT_SIZE_CLASSES[fontSize]} font-serif text-amber-900/70 leading-relaxed tracking-wide mb-3 sm:mb-4`}
           >
             {sanskritLines.map((line, idx) => (
               <p
                 key={idx}
                 className={
                   isSpeakerIntro(line)
-                    ? "text-base sm:text-lg text-amber-700/60 mb-2 sm:mb-3 italic"
+                    ? `${SPEAKER_FONT_SIZE_CLASSES[fontSize]} text-amber-700/60 mb-2 sm:mb-3 italic`
                     : "mb-1 sm:mb-2"
                 }
               >
@@ -194,6 +212,18 @@ export function VerseFocus({ verse, onTap }: VerseFocusProps) {
           ) : (
             // Translations display
             <div className="space-y-4">
+              {/* IAST (Romanized Sanskrit) - shown first if available */}
+              {verse.sanskrit_iast && (
+                <div className="bg-amber-100/30 rounded-xl p-4 border border-amber-200/30">
+                  <div className="text-xs font-semibold text-amber-700/70 uppercase tracking-widest mb-2">
+                    IAST
+                  </div>
+                  <p className="text-base text-amber-800/80 leading-relaxed italic font-serif">
+                    {verse.sanskrit_iast}
+                  </p>
+                </div>
+              )}
+
               {/* Hindi translation */}
               {hindiTranslation && (
                 <div className="bg-amber-50/50 rounded-xl p-4 border border-amber-200/50">
