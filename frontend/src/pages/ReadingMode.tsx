@@ -11,10 +11,10 @@
  */
 
 import { useSearchParams } from "react-router-dom";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { versesApi } from "../lib/api";
 import type { Verse } from "../types";
-import { Navbar, VerseFocus, ProgressBar } from "../components";
+import { Navbar, VerseFocus, ProgressBar, ChapterSelector } from "../components";
 import { useSEO, useSwipeNavigation } from "../hooks";
 import {
   getChapterName,
@@ -23,6 +23,85 @@ import {
   TOTAL_CHAPTERS,
 } from "../constants/chapters";
 import { errorMessages } from "../lib/errorMessages";
+
+// localStorage keys
+const READING_POSITION_KEY = "geetanjali:readingPosition";
+const READING_SETTINGS_KEY = "geetanjali:readingSettings";
+const ONBOARDING_SEEN_KEY = "geetanjali:readingOnboardingSeen";
+
+interface ReadingPosition {
+  chapter: number;
+  verse: number;
+  timestamp: number;
+}
+
+/** Font size options */
+type FontSize = "small" | "medium" | "large";
+
+interface ReadingSettings {
+  fontSize: FontSize;
+}
+
+const DEFAULT_SETTINGS: ReadingSettings = {
+  fontSize: "medium",
+};
+
+/**
+ * Get saved settings from localStorage
+ */
+function getSavedSettings(): ReadingSettings {
+  try {
+    const saved = localStorage.getItem(READING_SETTINGS_KEY);
+    if (saved) {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+  return DEFAULT_SETTINGS;
+}
+
+/**
+ * Save settings to localStorage
+ */
+function saveSettings(settings: ReadingSettings): void {
+  try {
+    localStorage.setItem(READING_SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
+/**
+ * Get saved reading position from localStorage
+ */
+function getSavedPosition(): ReadingPosition | null {
+  try {
+    const saved = localStorage.getItem(READING_POSITION_KEY);
+    if (saved) {
+      return JSON.parse(saved) as ReadingPosition;
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+  return null;
+}
+
+/**
+ * Save reading position to localStorage
+ */
+function savePosition(chapter: number, verse: number): void {
+  try {
+    const position: ReadingPosition = {
+      chapter,
+      verse,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem(READING_POSITION_KEY, JSON.stringify(position));
+  } catch {
+    // Ignore localStorage errors (quota exceeded, private browsing, etc.)
+  }
+}
 
 /**
  * Reading mode state
@@ -38,8 +117,9 @@ interface ReadingState {
 export default function ReadingMode() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Parse initial state from URL params
+  // Parse initial state from URL params, falling back to localStorage
   const getInitialChapter = (): number => {
+    // First check URL params (deep links take priority)
     const c = searchParams.get("c");
     if (c) {
       const chapter = parseInt(c, 10);
@@ -47,15 +127,28 @@ export default function ReadingMode() {
         return chapter;
       }
     }
+    // Fall back to saved position
+    const saved = getSavedPosition();
+    if (saved && saved.chapter >= 1 && saved.chapter <= TOTAL_CHAPTERS) {
+      return saved.chapter;
+    }
     return 1; // Default to chapter 1
   };
 
   const getInitialVerse = (): number => {
+    // First check URL params (deep links take priority)
     const v = searchParams.get("v");
     if (v) {
       const verse = parseInt(v, 10);
       if (verse >= 1) {
         return verse;
+      }
+    }
+    // Fall back to saved position (only if no URL chapter param either)
+    if (!searchParams.get("c")) {
+      const saved = getSavedPosition();
+      if (saved && saved.verse >= 1) {
+        return saved.verse;
       }
     }
     return 1; // Default to verse 1
@@ -70,6 +163,39 @@ export default function ReadingMode() {
   });
 
   const [initialVerse] = useState(getInitialVerse);
+  const [showChapterSelector, setShowChapterSelector] = useState(false);
+  const [settings, setSettings] = useState<ReadingSettings>(getSavedSettings);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try {
+      return !localStorage.getItem(ONBOARDING_SEEN_KEY);
+    } catch {
+      return false;
+    }
+  });
+
+  // Dismiss onboarding and remember
+  const dismissOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+    try {
+      localStorage.setItem(ONBOARDING_SEEN_KEY, "1");
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  // Cycle font size: small → medium → large → small
+  const cycleFontSize = useCallback(() => {
+    const sizes: FontSize[] = ["small", "medium", "large"];
+    const currentIndex = sizes.indexOf(settings.fontSize);
+    const nextIndex = (currentIndex + 1) % sizes.length;
+    const newSettings = { ...settings, fontSize: sizes[nextIndex] };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  }, [settings]);
+
+  // Chapter prefetch cache (prevents duplicate fetches)
+  const prefetchCache = useRef<Map<number, Verse[]>>(new Map());
+  const prefetchingRef = useRef<Set<number>>(new Set());
 
   // Current verse from the chapter verses array
   const currentVerse =
@@ -92,7 +218,21 @@ export default function ReadingMode() {
   });
 
   // Load chapter verses (paginated - API limit is 50)
+  // Uses prefetch cache when available for instant loading
   const loadChapter = useCallback(async (chapter: number) => {
+    // Check prefetch cache first
+    const cached = prefetchCache.current.get(chapter);
+    if (cached) {
+      setState((prev) => ({
+        ...prev,
+        chapter,
+        chapterVerses: cached,
+        isLoading: false,
+        error: null,
+      }));
+      return;
+    }
+
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
@@ -118,6 +258,9 @@ export default function ReadingMode() {
       // Sort by verse number to ensure correct order
       allVerses.sort((a, b) => a.verse - b.verse);
 
+      // Cache for future use
+      prefetchCache.current.set(chapter, allVerses);
+
       setState((prev) => ({
         ...prev,
         chapter,
@@ -133,32 +276,117 @@ export default function ReadingMode() {
     }
   }, []);
 
+  // Prefetch a chapter silently (no state updates, just cache)
+  const prefetchChapter = useCallback(async (chapter: number) => {
+    // Skip if already cached or currently fetching
+    if (
+      prefetchCache.current.has(chapter) ||
+      prefetchingRef.current.has(chapter) ||
+      chapter < 1 ||
+      chapter > TOTAL_CHAPTERS
+    ) {
+      return;
+    }
+
+    prefetchingRef.current.add(chapter);
+
+    try {
+      const allVerses: Verse[] = [];
+      const pageSize = 50;
+      let skip = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const batch = await versesApi.list(skip, pageSize, chapter, undefined, undefined);
+        allVerses.push(...batch);
+        hasMore = batch.length === pageSize;
+        skip += pageSize;
+      }
+
+      allVerses.sort((a, b) => a.verse - b.verse);
+      prefetchCache.current.set(chapter, allVerses);
+    } catch {
+      // Silently fail - prefetch is optional optimization
+    } finally {
+      prefetchingRef.current.delete(chapter);
+    }
+  }, []);
+
   // Load initial chapter
   useEffect(() => {
     loadChapter(state.chapter);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Prefetch adjacent chapters when near boundaries (80%/20%)
+  useEffect(() => {
+    if (state.chapterVerses.length === 0) return;
+
+    const progressInChapter = (state.verseIndex + 1) / state.chapterVerses.length;
+
+    // Near end (80%+) - prefetch next chapter
+    if (progressInChapter >= 0.8 && state.chapter < TOTAL_CHAPTERS) {
+      prefetchChapter(state.chapter + 1);
+    }
+
+    // Near start (20%-) - prefetch previous chapter
+    if (progressInChapter <= 0.2 && state.chapter > 1) {
+      prefetchChapter(state.chapter - 1);
+    }
+  }, [state.verseIndex, state.chapterVerses.length, state.chapter, prefetchChapter]);
+
   // Set initial verse index once chapter loads
   useEffect(() => {
-    if (state.chapterVerses.length > 0 && initialVerse > 1) {
-      const index = state.chapterVerses.findIndex(
-        (v) => v.verse === initialVerse
-      );
-      if (index !== -1) {
-        setState((prev) => ({ ...prev, verseIndex: index }));
+    if (state.chapterVerses.length > 0) {
+      // Handle "start at end" case (verseIndex -1)
+      if (state.verseIndex === -1) {
+        setState((prev) => ({
+          ...prev,
+          verseIndex: prev.chapterVerses.length - 1,
+        }));
+        return;
+      }
+      // Handle initial verse from URL
+      if (initialVerse > 1) {
+        const index = state.chapterVerses.findIndex(
+          (v) => v.verse === initialVerse
+        );
+        if (index !== -1) {
+          setState((prev) => ({ ...prev, verseIndex: index }));
+        }
       }
     }
-  }, [state.chapterVerses, initialVerse]);
+  }, [state.chapterVerses, state.verseIndex, initialVerse]);
 
-  // Update URL when verse changes
+  // Update URL and save position when verse changes
   useEffect(() => {
     if (currentVerse) {
+      // Update URL for deep linking
       const newParams = new URLSearchParams();
       newParams.set("c", state.chapter.toString());
       newParams.set("v", currentVerse.verse.toString());
       setSearchParams(newParams, { replace: true });
+
+      // Save position to localStorage for "continue reading"
+      savePosition(state.chapter, currentVerse.verse);
     }
   }, [state.chapter, currentVerse, setSearchParams]);
+
+  // Navigate to a different chapter
+  // startAtEnd: if true, start at the last verse (for prev navigation)
+  const goToChapter = useCallback(
+    (chapter: number, startAtEnd = false) => {
+      if (chapter >= 1 && chapter <= TOTAL_CHAPTERS && chapter !== state.chapter) {
+        setState((prev) => ({
+          ...prev,
+          chapter,
+          verseIndex: startAtEnd ? -1 : 0, // -1 signals "start at end", will be resolved after load
+          chapterVerses: [],
+        }));
+        loadChapter(chapter);
+      }
+    },
+    [loadChapter, state.chapter]
+  );
 
   // Navigation functions
   const nextVerse = useCallback(() => {
@@ -167,10 +395,14 @@ export default function ReadingMode() {
       if (prev.verseIndex < prev.chapterVerses.length - 1) {
         return { ...prev, verseIndex: prev.verseIndex + 1 };
       }
-      // At end of chapter - could navigate to next chapter (handled later)
+      // At end of chapter - advance to next chapter
+      if (prev.chapter < TOTAL_CHAPTERS) {
+        // Use setTimeout to avoid setState during render
+        setTimeout(() => goToChapter(prev.chapter + 1), 0);
+      }
       return prev;
     });
-  }, []);
+  }, [goToChapter]);
 
   const prevVerse = useCallback(() => {
     setState((prev) => {
@@ -178,10 +410,14 @@ export default function ReadingMode() {
       if (prev.verseIndex > 0) {
         return { ...prev, verseIndex: prev.verseIndex - 1 };
       }
-      // At start of chapter - could navigate to previous chapter (handled later)
+      // At start of chapter - go to previous chapter (at end)
+      if (prev.chapter > 1) {
+        // Use setTimeout to avoid setState during render
+        setTimeout(() => goToChapter(prev.chapter - 1, true), 0);
+      }
       return prev;
     });
-  }, []);
+  }, [goToChapter]);
 
   // Check navigation boundaries
   const canGoPrev = state.verseIndex > 0 || state.chapter > 1;
@@ -239,11 +475,25 @@ export default function ReadingMode() {
                 {getChapterName(state.chapter)}
               </span>
             </div>
-            {currentVerse && (
-              <div className="text-sm text-amber-600">
-                Verse {currentVerse.verse} of {getChapterVerseCount(state.chapter)}
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {/* Font size toggle */}
+              <button
+                onClick={cycleFontSize}
+                className="flex items-center gap-1 px-2 py-1 text-amber-600 hover:bg-amber-100 active:bg-amber-200 rounded transition-colors text-sm"
+                aria-label={`Font size: ${settings.fontSize}. Tap to change.`}
+                title="Change font size"
+              >
+                <span className="font-serif">Aa</span>
+                <span className="text-xs text-amber-500 uppercase">
+                  {settings.fontSize[0]}
+                </span>
+              </button>
+              {currentVerse && (
+                <div className="text-sm text-amber-600">
+                  {currentVerse.verse}/{getChapterVerseCount(state.chapter)}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Progress bar */}
@@ -281,7 +531,7 @@ export default function ReadingMode() {
           </div>
         ) : currentVerse ? (
           // Verse display with tap-to-reveal translations
-          <VerseFocus verse={currentVerse} />
+          <VerseFocus verse={currentVerse} fontSize={settings.fontSize} />
         ) : (
           // No verses loaded
           <div className="text-center">
@@ -313,8 +563,9 @@ export default function ReadingMode() {
               <span className="text-sm font-medium">Prev</span>
             </button>
 
-            {/* Chapter selector button (placeholder) */}
+            {/* Chapter selector button */}
             <button
+              onClick={() => setShowChapterSelector(true)}
               className="flex items-center gap-2 px-4 py-2 text-amber-700 hover:bg-amber-50 active:bg-amber-100 rounded-lg transition-colors"
               aria-label="Select chapter"
             >
@@ -323,6 +574,21 @@ export default function ReadingMode() {
                   ? `${state.chapter}.${currentVerse.verse}`
                   : `Ch ${state.chapter}`}
               </span>
+              {/* Dropdown indicator */}
+              <svg
+                className="w-4 h-4 text-amber-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
             </button>
 
             {/* Next button */}
@@ -339,9 +605,79 @@ export default function ReadingMode() {
               <span className="text-sm font-medium">Next</span>
               <span className="text-lg">→</span>
             </button>
+
           </div>
         </div>
       </nav>
+
+      {/* Chapter Selector Overlay */}
+      <ChapterSelector
+        currentChapter={state.chapter}
+        onSelect={goToChapter}
+        onClose={() => setShowChapterSelector(false)}
+        isOpen={showChapterSelector}
+      />
+
+      {/* Onboarding Overlay - First-time users */}
+      {showOnboarding && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            onClick={dismissOnboarding}
+            aria-hidden="true"
+          />
+
+          {/* Onboarding Card */}
+          <div
+            className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 max-w-sm mx-auto
+                       bg-white rounded-2xl shadow-2xl p-6 animate-fade-in"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Reading Mode tips"
+          >
+            <h2 className="text-lg font-semibold text-amber-900 text-center mb-4">
+              Welcome to Reading Mode
+            </h2>
+
+            <div className="space-y-4 text-sm text-gray-700">
+              {/* Tap hint */}
+              <div className="flex items-start gap-3">
+                <span className="text-xl">👆</span>
+                <div>
+                  <p className="font-medium text-gray-900">Tap for translation</p>
+                  <p className="text-gray-500">Tap the verse to reveal Hindi, English & IAST</p>
+                </div>
+              </div>
+
+              {/* Swipe hint */}
+              <div className="flex items-start gap-3">
+                <span className="text-xl">👈👉</span>
+                <div>
+                  <p className="font-medium text-gray-900">Swipe to navigate</p>
+                  <p className="text-gray-500">Swipe left/right to move between verses</p>
+                </div>
+              </div>
+
+              {/* Keyboard hint - desktop only */}
+              <div className="hidden sm:flex items-start gap-3">
+                <span className="text-xl">⌨️</span>
+                <div>
+                  <p className="font-medium text-gray-900">Keyboard shortcuts</p>
+                  <p className="text-gray-500">← → or J/K to navigate, Space for translation</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={dismissOnboarding}
+              className="w-full mt-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-xl transition-colors"
+            >
+              Got it!
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
