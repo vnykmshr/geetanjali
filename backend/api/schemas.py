@@ -443,3 +443,40 @@ class PaginatedResponse(BaseModel, Generic[T]):
             page_size=page_size,
             total_pages=total_pages,
         )
+
+
+# ============================================================================
+# Reading Mode Metadata Schemas
+# ============================================================================
+
+
+class BookMetadataResponse(BaseModel):
+    """Schema for book metadata response (cover page content)."""
+
+    book_key: str = Field(..., description="Book identifier (e.g., 'bhagavad_geeta')")
+    sanskrit_title: str = Field(..., description="Title in Sanskrit")
+    transliteration: str = Field(..., description="Romanized Sanskrit title")
+    english_title: str = Field(..., description="English title")
+    tagline: str = Field(..., description="Brief tagline/subtitle")
+    intro_text: str = Field(..., description="Introduction text for cover page")
+    verse_count: int = Field(..., description="Total verses in the book")
+    chapter_count: int = Field(..., description="Total chapters in the book")
+
+    class Config:
+        from_attributes = True
+
+
+class ChapterMetadataResponse(BaseModel):
+    """Schema for chapter metadata response (chapter intro content)."""
+
+    chapter_number: int = Field(..., ge=1, le=18, description="Chapter number (1-18)")
+    sanskrit_name: str = Field(..., description="Chapter name in Sanskrit")
+    transliteration: str = Field(..., description="Romanized chapter name")
+    english_title: str = Field(..., description="English chapter title")
+    subtitle: Optional[str] = Field(None, description="Optional subtitle")
+    summary: str = Field(..., description="Chapter summary/introduction")
+    verse_count: int = Field(..., description="Number of verses in chapter")
+    key_themes: Optional[List[str]] = Field(None, description="Key themes in chapter")
+
+    class Config:
+        from_attributes = True

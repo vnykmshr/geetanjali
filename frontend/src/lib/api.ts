@@ -9,6 +9,8 @@ import type {
   Feedback,
   FeedbackCreate,
   Message,
+  BookMetadata,
+  ChapterMetadata,
 } from "../types";
 import { tokenStorage, authApi } from "../api/auth";
 import { getSessionId } from "./session";
@@ -267,6 +269,27 @@ export const versesApi = {
 
   getTranslations: async (canonicalId: string): Promise<Translation[]> => {
     const response = await api.get(`/verses/${canonicalId}/translations`);
+    return response.data;
+  },
+};
+
+// Reading Mode Metadata API
+export const readingApi = {
+  /** Get book metadata for cover page */
+  getBookMetadata: async (): Promise<BookMetadata> => {
+    const response = await api.get(`/reading/book`);
+    return response.data;
+  },
+
+  /** Get all chapter metadata */
+  getAllChapters: async (): Promise<ChapterMetadata[]> => {
+    const response = await api.get(`/reading/chapters`);
+    return response.data;
+  },
+
+  /** Get metadata for a specific chapter */
+  getChapter: async (chapterNumber: number): Promise<ChapterMetadata> => {
+    const response = await api.get(`/reading/chapters/${chapterNumber}`);
     return response.data;
   },
 };

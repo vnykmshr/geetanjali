@@ -12,9 +12,9 @@
 
 import { useSearchParams } from "react-router-dom";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { versesApi } from "../lib/api";
-import type { Verse } from "../types";
-import { Navbar, VerseFocus, ProgressBar, ChapterSelector } from "../components";
+import { versesApi, readingApi } from "../lib/api";
+import type { Verse, BookMetadata, ChapterMetadata } from "../types";
+import { Navbar, VerseFocus, ProgressBar, ChapterSelector, CoverPage, ChapterIntro } from "../components";
 import { useSEO, useSwipeNavigation } from "../hooks";
 import {
   getChapterName,
@@ -28,6 +28,8 @@ import { errorMessages } from "../lib/errorMessages";
 const READING_POSITION_KEY = "geetanjali:readingPosition";
 const READING_SETTINGS_KEY = "geetanjali:readingSettings";
 const ONBOARDING_SEEN_KEY = "geetanjali:readingOnboardingSeen";
+const COVER_SEEN_KEY = "geetanjali:coverSeen";
+const CHAPTER_INTROS_SEEN_KEY = "geetanjali:chapterIntrosSeen";
 
 interface ReadingPosition {
   chapter: number;
@@ -104,6 +106,56 @@ function savePosition(chapter: number, verse: number): void {
 }
 
 /**
+ * Check if cover page has been seen
+ */
+function hasCoverBeenSeen(): boolean {
+  try {
+    return localStorage.getItem(COVER_SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Mark cover page as seen
+ */
+function markCoverSeen(): void {
+  try {
+    localStorage.setItem(COVER_SEEN_KEY, "1");
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * Get set of chapter numbers whose intros have been seen
+ */
+function getSeenChapterIntros(): Set<number> {
+  try {
+    const saved = localStorage.getItem(CHAPTER_INTROS_SEEN_KEY);
+    if (saved) {
+      return new Set(JSON.parse(saved) as number[]);
+    }
+  } catch {
+    // Ignore
+  }
+  return new Set();
+}
+
+/**
+ * Mark a chapter intro as seen
+ */
+function markChapterIntroSeen(chapter: number): void {
+  try {
+    const seen = getSeenChapterIntros();
+    seen.add(chapter);
+    localStorage.setItem(CHAPTER_INTROS_SEEN_KEY, JSON.stringify([...seen]));
+  } catch {
+    // Ignore
+  }
+}
+
+/**
  * Reading mode state
  */
 interface ReadingState {
@@ -173,6 +225,13 @@ export default function ReadingMode() {
     }
   });
 
+  // Book and chapter metadata states
+  const [bookMetadata, setBookMetadata] = useState<BookMetadata | null>(null);
+  const [chapterMetadata, setChapterMetadata] = useState<ChapterMetadata | null>(null);
+  const [showCoverPage, setShowCoverPage] = useState(() => !hasCoverBeenSeen());
+  const [showChapterIntro, setShowChapterIntro] = useState(false);
+  const [seenChapters] = useState(() => getSeenChapterIntros());
+
   // Dismiss onboarding and remember
   const dismissOnboarding = useCallback(() => {
     setShowOnboarding(false);
@@ -182,6 +241,23 @@ export default function ReadingMode() {
       // Ignore
     }
   }, []);
+
+  // Dismiss cover page and mark as seen
+  const dismissCoverPage = useCallback(() => {
+    setShowCoverPage(false);
+    markCoverSeen();
+    // Show chapter intro for the first chapter (if not yet seen)
+    if (!seenChapters.has(state.chapter)) {
+      setShowChapterIntro(true);
+    }
+  }, [seenChapters, state.chapter]);
+
+  // Dismiss chapter intro and mark as seen
+  const dismissChapterIntro = useCallback(() => {
+    setShowChapterIntro(false);
+    markChapterIntroSeen(state.chapter);
+    seenChapters.add(state.chapter);
+  }, [state.chapter, seenChapters]);
 
   // Cycle font size: small → medium → large → small
   const cycleFontSize = useCallback(() => {
@@ -316,6 +392,35 @@ export default function ReadingMode() {
   useEffect(() => {
     loadChapter(state.chapter);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch book metadata for cover page
+  useEffect(() => {
+    if (showCoverPage) {
+      readingApi.getBookMetadata()
+        .then(setBookMetadata)
+        .catch(() => {
+          // If book metadata fails to load, skip the cover page
+          setShowCoverPage(false);
+          markCoverSeen();
+        });
+    }
+  }, [showCoverPage]);
+
+  // Fetch chapter metadata when chapter changes
+  useEffect(() => {
+    readingApi.getChapter(state.chapter)
+      .then((meta) => {
+        setChapterMetadata(meta);
+        // Show chapter intro if this chapter hasn't been seen
+        if (!seenChapters.has(state.chapter) && !showCoverPage) {
+          setShowChapterIntro(true);
+        }
+      })
+      .catch(() => {
+        // Silently fail - chapter intros are optional
+        setChapterMetadata(null);
+      });
+  }, [state.chapter, seenChapters, showCoverPage]);
 
   // Prefetch adjacent chapters when near boundaries (80%/20%)
   useEffect(() => {
@@ -687,6 +792,24 @@ export default function ReadingMode() {
             </button>
           </div>
         </>
+      )}
+
+      {/* Book Cover Page - shown on first visit */}
+      {bookMetadata && (
+        <CoverPage
+          book={bookMetadata}
+          onStart={dismissCoverPage}
+          isVisible={showCoverPage}
+        />
+      )}
+
+      {/* Chapter Intro - shown when entering a new chapter */}
+      {chapterMetadata && (
+        <ChapterIntro
+          chapter={chapterMetadata}
+          onContinue={dismissChapterIntro}
+          isVisible={showChapterIntro}
+        />
       )}
     </div>
   );

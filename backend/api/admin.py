@@ -289,6 +289,143 @@ def trigger_sync_featured(
         raise HTTPException(status_code=500, detail="Failed to sync featured verses")
 
 
+# =============================================================================
+# Metadata Sync (Book & Chapter Intros)
+# =============================================================================
+
+
+class SyncMetadataResponse(BaseModel):
+    """Response model for metadata sync."""
+
+    status: str
+    message: str
+    book_synced: bool
+    chapters_synced: int
+
+
+def sync_metadata(db: Session) -> dict:
+    """
+    Sync book and chapter metadata from static data to database.
+
+    This updates the book_metadata and chapter_metadata tables based on
+    the curated content in data/chapter_metadata.py.
+
+    Args:
+        db: Database session
+
+    Returns:
+        Stats dict with sync results
+    """
+    from datetime import datetime
+    from data.chapter_metadata import get_book_metadata, get_all_chapter_metadata
+    from models import BookMetadata, ChapterMetadata
+
+    book_data = get_book_metadata()
+    chapters_data = get_all_chapter_metadata()
+
+    # Sync book metadata
+    book_synced = False
+    existing_book = db.query(BookMetadata).filter(
+        BookMetadata.book_key == "bhagavad_geeta"
+    ).first()
+
+    if existing_book:
+        # Update existing
+        existing_book.sanskrit_title = book_data["sanskrit_title"]
+        existing_book.transliteration = book_data["transliteration"]
+        existing_book.english_title = book_data["english_title"]
+        existing_book.tagline = book_data["tagline"]
+        existing_book.intro_text = book_data["intro_text"]
+        existing_book.verse_count = book_data["verse_count"]
+        existing_book.chapter_count = book_data["chapter_count"]
+        existing_book.updated_at = datetime.utcnow()
+        book_synced = True
+    else:
+        # Create new
+        new_book = BookMetadata(
+            book_key="bhagavad_geeta",
+            sanskrit_title=book_data["sanskrit_title"],
+            transliteration=book_data["transliteration"],
+            english_title=book_data["english_title"],
+            tagline=book_data["tagline"],
+            intro_text=book_data["intro_text"],
+            verse_count=book_data["verse_count"],
+            chapter_count=book_data["chapter_count"],
+        )
+        db.add(new_book)
+        book_synced = True
+
+    # Sync chapter metadata
+    chapters_synced = 0
+    for ch_data in chapters_data:
+        existing_ch = db.query(ChapterMetadata).filter(
+            ChapterMetadata.chapter_number == ch_data["chapter_number"]
+        ).first()
+
+        if existing_ch:
+            # Update existing
+            existing_ch.sanskrit_name = ch_data["sanskrit_name"]
+            existing_ch.transliteration = ch_data["transliteration"]
+            existing_ch.english_title = ch_data["english_title"]
+            existing_ch.subtitle = ch_data["subtitle"]
+            existing_ch.summary = ch_data["summary"]
+            existing_ch.verse_count = ch_data["verse_count"]
+            existing_ch.key_themes = ch_data["key_themes"]
+            existing_ch.updated_at = datetime.utcnow()
+        else:
+            # Create new
+            new_ch = ChapterMetadata(
+                chapter_number=ch_data["chapter_number"],
+                sanskrit_name=ch_data["sanskrit_name"],
+                transliteration=ch_data["transliteration"],
+                english_title=ch_data["english_title"],
+                subtitle=ch_data["subtitle"],
+                summary=ch_data["summary"],
+                verse_count=ch_data["verse_count"],
+                key_themes=ch_data["key_themes"],
+            )
+            db.add(new_ch)
+
+        chapters_synced += 1
+
+    db.commit()
+
+    logger.info(f"Synced book metadata and {chapters_synced} chapters")
+
+    return {
+        "book_synced": book_synced,
+        "chapters_synced": chapters_synced,
+    }
+
+
+@router.post("/sync-metadata", response_model=SyncMetadataResponse)
+def trigger_sync_metadata(
+    db: Session = Depends(get_db), _: bool = Depends(verify_admin_api_key)
+):
+    """
+    Sync book and chapter metadata from curated content to database.
+
+    This populates/updates the book_metadata and chapter_metadata tables
+    with content for the Reading Mode cover page and chapter intros.
+
+    Returns:
+        Sync statistics
+    """
+    try:
+        stats = sync_metadata(db)
+
+        return SyncMetadataResponse(
+            status="success",
+            message=f"Synced book metadata and {stats['chapters_synced']} chapters.",
+            book_synced=stats["book_synced"],
+            chapters_synced=stats["chapters_synced"],
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to sync metadata: {e}")
+        raise HTTPException(status_code=500, detail="Failed to sync metadata")
+
+
 class EnrichRequest(BaseModel):
     """Request model for enriching verses with LLM-generated content."""
 

@@ -28,6 +28,8 @@ export { StickyBottomNav } from "./StickyBottomNav";
 export { FloatingNavArrow } from "./FloatingNavArrow";
 export { VerseFocus } from "./VerseFocus";
 export { ChapterSelector } from "./ChapterSelector";
+export { CoverPage } from "./CoverPage";
+export { ChapterIntro } from "./ChapterIntro";
 
 // Case-related components
 export {

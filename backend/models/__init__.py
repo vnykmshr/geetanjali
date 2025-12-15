@@ -10,6 +10,7 @@ from models.verse import Verse, Commentary, Translation
 from models.feedback import Feedback
 from models.contact import ContactMessage, ContactType
 from models.experiment import ExperimentEvent
+from models.metadata import BookMetadata, ChapterMetadata
 
 __all__ = [
     "Base",
@@ -26,4 +27,6 @@ __all__ = [
     "ContactMessage",
     "ContactType",
     "ExperimentEvent",
+    "BookMetadata",
+    "ChapterMetadata",
 ]

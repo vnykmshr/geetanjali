@@ -181,3 +181,29 @@ export interface FollowUpResponse {
   output_id: string | null;
   created_at: string;
 }
+
+// Reading Mode Metadata Types
+
+/** Book metadata for the cover page */
+export interface BookMetadata {
+  book_key: string;
+  sanskrit_title: string;
+  transliteration: string;
+  english_title: string;
+  tagline: string;
+  intro_text: string;
+  verse_count: number;
+  chapter_count: number;
+}
+
+/** Chapter metadata for chapter intro cards */
+export interface ChapterMetadata {
+  chapter_number: number;
+  sanskrit_name: string;
+  transliteration: string;
+  english_title: string;
+  subtitle?: string;
+  summary: string;
+  verse_count: number;
+  key_themes?: string[];
+}
