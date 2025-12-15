@@ -2,10 +2,55 @@ import { useState, useEffect, useCallback, useRef, FormEvent } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { Navbar, Footer } from "../components";
 import { useSearch, useSEO } from "../hooks";
-import { SearchIcon, SpinnerIcon, StarIcon } from "../components/icons";
+import { SearchIcon, SpinnerIcon, StarIcon, CloseIcon } from "../components/icons";
 import { getPrincipleShortLabel } from "../constants/principles";
 import { CHAPTERS } from "../constants/chapters";
 import type { SearchResult } from "../types";
+
+// localStorage key for recent searches
+const RECENT_SEARCHES_KEY = "geetanjali:recentSearches";
+const MAX_RECENT_SEARCHES = 5;
+
+/**
+ * Get recent searches from localStorage
+ */
+function getRecentSearches(): string[] {
+  try {
+    const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Save a search to recent searches
+ */
+function saveRecentSearch(query: string): void {
+  try {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+
+    const recent = getRecentSearches();
+    // Remove if already exists, add to front
+    const filtered = recent.filter((s) => s.toLowerCase() !== trimmed.toLowerCase());
+    const updated = [trimmed, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
+/**
+ * Clear recent searches
+ */
+function clearRecentSearches(): void {
+  try {
+    localStorage.removeItem(RECENT_SEARCHES_KEY);
+  } catch {
+    // Ignore
+  }
+}
 
 /**
  * Get human-readable label for search strategy
@@ -242,6 +287,23 @@ export default function Search() {
 
   // Track if initial search has been performed
   const hasSearchedRef = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Recent searches state - initialize from localStorage
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => getRecentSearches());
+  const [showRecent, setShowRecent] = useState(false);
+
+  // Keyboard shortcut: Cmd/Ctrl+K to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // SEO
   useSEO({
@@ -272,11 +334,38 @@ export default function Search() {
       if (selectedChapter) newParams.set("chapter", String(selectedChapter));
       setSearchParams(newParams);
 
+      // Save to recent searches
+      saveRecentSearch(trimmed);
+      setRecentSearches(getRecentSearches());
+      setShowRecent(false);
+
       // Execute search
       search(trimmed);
     },
     [inputValue, selectedChapter, search, setSearchParams]
   );
+
+  // Handle selecting a recent search
+  const handleRecentSelect = useCallback(
+    (query: string) => {
+      setInputValue(query);
+      setShowRecent(false);
+
+      // Update URL and search
+      const newParams = new URLSearchParams();
+      newParams.set("q", query);
+      if (selectedChapter) newParams.set("chapter", String(selectedChapter));
+      setSearchParams(newParams);
+      search(query);
+    },
+    [selectedChapter, search, setSearchParams]
+  );
+
+  // Handle clearing recent searches
+  const handleClearRecent = useCallback(() => {
+    clearRecentSearches();
+    setRecentSearches([]);
+  }, []);
 
   // Handle chapter change
   const handleChapterChange = useCallback(
@@ -325,23 +414,62 @@ export default function Search() {
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="relative">
               <input
+                ref={inputRef}
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
+                onFocus={() => setShowRecent(true)}
+                onBlur={() => setTimeout(() => setShowRecent(false), 200)}
                 placeholder="Search by verse (2.47), Sanskrit, or keywords..."
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-400"
+                className="w-full pl-10 pr-20 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-400"
                 aria-label="Search query"
               />
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              {inputValue && (
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label="Clear search"
-                >
-                  ✕
-                </button>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                {inputValue ? (
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    className="text-gray-400 hover:text-gray-600 p-1"
+                    aria-label="Clear search"
+                  >
+                    <CloseIcon className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs text-gray-400 bg-gray-100 rounded border border-gray-200">
+                    ⌘K
+                  </kbd>
+                )}
+              </div>
+
+              {/* Recent Searches Dropdown */}
+              {showRecent && recentSearches.length > 0 && !inputValue && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
+                    <span className="text-xs font-medium text-gray-500">Recent searches</span>
+                    <button
+                      type="button"
+                      onClick={handleClearRecent}
+                      className="text-xs text-gray-400 hover:text-gray-600"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <ul>
+                    {recentSearches.map((query, index) => (
+                      <li key={index}>
+                        <button
+                          type="button"
+                          onClick={() => handleRecentSelect(query)}
+                          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-orange-50 flex items-center gap-2"
+                        >
+                          <SearchIcon className="w-4 h-4 text-gray-400" />
+                          {query}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </div>
 
