@@ -513,9 +513,9 @@ export default function Search() {
     initialChapter
   );
 
-  const { data, loading, error, search, clear } = useSearch({
+  const { data, loading, loadingMore, error, hasMore, search, loadMore, clear } = useSearch({
     chapter: selectedChapter,
-    limit: 30,
+    limit: 20,
   });
 
   // Track if initial search has been performed
@@ -840,15 +840,61 @@ export default function Search() {
 
               {/* Results Grid */}
               {data.total > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {data.results.map((result) => (
-                    <SearchResultCard
-                      key={result.canonical_id}
-                      result={result}
-                      onPrincipleClick={handlePrincipleClick}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {data.results.map((result) => (
+                      <SearchResultCard
+                        key={result.canonical_id}
+                        result={result}
+                        onPrincipleClick={handlePrincipleClick}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Load More / End of Results */}
+                  <div className="mt-8 sm:mt-10">
+                    {hasMore ? (
+                      <button
+                        onClick={loadMore}
+                        disabled={loadingMore}
+                        className="w-full group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-300/50 to-amber-300/70" />
+                          <div className={`flex flex-col items-center transition-all duration-300 ${loadingMore ? "scale-95 opacity-70" : "group-hover:scale-105"}`}>
+                            {loadingMore ? (
+                              <div className="flex items-center gap-2 text-amber-600">
+                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                <span className="text-sm font-medium">Loading...</span>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="text-sm font-medium text-amber-700 group-hover:text-amber-800">
+                                  Load More
+                                </span>
+                                <svg className="w-4 h-4 text-amber-500 group-hover:text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </>
+                            )}
+                          </div>
+                          <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-300/50 to-amber-300/70" />
+                        </div>
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/50 to-amber-200/70" />
+                        <span className="text-xs text-amber-600/60 font-medium">
+                          All {data.total} results shown
+                        </span>
+                        <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-200/50 to-amber-200/70" />
+                      </div>
+                    )}
+                  </div>
+                </>
               ) : (
                 /* Empty Results State */
                 <div className="text-center py-12 bg-white/50 rounded-2xl border border-amber-100">
