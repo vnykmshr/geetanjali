@@ -843,8 +843,8 @@ ${messages
                           </>
                         )}
 
-                        {/* Processing state - uses unified ThinkingIndicator */}
-                        {isProcessing && (
+                        {/* Processing state - uses unified ThinkingIndicator (only for initial, not follow-ups) */}
+                        {isProcessing && !pendingFollowUp && (
                           <ThinkingIndicator variant="initial" />
                         )}
 
