@@ -2,13 +2,14 @@ import type { Message, Output } from "../types";
 
 export interface Exchange {
   user: Message;
-  assistant: Message;
+  assistant: Message | null; // null for draft/pending exchanges
   output: Output | undefined;
 }
 
 /**
  * Groups messages into user-assistant exchanges.
  * Handles duplicate assistant messages from retries by taking the latest one.
+ * Includes incomplete exchanges (user without assistant) for draft/pending states.
  */
 export function groupMessagesIntoExchanges(
   messages: Message[],
@@ -41,13 +42,12 @@ export function groupMessagesIntoExchanges(
           )
         : null;
 
-    if (latestAssistant) {
-      exchanges.push({
-        user: userMsg,
-        assistant: latestAssistant,
-        output: getOutput(latestAssistant.output_id),
-      });
-    }
+    // Include exchange even without assistant (for draft/pending)
+    exchanges.push({
+      user: userMsg,
+      assistant: latestAssistant,
+      output: latestAssistant ? getOutput(latestAssistant.output_id) : undefined,
+    });
   });
 
   return exchanges;

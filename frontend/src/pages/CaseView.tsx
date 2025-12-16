@@ -3,11 +3,10 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import Markdown from "react-markdown";
 import { casesApi, outputsApi } from "../lib/api";
 import { messagesApi } from "../api/messages";
-import type { Case, Message, Output, CaseStatus, Option } from "../types";
+import type { Case, Message, Output, Option } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import {
   Navbar,
-  ConsultationWaiting,
   ConfirmModal,
   ContentNotFound,
 } from "../components";
@@ -729,61 +728,9 @@ ${messages
             </div>
           )}
 
-          {/* Processing/Failed state - only show for initial case (no outputs yet) */}
-          {(isProcessing || isFailed) && outputs.length === 0 && (
-            <div className="mb-8">
-              <ConsultationWaiting
-                status={caseData.status as CaseStatus}
-                onRetry={handleRetry}
-              />
-            </div>
-          )}
-
-          {/* Draft state - case created but not yet analyzed */}
-          {isDraft && outputs.length === 0 && (
-            <div className="mb-8">
-              {/* Show the question */}
-              {messages.length > 0 && (
-                <div className="bg-white rounded-xl shadow-lg border-2 border-amber-200 p-4 sm:p-6 mb-6">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-amber-700 mb-2">
-                    Your Question
-                  </div>
-                  <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">
-                    {messages[0]?.content}
-                  </p>
-                </div>
-              )}
-              {/* Get Guidance button */}
-              <div className="text-center">
-                <button
-                  onClick={handleRetry}
-                  className="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                    />
-                  </svg>
-                  Get Guidance
-                </button>
-                <p className="text-sm text-gray-500 mt-3">
-                  Click to receive wisdom from the Bhagavad Geeta
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* Main Content - Timeline */}
-          {/* Show timeline when completed OR when there are existing outputs (follow-up processing) */}
-          {(isCompleted || outputs.length > 0) && (
+          {/* Show timeline when there are messages - handles all statuses consistently */}
+          {messages.length > 0 && (
             <div className="relative">
               {/* Vertical Line */}
               <div className="absolute left-2.5 sm:left-3 top-6 bottom-0 w-0.5 bg-gradient-to-b from-amber-300 via-orange-300 to-red-300" />
@@ -847,18 +794,18 @@ ${messages
                           {exchange.user.content}
                         </p>
                         {isFirst &&
-                          (caseData.stakeholders.length > 1 ||
-                            caseData.stakeholders[0] !== "self" ||
-                            caseData.constraints.length > 0 ||
-                            caseData.role !== "Individual") && (
+                          ((caseData.stakeholders?.length ?? 0) > 1 ||
+                            (caseData.stakeholders?.[0] && caseData.stakeholders[0] !== "self") ||
+                            (caseData.constraints?.length ?? 0) > 0 ||
+                            (caseData.role && caseData.role !== "Individual")) && (
                             <div className="mt-3 flex flex-wrap gap-2">
-                              {caseData.role !== "Individual" && (
+                              {caseData.role && caseData.role !== "Individual" && (
                                 <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium">
                                   {caseData.role}
                                 </span>
                               )}
                               {caseData.stakeholders
-                                .filter((s) => s !== "self")
+                                ?.filter((s) => s !== "self")
                                 .map((s, i) => (
                                   <span
                                     key={i}
@@ -872,7 +819,74 @@ ${messages
                       </div>
                     </div>
 
-                    {/* Response */}
+                    {/* Status indicator - show when no assistant response yet */}
+                    {!exchange.assistant && (
+                      <div className="relative pl-8 sm:pl-10 pb-4 sm:pb-6">
+                        {/* Draft state */}
+                        {isDraft && (
+                          <>
+                            <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center">
+                              <span className="text-xs">📝</span>
+                            </div>
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                              <p className="text-sm text-amber-800 mb-3">
+                                <span className="font-medium">Draft</span> — Your question is saved. Click below to receive wisdom from the Bhagavad Geeta.
+                              </p>
+                              <button
+                                onClick={handleRetry}
+                                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors"
+                              >
+                                Get Guidance
+                              </button>
+                            </div>
+                          </>
+                        )}
+
+                        {/* Processing state */}
+                        {isProcessing && (
+                          <>
+                            <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center animate-pulse">
+                              <span className="text-xs">🧘</span>
+                            </div>
+                            <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <div className="flex space-x-1">
+                                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                </div>
+                                <p className="text-sm text-orange-800">
+                                  <span className="font-medium">Contemplating</span> — Ancient wisdom is being consulted for your guidance...
+                                </p>
+                              </div>
+                            </div>
+                          </>
+                        )}
+
+                        {/* Failed state */}
+                        {isFailed && (
+                          <>
+                            <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-red-100 border-2 border-red-300 flex items-center justify-center">
+                              <span className="text-xs">⚠️</span>
+                            </div>
+                            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                              <p className="text-sm text-red-800 mb-3">
+                                <span className="font-medium">Unable to Complete</span> — We encountered an issue while preparing your guidance. Please try again.
+                              </p>
+                              <button
+                                onClick={handleRetry}
+                                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors"
+                              >
+                                Get Guidance
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Response - only show if assistant message exists */}
+                    {exchange.assistant && (
                     <div className="relative pl-8 sm:pl-10 pb-4 sm:pb-6">
                       <div
                         className={`absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ${
@@ -1034,6 +1048,7 @@ ${messages
                         )}
                       </div>
                     </div>
+                    )}
                   </div>
                 );
               })}

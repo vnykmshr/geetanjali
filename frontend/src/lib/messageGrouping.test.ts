@@ -14,7 +14,7 @@ describe("groupMessagesIntoExchanges", () => {
 
     expect(exchanges).toHaveLength(1);
     expect(exchanges[0].user.id).toBe("msg-1");
-    expect(exchanges[0].assistant.id).toBe("msg-2");
+    expect(exchanges[0].assistant?.id).toBe("msg-2");
     expect(exchanges[0].output?.id).toBe("output-1");
   });
 
@@ -24,7 +24,7 @@ describe("groupMessagesIntoExchanges", () => {
     expect(exchanges).toHaveLength(0);
   });
 
-  it("should handle user message without assistant response", () => {
+  it("should include user message without assistant response (draft/pending)", () => {
     const userOnly: Message[] = [
       {
         id: "msg-1",
@@ -37,7 +37,10 @@ describe("groupMessagesIntoExchanges", () => {
 
     const exchanges = groupMessagesIntoExchanges(userOnly, []);
 
-    expect(exchanges).toHaveLength(0); // No complete exchange without assistant response
+    expect(exchanges).toHaveLength(1); // Include incomplete exchange for draft/pending
+    expect(exchanges[0].user.id).toBe("msg-1");
+    expect(exchanges[0].assistant).toBeNull();
+    expect(exchanges[0].output).toBeUndefined();
   });
 
   it("should take the latest assistant message when there are retries", () => {
@@ -48,10 +51,10 @@ describe("groupMessagesIntoExchanges", () => {
 
     expect(exchanges).toHaveLength(2);
     // First exchange should have the retry response (latest)
-    expect(exchanges[0].assistant.id).toBe("msg-3");
-    expect(exchanges[0].assistant.content).toBe("Retry response (latest)");
+    expect(exchanges[0].assistant?.id).toBe("msg-3");
+    expect(exchanges[0].assistant?.content).toBe("Retry response (latest)");
     // Second exchange should be normal
-    expect(exchanges[1].assistant.id).toBe("msg-5");
+    expect(exchanges[1].assistant?.id).toBe("msg-5");
   });
 
   it("should correctly associate outputs with exchanges", () => {
@@ -124,9 +127,9 @@ describe("groupMessagesIntoExchanges", () => {
 
     expect(exchanges).toHaveLength(2);
     expect(exchanges[0].user.content).toBe("First question");
-    expect(exchanges[0].assistant.content).toBe("First response");
+    expect(exchanges[0].assistant?.content).toBe("First response");
     expect(exchanges[1].user.content).toBe("Second question");
-    expect(exchanges[1].assistant.content).toBe("Second response");
+    expect(exchanges[1].assistant?.content).toBe("Second response");
   });
 
   it("should correctly order exchanges by timestamp", () => {
