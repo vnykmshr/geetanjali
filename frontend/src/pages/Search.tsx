@@ -383,13 +383,6 @@ function StarterVerseSpotlight({
             ॥ {verseRef} ॥
           </span>
         </div>
-
-        {/* Translation Preview */}
-        {verse.paraphrase_en && (
-          <p className="text-center text-sm sm:text-base text-gray-600 leading-relaxed max-w-lg mx-auto line-clamp-2">
-            "{verse.paraphrase_en}"
-          </p>
-        )}
       </div>
     </Link>
   );
@@ -566,6 +559,14 @@ export default function Search() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Auto-focus search input on desktop (skip mobile to avoid keyboard popup)
+  useEffect(() => {
+    const isDesktop = window.innerWidth >= 1024;
+    if (isDesktop && !initialQuery) {
+      inputRef.current?.focus();
+    }
+  }, [initialQuery]);
+
   // SEO
   useSEO({
     title: initialQuery
@@ -588,7 +589,11 @@ export default function Search() {
     (e: FormEvent) => {
       e.preventDefault();
       const trimmed = inputValue.trim();
-      if (!trimmed) return;
+      if (!trimmed) {
+        // Focus input when submitting empty
+        inputRef.current?.focus();
+        return;
+      }
 
       // Clear previous validation error
       setValidationError(null);
@@ -840,7 +845,7 @@ export default function Search() {
               {/* Search Button - inline with input */}
               <button
                 type="submit"
-                disabled={loading || !inputValue.trim()}
+                disabled={loading}
                 className="px-4 sm:px-6 py-3 sm:py-3.5 bg-orange-600 text-white font-medium rounded-r-full hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm hover:shadow-md border border-orange-600 hover:border-orange-700 -ml-px"
               >
                 {loading ? (
