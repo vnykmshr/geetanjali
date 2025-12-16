@@ -166,17 +166,17 @@ function sortTranslations(translations: Translation[]): Translation[] {
   });
 }
 
-// Font size classes mapping
+// Font size classes mapping - dramatic steps for noticeable difference
 const FONT_SIZE_CLASSES: Record<FontSize, string> = {
-  small: "text-lg sm:text-xl lg:text-2xl",
+  small: "text-base sm:text-lg lg:text-xl",
   medium: "text-xl sm:text-2xl lg:text-3xl",
-  large: "text-2xl sm:text-3xl lg:text-4xl",
+  large: "text-3xl sm:text-4xl lg:text-5xl",
 };
 
 const SPEAKER_FONT_SIZE_CLASSES: Record<FontSize, string> = {
-  small: "text-sm sm:text-base",
-  medium: "text-base sm:text-lg",
-  large: "text-lg sm:text-xl",
+  small: "text-xs sm:text-sm",
+  medium: "text-sm sm:text-base",
+  large: "text-base sm:text-lg",
 };
 
 export function VerseFocus({

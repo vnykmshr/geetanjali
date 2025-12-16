@@ -16,11 +16,11 @@ import { useState, useCallback, useEffect } from "react";
 import type { BookMetadata, ChapterMetadata } from "../types";
 import type { FontSize } from "./VerseFocus";
 
-// Font size classes matching VerseFocus
+// Font size classes matching VerseFocus - dramatic steps for noticeable difference
 const FONT_SIZE_CLASSES: Record<FontSize, string> = {
-  small: "text-lg sm:text-xl lg:text-2xl",
+  small: "text-base sm:text-lg lg:text-xl",
   medium: "text-xl sm:text-2xl lg:text-3xl",
-  large: "text-2xl sm:text-3xl lg:text-4xl",
+  large: "text-3xl sm:text-4xl lg:text-5xl",
 };
 
 interface BookIntroProps {
