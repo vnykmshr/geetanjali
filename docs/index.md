@@ -18,10 +18,12 @@ Ethical leadership guidance from the Bhagavad Geeta.
 
 - [Discovery Journey](discovery.md) — Verse Browser and Reading Mode for exploring scripture
 - [Consultation Journey](consultation.md) — Case analysis and follow-up conversations for ethical guidance
+- [Search](search.md) — Multi-strategy hybrid search across 701 verses
 
 ## Reference
 
 - [Architecture](architecture.md) — System design, components, data flow
+- [Design](design.md) — Frontend design language, colors, typography, patterns
 - [Operations Overview](operations-overview.md) — Consultation flows, processing states, async handling
 - [Observability](observability.md) — Monitoring, metrics, Grafana dashboards, alerting
 - [Security](security.md) — Container hardening, secrets management, threat model

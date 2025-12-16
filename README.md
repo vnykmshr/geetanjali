@@ -30,6 +30,7 @@ The system uses retrieval-augmented generation (RAG) to ground responses in actu
 - **Follow-up Conversations** - Ask clarifying questions after initial consultation
 - **Verse Browser** - Explore 701 verses across 18 chapters with translations
 - **Reading Mode** - Distraction-free sequential reading with Sanskrit-first display
+- **Search** - Multi-strategy search by verse reference, Sanskrit, keywords, or meaning
 - **Confidence Scoring** - Low-confidence responses flagged for review
 - **User Feedback** - Rate outputs to improve recommendations
 - **Session Tracking** - Anonymous users can save and revisit cases
@@ -117,6 +118,7 @@ POST /api/v1/cases/{id}/analyze     # Analyze case
 POST /api/v1/cases/{id}/follow-up   # Follow-up question
 GET  /api/v1/verses                 # List verses
 GET  /api/v1/verses/daily           # Daily verse
+GET  /api/v1/search?q={query}       # Search verses
 POST /api/v1/auth/signup            # Create account
 POST /api/v1/auth/login             # Login
 ```
@@ -130,11 +132,13 @@ Full API documentation at `/docs` when running.
 **User Journeys:**
 - [Discovery Journey](docs/discovery.md) - Verse Browser and Reading Mode for exploring scripture
 - [Consultation Journey](docs/consultation.md) - Case analysis and follow-up conversations
+- [Search](docs/search.md) - Multi-strategy hybrid search across 701 verses
 
 **Reference:**
 - [Setup Guide](docs/setup.md) - Local development, Docker, environment
 - [Docker Configuration](docs/docker.md) - Compose files, deployment modes
 - [Architecture](docs/architecture.md) - System design, RAG pipeline, components
+- [Design](docs/design.md) - Frontend design language, colors, typography, patterns
 - [Content Moderation](docs/content-moderation.md) - Multi-layer filtering, abuse detection
 - [Observability](docs/observability.md) - Monitoring, metrics, Grafana dashboards
 - [Security](docs/security.md) - Container hardening, secrets management
