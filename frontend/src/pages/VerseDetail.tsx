@@ -35,11 +35,12 @@ export default function VerseDetail() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Check navigation context - hide prev/next nav when coming from search or reading mode
+  // Check navigation context - hide prev/next nav when coming from search, reading mode, or cases
   const fromContext = searchParams.get("from");
   const isFromReadingMode = fromContext === "read";
   const isFromSearch = fromContext === "search";
-  const hideVerseNavigation = isFromReadingMode || isFromSearch;
+  const isFromCases = fromContext === "cases";
+  const hideVerseNavigation = isFromReadingMode || isFromSearch || isFromCases;
 
   const [verse, setVerse] = useState<Verse | null>(null);
   const [translations, setTranslations] = useState<Translation[]>([]);
