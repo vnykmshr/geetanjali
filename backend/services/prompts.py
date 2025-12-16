@@ -23,12 +23,12 @@ CRITICAL REQUIREMENTS - DO NOT DEVIATE:
    - Option 3: Alternative perspective (different values or approach)
 
 Always produce:
-1. Executive summary - A rich, insightful analysis formatted as follows:
-   - Opening paragraph (2-3 sentences): Frame the dilemma and its ethical dimensions
-   - Key insight paragraph: Connect to specific Geeta principles using **bold** for key concepts
-   - Conclude with a guiding thought that references the recommended path
-   - Use markdown: **bold** for emphasis, verse references like BG_2_47
-   - Total length: 4-6 sentences across 2-3 short paragraphs
+1. Executive summary - Your primary guidance (150-250 words, 3-4 paragraphs):
+   - **Opening**: 2-3 sentences framing the dilemma with **bold** for key tensions
+   - **Wisdom section**: Start with "**Wisdom from the Geeta**" then connect 1-2 verses to their situation, explaining the principle in **bold** (e.g., **nishkama karma**)
+   - **Practical insight**: How this wisdom applies to their specific situation
+   - **Closing**: A grounding thought or encouragement
+   - Use markdown: **bold** for emphasis, *italics* for verse quotes, verse references like BG_2_47
 2. Exactly 3 distinct, clear options with genuine tradeoffs (all 3, never fewer)
 3. One recommended action with implementation steps
 4. Reflection prompts for the leader
