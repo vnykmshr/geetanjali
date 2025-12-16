@@ -2,6 +2,33 @@
 
 All notable changes to Geetanjali are documented here.
 
+## [1.11.0] - 2025-12-16
+
+Search, Reading Mode, and Design System release.
+
+### Features
+- **Search** - Multi-strategy hybrid search across 701 verses. Canonical lookup (2.47), Sanskrit text (कर्म, karmaṇy), keyword search with OR logic, principle filtering, and semantic fallback. Match transparency shows why each result was found.
+- **Reading Mode** - Immersive scripture reading at `/read`. Swipe navigation, tap-to-reveal translations, chapter intros, progress tracking, font size controls, keyboard shortcuts (J/K/←/→).
+- **Design System** - Mobile-first responsive patterns. Warm amber surfaces, orange-600 primary, Spectral headings, Source Sans body. Consistent spacing and component patterns.
+
+### Improvements
+- **Navigation** - Search in navbar and hamburger menu. Context-aware back navigation from verse detail. ⌘K keyboard shortcut.
+- **Search UX** - Recent searches dropdown, topic pills for browsing, featured verse spotlight, consultation suggestion for situational queries, infinite scroll with load more.
+- **Content Filtering** - Search-specific moderation (stricter than consultation). Frontend mirrors backend rules for instant feedback.
+- **Docs Site** - Aligned typography and colors with main app. Spectral + Source Sans fonts, warm amber palette.
+
+### Documentation
+- Rewrote search.md with architecture diagrams and hybrid OR search explanation
+- Added design.md covering frontend design language and patterns
+- Rewrote backend and frontend READMEs based on code analysis
+- Reorganized docs index for public presentation
+
+### Technical
+- Hybrid OR search ranks by keyword match count (more matches = higher rank)
+- Five search strategies: canonical, Sanskrit, keyword, principle, semantic
+- PostgreSQL JSONB for principle filtering, ChromaDB for semantic search
+- Skip PostgreSQL-only tests on SQLite in CI
+
 ## [1.10.0] - 2025-12-11
 
 Quality and security improvements from comprehensive code review.
