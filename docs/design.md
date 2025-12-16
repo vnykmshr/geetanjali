@@ -6,7 +6,9 @@ description: Frontend design language and UX patterns in Geetanjali.
 
 # Design
 
-Geetanjali's frontend uses a cohesive design system built for clarity and warmth.
+The UI should feel like a quiet library, not a busy app. Warm colors, readable type, and enough space to breathe. The scripture is the star — the interface just helps you find and absorb it.
+
+This doc covers the visual language and patterns we use across Geetanjali.
 
 ## Philosophy
 
@@ -109,12 +111,12 @@ Hero CTAs scale: `px-6 py-3 sm:px-8 sm:py-3.5`
 ### Cards
 
 ```
-┌─────────────────────────────────────────┐
-│  bg-amber-50 rounded-xl border-amber-200 │
-│  p-3 sm:p-4                             │
-│  hover:shadow-md hover:-translate-y-0.5  │
-│  transition-all duration-150             │
-└─────────────────────────────────────────┘
+┌───────────────────────────────────────────┐
+│  bg-amber-50 rounded-xl border-amber-200  │
+│  p-3 sm:p-4                               │
+│  hover:shadow-md hover:-translate-y-0.5   │
+│  transition-all duration-150              │
+└───────────────────────────────────────────┘
 ```
 
 ### Form Inputs
@@ -135,8 +137,8 @@ Skeleton loaders match final layout structure:
 ```
 ┌──────────────────────┐   ┌──────────────────────┐
 │  ████████░░░░░░░░░   │   │  ॥ 2.47 ॥            │
-│  ██████████████░░░   │ → │  कर्मण्येवाधिकारस्ते      │
-│  ████████░░░░░░░░░   │   │  "Focus on duty..."   │
+│  ██████████████░░░   │ → │  कर्मण्येवाधिकारस्ते         │
+│  ████████░░░░░░░░░   │   │  "Focus on duty..."  │
 └──────────────────────┘   └──────────────────────┘
      skeleton                   loaded
 ```
@@ -172,10 +174,10 @@ animation: shimmer 1.5s infinite;
 │    [Page Title]                                      │
 │    [Subtitle]                                        │
 │                                                      │
-│    ┌────────────────────────────────────────────┐   │
-│    │  [Main Content Area]                       │   │
-│    │  max-w-6xl mx-auto px-4                    │   │
-│    └────────────────────────────────────────────┘   │
+│    ┌────────────────────────────────────────────┐    │
+│    │  [Main Content Area]                       │    │
+│    │  max-w-6xl mx-auto px-4                    │    │
+│    └────────────────────────────────────────────┘    │
 │                                                      │
 ├──────────────────────────────────────────────────────┤
 │  [Footer]                                            │
@@ -189,9 +191,9 @@ animation: shimmer 1.5s infinite;
 │  [Minimal Header]                                    │
 ├──────────────────────────────────────────────────────┤
 │                                                      │
-│                        ॐ                             │
+│                        ॐ                            │
 │           [Large Sanskrit Text]                      │
-│                  ॥ 2.47 ॥                            │
+│                  ॥ 2.47 ॥                           │
 │                                                      │
 │         [Tap for translation]                        │
 │                                                      │

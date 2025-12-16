@@ -1,40 +1,61 @@
 ---
 layout: default
 title: Geetanjali Docs
-description: Documentation for Geetanjali - a RAG system providing ethical leadership guidance grounded in the Bhagavad Geeta's 701 verses.
+description: Documentation for Geetanjali - ethical leadership guidance grounded in the Bhagavad Geeta.
 ---
 
-# Geetanjali Documentation
+# Geetanjali
 
 Ethical leadership guidance from the Bhagavad Geeta.
 
+Geetanjali helps you think through tough decisions by connecting your dilemmas to wisdom from 701 verses of the Bhagavad Geeta. It also lets you explore the scripture at your own pace — browse, search, or read cover to cover.
+
+**[Try it live →](https://geetanjaliapp.com)**
+
 ---
 
-## Overview
+## Start Here
 
-- [Building Geetanjali](building-geetanjali.md) — Two journeys (Consultation + Discovery), architecture, design decisions
+**[Building Geetanjali](building-geetanjali.md)** — The full story. How we built a RAG system that grounds ethical guidance in scripture. Two user journeys, architecture decisions, and why local-first matters.
 
-## User Journeys
+---
 
-- [Discovery Journey](discovery.md) — Verse Browser and Reading Mode for exploring scripture
-- [Consultation Journey](consultation.md) — Case analysis and follow-up conversations for ethical guidance
-- [Search](search.md) — Multi-strategy hybrid search across 701 verses
+## How It Works
+
+Understand what users experience:
+
+- **[Consultation Journey](consultation.md)** — Submit a dilemma, get structured guidance with verse citations
+- **[Discovery Journey](discovery.md)** — Browse verses, read chapters, explore at your pace
+- **[Search](search.md)** — Find verses by reference, Sanskrit text, keywords, or meaning
+
+---
+
+## Design & Architecture
+
+How we built it:
+
+- **[Architecture](architecture.md)** — System components, RAG pipeline, data flow
+- **[Design](design.md)** — Frontend design language, colors, typography, responsive patterns
+- **[Operations](operations-overview.md)** — Consultation flow, processing states, async handling
+- **[Content Moderation](content-moderation.md)** — Multi-layer filtering, keeping focus on real dilemmas
+
+---
+
+## Running It
+
+For operators and contributors:
+
+- **[Setup Guide](setup.md)** — Local development, environment variables, common commands
+- **[Docker](docker.md)** — Compose files, deployment modes, container orchestration
+- **[Security](security.md)** — Container hardening, secrets management, incident response
+- **[Observability](observability.md)** — Prometheus metrics, Grafana dashboards, alerting
+
+---
 
 ## Reference
 
-- [Architecture](architecture.md) — System design, components, data flow
-- [Design](design.md) — Frontend design language, colors, typography, patterns
-- [Operations Overview](operations-overview.md) — Consultation flows, processing states, async handling
-- [Observability](observability.md) — Monitoring, metrics, Grafana dashboards, alerting
-- [Security](security.md) — Container hardening, secrets management, threat model
-- [SEO](seo.md) — Search engine setup, meta tags, crawlability trade-offs
-- [Content Moderation](content-moderation.md) — Multi-layer filtering, abuse detection, configuration
-- [Data Sources](data.md) — Bhagavad Geeta content, licensing, ingestion
-
-## Development
-
-- [Setup Guide](setup.md) — Local development environment, Docker, testing
-- [Docker Configuration](docker.md) — Compose files, deployment modes, container orchestration
+- **[Data Sources](data.md)** — Bhagavad Geeta content, licensing, ingestion pipeline
+- **[SEO](seo.md)** — Search engine setup and why we skipped prerendering
 
 ---
 
