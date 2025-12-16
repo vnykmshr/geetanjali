@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
+import Markdown from "react-markdown";
 import { casesApi } from "../lib/api";
 import type { Case, Message, Output } from "../types";
 import { Navbar, ContentNotFound, Footer } from "../components";
@@ -249,11 +250,11 @@ export default function PublicCaseView() {
                           : "bg-white shadow-md border-orange-100"
                       }`}
                     >
-                      <p
-                        className={`leading-relaxed whitespace-pre-wrap ${isFirst ? "text-gray-900 text-sm sm:text-base" : "text-gray-800 text-sm"}`}
+                      <div
+                        className={`leading-relaxed prose max-w-none ${isFirst ? "text-gray-900" : "text-gray-800"} prose-p:my-2 prose-ul:my-2 prose-li:my-0.5`}
                       >
-                        {exchange.assistant.content}
-                      </p>
+                        <Markdown>{exchange.assistant.content}</Markdown>
+                      </div>
 
                       {/* Verse Sources */}
                       {exchange.output &&
@@ -451,7 +452,7 @@ export default function PublicCaseView() {
                                 Path {idx + 1}
                               </div>
                               <div
-                                className={`text-xs sm:text-sm font-medium mt-1 leading-snug ${selectedOption === idx ? "text-orange-900" : "text-gray-700"}`}
+                                className={`text-sm font-medium mt-1 leading-snug ${selectedOption === idx ? "text-orange-900" : "text-gray-700"}`}
                               >
                                 {opt.title.replace(" Approach", "")}
                               </div>
@@ -476,7 +477,7 @@ export default function PublicCaseView() {
                               ].pros.map((pro, i) => (
                                 <div
                                   key={i}
-                                  className="text-xs sm:text-sm text-gray-700 flex items-start gap-1 mb-0.5"
+                                  className="text-sm sm:text-base text-gray-700 flex items-start gap-1 mb-0.5"
                                 >
                                   <span className="text-green-500 mt-0.5 text-xs">
                                     +
@@ -494,7 +495,7 @@ export default function PublicCaseView() {
                               ].cons.map((con, i) => (
                                 <div
                                   key={i}
-                                  className="text-xs sm:text-sm text-gray-700 flex items-start gap-1 mb-0.5"
+                                  className="text-sm sm:text-base text-gray-700 flex items-start gap-1 mb-0.5"
                                 >
                                   <span className="text-amber-500 mt-0.5 text-xs">
                                     -
@@ -583,7 +584,7 @@ export default function PublicCaseView() {
                                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center flex-shrink-0 text-xs font-medium">
                                   {idx + 1}
                                 </div>
-                                <p className="text-xs sm:text-sm text-gray-700 pt-0.5">
+                                <p className="text-sm sm:text-base text-gray-700 pt-0.5">
                                   {step}
                                 </p>
                               </div>
@@ -659,7 +660,7 @@ export default function PublicCaseView() {
                                 <span className="text-purple-400 mt-0.5 text-xs sm:text-sm">
                                   ◆
                                 </span>
-                                <span className="text-xs sm:text-sm italic">
+                                <span className="text-sm sm:text-base italic">
                                   {prompt}
                                 </span>
                               </li>

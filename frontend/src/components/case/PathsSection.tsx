@@ -85,7 +85,7 @@ export function PathsSection({
                   Path {idx + 1}
                 </div>
                 <div
-                  className={`text-xs sm:text-sm font-medium mt-0.5 sm:mt-1 leading-snug line-clamp-2 ${selectedOption === idx ? "text-orange-900" : "text-gray-700"}`}
+                  className={`text-sm font-medium mt-0.5 sm:mt-1 leading-snug line-clamp-2 ${selectedOption === idx ? "text-orange-900" : "text-gray-700"}`}
                 >
                   {opt.title.replace(" Approach", "")}
                 </div>
@@ -107,7 +107,7 @@ export function PathsSection({
                 {options[selectedOption].pros.map((pro, i) => (
                   <div
                     key={i}
-                    className="text-xs sm:text-sm text-gray-700 flex items-start gap-1 mb-0.5"
+                    className="text-sm sm:text-base text-gray-700 flex items-start gap-1 mb-0.5"
                   >
                     <span className="text-green-500 mt-0.5 text-xs flex-shrink-0">
                       +
@@ -123,7 +123,7 @@ export function PathsSection({
                 {options[selectedOption].cons.map((con, i) => (
                   <div
                     key={i}
-                    className="text-xs sm:text-sm text-gray-700 flex items-start gap-1 mb-0.5"
+                    className="text-sm sm:text-base text-gray-700 flex items-start gap-1 mb-0.5"
                   >
                     <span className="text-amber-500 mt-0.5 text-xs flex-shrink-0">
                       -

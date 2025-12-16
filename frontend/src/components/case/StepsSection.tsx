@@ -63,7 +63,7 @@ export function StepsSection({
                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center flex-shrink-0 text-xs font-medium">
                   {idx + 1}
                 </div>
-                <p className="text-xs sm:text-sm text-gray-700 pt-0.5">
+                <p className="text-sm sm:text-base text-gray-700 pt-0.5">
                   {step}
                 </p>
               </div>

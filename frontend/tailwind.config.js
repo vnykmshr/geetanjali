@@ -29,6 +29,39 @@ export default {
        * - Status: green (success), yellow (warning), red (error), orange (processing)
        * - Gradients: from-amber-50 via-orange-50 to-red-50 (hero)
        */
+      /*
+       * Prose/Typography Plugin Customization
+       * Subtle styling for markdown content that matches app design:
+       * - Bold: amber-800 for warmth (matches Sanskrit text color family)
+       * - Italics: inherit color, use serif font for verse quotes
+       * - Paragraphs: comfortable spacing
+       */
+      typography: {
+        DEFAULT: {
+          css: {
+            // Bold text - warm amber for emphasis, matching app palette
+            'strong': {
+              color: 'rgb(146 64 14)', // amber-800
+              fontWeight: '600',
+            },
+            // Italic text - serif font for verse quotes
+            'em': {
+              fontFamily: 'Spectral, Georgia, serif',
+              fontStyle: 'italic',
+            },
+            // Paragraph spacing
+            'p': {
+              marginTop: '0.75em',
+              marginBottom: '0.75em',
+            },
+            // Remove default link styling (handled by app)
+            'a': {
+              color: 'inherit',
+              textDecoration: 'none',
+            },
+          },
+        },
+      },
     },
   },
   plugins: [

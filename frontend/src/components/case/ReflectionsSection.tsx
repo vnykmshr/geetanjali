@@ -63,7 +63,7 @@ export function ReflectionsSection({
                 <span className="text-purple-400 mt-0.5 text-xs sm:text-sm">
                   ◆
                 </span>
-                <span className="text-xs sm:text-sm italic">{prompt}</span>
+                <span className="text-sm sm:text-base italic">{prompt}</span>
               </li>
             ))}
           </ul>

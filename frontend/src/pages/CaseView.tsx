@@ -929,7 +929,7 @@ ${messages
                         }`}
                       >
                         <div
-                          className={`leading-relaxed prose prose-sm max-w-none ${isFirst ? "text-gray-900" : "text-gray-800"} prose-p:my-2 prose-ul:my-2 prose-li:my-0.5 prose-strong:text-inherit`}
+                          className={`leading-relaxed prose max-w-none ${isFirst ? "text-gray-900" : "text-gray-800"} prose-p:my-2 prose-ul:my-2 prose-li:my-0.5`}
                         >
                           <Markdown>{exchange.assistant.content}</Markdown>
                         </div>
