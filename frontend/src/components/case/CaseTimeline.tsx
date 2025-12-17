@@ -43,7 +43,7 @@ export function CaseTimeline({
   return (
     <div className="relative">
       {/* Vertical Line */}
-      <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-gradient-to-b from-amber-300 via-orange-300 to-red-300" />
+      <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-gradient-to-b from-amber-300 via-orange-300 to-red-300 dark:from-amber-600/50 dark:via-orange-600/50 dark:to-red-600/50" />
 
       {/* Exchanges */}
       {exchanges.map((exchange, exchangeIdx) => (

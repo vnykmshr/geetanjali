@@ -30,12 +30,12 @@ export function CaseHeader({
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
 
   return (
-    <div className="border-b border-amber-200/50 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+    <div className="border-b border-amber-200/50 dark:border-gray-700 bg-white/50 dark:bg-gray-800/80 backdrop-blur-sm sticky top-0 z-10">
       {/* Main header row */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between">
         <Link
           to="/consultations"
-          className="text-amber-700 hover:text-amber-800 text-sm flex items-center gap-1"
+          className="text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 text-sm flex items-center gap-1"
         >
           ← <span className="hidden sm:inline">Back</span>
         </Link>
@@ -44,7 +44,7 @@ export function CaseHeader({
           {canSave && (
             <button
               onClick={onSave}
-              className="p-2 sm:px-3 sm:py-1.5 bg-white rounded-lg shadow-sm text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center gap-1.5"
+              className="p-2 sm:px-3 sm:py-1.5 bg-white dark:bg-gray-700 rounded-lg shadow-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 flex items-center gap-1.5"
               aria-label="Save consultation as file"
             >
               <svg
@@ -73,7 +73,7 @@ export function CaseHeader({
               className={`p-2 sm:px-3 sm:py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors ${
                 caseData.is_public
                   ? "bg-green-600 text-white hover:bg-green-700"
-                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                  : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
               } ${shareLoading ? "opacity-50 cursor-not-allowed" : ""}`}
               aria-label={
                 caseData.is_public ? "Stop sharing" : "Share consultation"
@@ -104,7 +104,7 @@ export function CaseHeader({
             <div className="relative">
               <button
                 onClick={() => setShowOverflowMenu(!showOverflowMenu)}
-                className="p-2 bg-white rounded-lg shadow-sm text-gray-400 hover:text-gray-600 hover:bg-gray-50 border border-gray-200"
+                className="p-2 bg-white dark:bg-gray-700 rounded-lg shadow-sm text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
                 aria-label="More options"
                 aria-expanded={showOverflowMenu}
               >
@@ -131,13 +131,13 @@ export function CaseHeader({
                     className="fixed inset-0 z-10"
                     onClick={() => setShowOverflowMenu(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-xl border border-gray-200 z-20 py-1">
+                  <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-20 py-1">
                     <button
                       onClick={() => {
                         setShowOverflowMenu(false);
                         onDeleteClick();
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2"
                     >
                       <svg
                         className="w-4 h-4"
@@ -166,9 +166,9 @@ export function CaseHeader({
       {/* Compact share URL bar (when public) - right aligned */}
       {caseData.is_public && caseData.public_slug && (
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-2 flex justify-end">
-          <div className="bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
+          <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg px-2.5 py-1.5">
             <div className="flex items-center gap-2">
-              <code className="text-xs text-green-700 font-mono truncate max-w-[200px] sm:max-w-none">
+              <code className="text-xs text-green-700 dark:text-green-300 font-mono truncate max-w-[200px] sm:max-w-none">
                 {window.location.host}/c/{caseData.public_slug}
               </code>
               <button
@@ -178,7 +178,7 @@ export function CaseHeader({
                 {copySuccess ? "Copied!" : "Copy"}
               </button>
             </div>
-            <p className="text-[10px] text-green-600 mt-1 flex items-center gap-1">
+            <p className="text-[10px] text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
               <svg
                 className="w-3 h-3"
                 fill="none"

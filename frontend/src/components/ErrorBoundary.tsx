@@ -15,7 +15,7 @@ interface State {
  */
 function ErrorNavbar() {
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200 h-14 sm:h-16 flex-shrink-0">
+    <nav className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 h-14 sm:h-16 flex-shrink-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
         <div className="flex justify-between items-center h-full">
           <a
@@ -27,7 +27,7 @@ function ErrorNavbar() {
               alt="Geetanjali"
               className="h-8 w-8 sm:h-10 sm:w-10"
             />
-            <span className="text-xl sm:text-2xl font-heading font-bold text-orange-600">
+            <span className="text-xl sm:text-2xl font-heading font-bold text-orange-600 dark:text-orange-400">
               Geetanjali
             </span>
           </a>
@@ -63,24 +63,24 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+        <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 flex flex-col">
           <ErrorNavbar />
           <div className="flex-1 flex items-center justify-center">
             <div className="max-w-md mx-auto px-4 text-center">
-              <div className="mb-6 p-6 bg-red-50 border border-red-200 rounded-lg">
-                <h1 className="text-2xl font-bold text-red-800 mb-2">
+              <div className="mb-6 p-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+                <h1 className="text-2xl font-bold text-red-800 dark:text-red-300 mb-2">
                   Oops, something went wrong
                 </h1>
-                <p className="text-red-700 mb-4">
+                <p className="text-red-700 dark:text-red-400 mb-4">
                   We encountered an unexpected error. The page will be reloaded
                   automatically.
                 </p>
                 {process.env.NODE_ENV === "development" && this.state.error && (
                   <details className="mt-4 text-left">
-                    <summary className="cursor-pointer text-sm font-semibold text-red-700 hover:text-red-800">
+                    <summary className="cursor-pointer text-sm font-semibold text-red-700 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300">
                       Error details (development only)
                     </summary>
-                    <pre className="mt-2 overflow-auto bg-white p-2 rounded text-xs text-red-900 border border-red-200">
+                    <pre className="mt-2 overflow-auto bg-white dark:bg-gray-800 p-2 rounded text-xs text-red-900 dark:text-red-300 border border-red-200 dark:border-red-700">
                       {this.state.error.toString()}
                     </pre>
                   </details>

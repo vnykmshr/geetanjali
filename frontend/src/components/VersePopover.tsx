@@ -107,9 +107,9 @@ export function VersePopover({
       <button
         ref={triggerRef}
         onClick={toggle}
-        className="inline-flex items-center text-orange-700 font-mono text-sm
-                   bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200
-                   hover:bg-orange-100 hover:border-orange-300
+        className="inline-flex items-center text-orange-700 dark:text-orange-400 font-mono text-sm
+                   bg-orange-50 dark:bg-orange-900/30 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-800
+                   hover:bg-orange-100 dark:hover:bg-orange-900/50 hover:border-orange-300 dark:hover:border-orange-700
                    focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500
                    transition-colors duration-150 cursor-pointer"
         aria-expanded={isOpen}
@@ -125,25 +125,25 @@ export function VersePopover({
           role="dialog"
           aria-label={`Verse ${displayRef} details`}
           className={`absolute z-50 w-72 sm:w-80
-                      bg-white rounded-xl shadow-xl border border-amber-200
+                      bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-amber-200 dark:border-gray-700
                       animate-in fade-in zoom-in-95 duration-150
                       ${position === "above" ? "bottom-full mb-2" : "top-full mt-2"}
                       left-1/2 -translate-x-1/2
                       sm:left-0 sm:translate-x-0`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-amber-100">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-amber-100 dark:border-gray-700">
             <div>
-              <div className="font-mono text-orange-700 font-semibold">
+              <div className="font-mono text-orange-700 dark:text-orange-400 font-semibold">
                 {displayRef}
               </div>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
                 Chapter {chapter} · {chapterName}
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded
+              className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded
                          focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
               aria-label="Close"
             >
@@ -158,30 +158,30 @@ export function VersePopover({
             {loading ? (
               <div className="flex items-center justify-center py-2">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="w-2 h-2 bg-orange-400 dark:bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-orange-400 dark:bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-orange-400 dark:bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             ) : paraphrase ? (
-              <p className="text-gray-700 text-sm leading-relaxed italic">
+              <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed italic">
                 "{paraphrase}"
               </p>
             ) : (
-              <p className="text-gray-500 text-sm italic">
+              <p className="text-gray-500 dark:text-gray-400 text-sm italic">
                 Insight unavailable
               </p>
             )}
           </div>
 
           {/* Footer - View Full Verse Link */}
-          <div className="px-4 py-3 border-t border-amber-100 bg-amber-50/50 rounded-b-xl">
+          <div className="px-4 py-3 border-t border-amber-100 dark:border-gray-700 bg-amber-50/50 dark:bg-gray-700/50 rounded-b-xl">
             <Link
               to={`/verses/${canonicalId}`}
-              className="flex items-center justify-center gap-1.5 text-sm text-orange-600
-                         hover:text-orange-700 font-medium transition-colors
+              className="flex items-center justify-center gap-1.5 text-sm text-orange-600 dark:text-orange-400
+                         hover:text-orange-700 dark:hover:text-orange-300 font-medium transition-colors
                          focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500
-                         focus-visible:ring-offset-2 rounded py-1"
+                         focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 rounded py-1"
               onClick={() => setIsOpen(false)}
             >
               View full verse
