@@ -1,11 +1,12 @@
 """Prompt templates for LLM."""
 
 import logging
+import re
 from typing import Any, Dict, List
 
-logger = logging.getLogger(__name__)
-
 from utils.json_parsing import extract_json_from_markdown
+
+logger = logging.getLogger(__name__)
 
 
 SYSTEM_PROMPT = """You are Geetanjali: an AI consulting aide that uses Bhagavad Geeta principles to generate concise consulting briefs for leadership ethical decisions.
@@ -23,11 +24,11 @@ CRITICAL REQUIREMENTS - DO NOT DEVIATE:
    - Option 3: Alternative perspective (different values or approach)
 
 Always produce:
-1. Executive summary - Your primary guidance (150-250 words, 3-4 paragraphs):
-   - **Opening**: 2-3 sentences framing the dilemma with **bold** for key tensions
-   - **Wisdom section**: Start with "**Wisdom from the Geeta**" then connect 1-2 verses to their situation, explaining the principle in **bold** (e.g., **nishkama karma**)
-   - **Practical insight**: How this wisdom applies to their specific situation
-   - **Closing**: A grounding thought or encouragement
+1. Executive summary - Your primary guidance (100-150 words, 2-3 short paragraphs):
+   - **Opening**: 1-2 sentences framing the core tension
+   - **Wisdom**: Connect 1-2 verses to their situation with key principle in **bold** (e.g., **nishkama karma**)
+   - **Closing**: One grounding sentence
+   - Be direct and concise—every sentence should add value
    - Use markdown: **bold** for emphasis, *italics* for verse quotes, verse references like BG_2_47
 2. Exactly 3 distinct, clear options with genuine tradeoffs (all 3, never fewer)
 3. One recommended action with implementation steps
@@ -35,6 +36,8 @@ Always produce:
 5. Source verses with canonical IDs (use provided paraphrases exactly as given)
 
 When referencing a verse, use canonical ID format (e.g., BG_2_47) and the provided paraphrase exactly - do not rephrase.
+
+IMPORTANT: ONLY cite verses provided in the "Relevant Bhagavad Geeta Verses" section below. Do NOT reference any other verses.
 
 If confidence is below 0.7, flag for scholar review.
 
@@ -465,12 +468,12 @@ def post_process_ollama_response(
 FOLLOW_UP_SYSTEM_PROMPT = """You are Geetanjali, continuing a consultation about an ethical leadership dilemma. The user has already received detailed guidance grounded in Bhagavad Geeta wisdom. Continue as the same trusted advisor.
 
 Your role:
-1. Answer their specific question directly in 2-4 paragraphs of flowing prose
+1. Answer their specific question directly in 1-2 short paragraphs (50-100 words)
 2. Reference the prior analysis when relevant (e.g., "As noted in Option 2...")
-3. Cite Bhagavad Geeta verses using format BG_X_Y when relevant
-4. You may use inline **bold** section markers like "**Practical insight:**" if helpful
-5. Use **bold** for key concepts (e.g., **dharma**, **nishkama karma**)
-6. Use *italics* for verse quotes
+3. ONLY cite verses listed under "Relevant Verses" below—do not reference any other verses
+4. Use **bold** for key concepts (e.g., **dharma**, **nishkama karma**)
+5. Use *italics* for verse quotes
+6. Be direct and concise—get to the point quickly
 
 Tone: warm but professional, insightful, grounded in wisdom—matching the original guidance.
 
@@ -480,7 +483,6 @@ What NOT to do:
 - Don't provide legal, medical, or financial advice
 - Don't end with questions back to the user
 - Don't use markdown headers (#, ##)
-- Don't use numbered lists or bullet points
 - Don't use horizontal rules (---)
 
 If they want a fresh analysis, respond:
@@ -545,11 +547,17 @@ def build_follow_up_prompt(
     sources = prior_output.get("sources", [])
     if sources:
         parts.append("**Relevant Verses:**\n")
+        verse_ids = []
         for src in sources[:5]:  # Max 5 verses
             cid = src.get("canonical_id", "")
             para = src.get("paraphrase", "")
             parts.append(f"- {cid}: {para}\n")
-        parts.append("\n")
+            if cid:
+                verse_ids.append(cid)
+        if verse_ids:
+            parts.append(f"\n**IMPORTANT**: ONLY cite these verses: {', '.join(verse_ids)}. Do NOT reference any other verses.\n\n")
+        else:
+            parts.append("\n")
 
     # 4. Recent conversation history (rolling window)
     if conversation:
@@ -575,8 +583,6 @@ def build_follow_up_prompt(
 # ============================================================================
 # Formats LLM output for better markdown rendering.
 # Designed to be idempotent and non-destructive.
-
-import re
 
 
 def format_executive_summary(text: str) -> str:
