@@ -343,8 +343,10 @@ class RAGPipeline:
                 f"LLM refused to process content (provider={provider}, "
                 f"matched: '{refusal_match}')"
             )
-            # Return policy violation response instead of generic fallback
-            return get_policy_violation_response(), True
+            # Return policy violation response with raw response for debugging
+            violation_response = get_policy_violation_response()
+            violation_response["_raw_llm_response"] = response_text
+            return violation_response, True
 
         # Parse JSON with robust extraction
         try:

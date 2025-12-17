@@ -43,6 +43,9 @@ def _build_case_data(case: Case) -> dict:
 
 def _create_output_from_result(case_id: str, result: dict, db: Session) -> Output:
     """Create and persist an Output record from RAG result."""
+    # Extract raw LLM response if present (only for policy violations)
+    raw_llm_response = result.pop("_raw_llm_response", None)
+
     output = Output(
         id=str(uuid.uuid4()),
         case_id=case_id,
@@ -50,6 +53,7 @@ def _create_output_from_result(case_id: str, result: dict, db: Session) -> Outpu
         executive_summary=result.get("executive_summary", ""),
         confidence=result.get("confidence", 0.0),
         scholar_flag=result.get("scholar_flag", False),
+        raw_llm_response=raw_llm_response,
         created_at=datetime.utcnow(),
     )
     db.add(output)

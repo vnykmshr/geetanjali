@@ -27,6 +27,9 @@ class Output(Base):
     executive_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
+    # Debug - only populated for policy violations
+    raw_llm_response: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     # Review
     scholar_flag: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     reviewed_by: Mapped[Optional[str]] = mapped_column(
