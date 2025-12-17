@@ -7,7 +7,7 @@ These utilities provide robust extraction strategies.
 import json
 import logging
 import re
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,11 @@ def extract_json_from_text(response_text: str) -> Dict[str, Any]:
     """
     # Strategy 1: Try direct JSON parse (LLM followed instructions perfectly)
     try:
-        return cast(Dict[str, Any], json.loads(response_text))
+        parsed = json.loads(response_text)
+        if isinstance(parsed, dict):
+            return parsed
+        # Valid JSON but not a dict (e.g., string, list) - continue to other strategies
+        logger.debug(f"Direct parse returned {type(parsed).__name__}, expected dict")
     except json.JSONDecodeError:
         pass
 
@@ -44,7 +48,10 @@ def extract_json_from_text(response_text: str) -> Dict[str, Any]:
         for match in matches:
             json_text = match.group(1).strip()
             try:
-                return cast(Dict[str, Any], json.loads(json_text))
+                parsed = json.loads(json_text)
+                if isinstance(parsed, dict):
+                    return parsed
+                logger.debug(f"Markdown block returned {type(parsed).__name__}, expected dict")
             except json.JSONDecodeError as e:
                 logger.debug(
                     f"Markdown block parse failed at pos {e.pos}: "
@@ -52,7 +59,7 @@ def extract_json_from_text(response_text: str) -> Dict[str, Any]:
                 )
                 continue
 
-    # Strategy 3: Find first { and try to extract complete JSON
+    # Strategy 3: Find first { and try to extract complete JSON object
     # This handles: "analysis: {... proper json ...}" pattern
     # Use json.JSONDecoder.raw_decode() to find the complete object
     for start_idx in range(len(response_text)):
@@ -60,8 +67,9 @@ def extract_json_from_text(response_text: str) -> Dict[str, Any]:
             try:
                 decoder = json.JSONDecoder()
                 parsed, _ = decoder.raw_decode(response_text, start_idx)
-                logger.debug(f"Extracted JSON from position {start_idx}")
-                return cast(Dict[str, Any], parsed)
+                if isinstance(parsed, dict):
+                    logger.debug(f"Extracted JSON from position {start_idx}")
+                    return parsed
             except json.JSONDecodeError:
                 continue
 
@@ -93,9 +101,9 @@ def extract_json_from_markdown(response_text: str) -> Optional[Dict[str, Any]]:
         end = response_text.find("```", start)
         if end > start:
             try:
-                return cast(
-                    Dict[str, Any], json.loads(response_text[start:end].strip())
-                )
+                parsed = json.loads(response_text[start:end].strip())
+                if isinstance(parsed, dict):
+                    return parsed
             except json.JSONDecodeError:
                 pass
 
@@ -105,14 +113,18 @@ def extract_json_from_markdown(response_text: str) -> Optional[Dict[str, Any]]:
         end = response_text.find("```", start)
         if end > start:
             try:
-                return cast(
-                    Dict[str, Any], json.loads(response_text[start:end].strip())
-                )
+                parsed = json.loads(response_text[start:end].strip())
+                if isinstance(parsed, dict):
+                    return parsed
             except json.JSONDecodeError:
                 pass
 
     # Try direct parse
     try:
-        return cast(Dict[str, Any], json.loads(response_text))
+        parsed = json.loads(response_text)
+        if isinstance(parsed, dict):
+            return parsed
     except json.JSONDecodeError:
-        return None
+        pass
+
+    return None
