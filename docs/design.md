@@ -12,15 +12,18 @@ This doc covers the visual language and patterns we use across Geetanjali.
 
 ## Philosophy
 
-Three principles guide the design:
+Four principles guide the design:
 
 1. **Mobile-first** — Design for phones, scale up to desktop
 2. **Content-forward** — Scripture is the hero, UI is the frame
 3. **Warm accessibility** — Inviting colors, readable text, clear interactions
+4. **Theme parity** — Light and dark modes are equal citizens, not afterthoughts
 
 ## Visual Identity
 
 ### Color System
+
+#### Light Mode (Default)
 
 ```
 SURFACES                           INTERACTIVE
@@ -33,6 +36,71 @@ TEXT                               BORDERS
 ├── Secondary: gray-600            ├── Subtle:   amber-100
 ├── Muted:     gray-400            └── Focus:    orange-500
 └── Sanskrit:  amber-900
+```
+
+#### Dark Mode
+
+```
+SURFACES                           INTERACTIVE
+├── Base:     gray-900             ├── Primary:  orange-600
+├── Warm:     gray-800             ├── Hover:    orange-500
+└── Reading:  stone-900, stone-800 └── Active:   orange-400
+
+TEXT                               BORDERS
+├── Primary:   gray-100            ├── Default:  gray-700
+├── Secondary: gray-300            ├── Subtle:   gray-800
+├── Tertiary:  gray-400            └── Focus:    orange-500
+├── Muted:     gray-500
+└── Sanskrit:  amber-400, amber-200
+
+FOCUS STATES
+├── Ring:        orange-500
+└── Ring offset: gray-900
+```
+
+**Stone in dark mode**: Reading-focused components (ReadingMode, VerseFocus, IntroCard, ChapterSelector) use `stone-800/900` instead of `gray-800/900` for a warmer feel that aligns with the "quiet library" philosophy.
+
+**Text hierarchy in dark mode**: Use `gray-100` for primary content, `gray-300` for secondary labels, `gray-400` for tertiary/helper text, and `gray-500` sparingly for truly de-emphasized content. Avoid using the same gray value for both light and dark modes — dark mode typically needs one step lighter for equivalent visual weight.
+
+#### Semantic Colors
+
+Reserved for specific content types:
+
+| Color | Use Case | Components |
+|-------|----------|------------|
+| Purple/Pink | Reflections & contemplation | ReflectionsSection, case views |
+| Green | Steps, success, positive actions | StepsSection, confirmations |
+| Blue | Follow-ups, secondary paths | Follow-up questions, info states |
+| Red | Favorites, destructive actions | Heart icons, delete buttons |
+
+```
+REFLECTIONS (purple-pink gradient)
+Light                              Dark
+├── Background: purple-50/pink-50  ├── Background: purple-900/20, pink-900/20
+├── Border:     purple-100         ├── Border:     purple-800
+├── Icon:       purple-600         ├── Icon:       purple-400
+└── Text:       purple-700         └── Text:       purple-400
+
+STEPS (green)
+Light                              Dark
+├── Background: green-100          ├── Background: green-900/40
+├── Border:     green-300          ├── Border:     green-700
+├── Icon:       green-600          ├── Icon:       green-400
+└── Text:       green-700          └── Text:       green-400
+
+FOLLOW-UPS (blue)
+Light                              Dark
+├── Background: blue-50            ├── Background: blue-900/30
+├── Border:     blue-100           ├── Border:     blue-800
+├── Icon:       blue-600           ├── Icon:       blue-400
+└── Text:       blue-700           └── Text:       blue-400
+
+FAVORITES & ERRORS (red)
+Light                              Dark
+├── Filled:     red-500            ├── Filled:     red-500
+├── Unfilled:   gray-400           ├── Unfilled:   gray-500
+├── Error bg:   red-50             ├── Error bg:   red-900/20
+└── Error text: red-600            └── Error text: red-400
 ```
 
 Amber creates warmth. Orange signals action. Gray provides contrast.
@@ -100,11 +168,54 @@ Mobile                    Desktop
 
 ### Buttons
 
-| Type | Style |
-|------|-------|
-| Primary CTA | `bg-orange-600 text-white px-6 py-3 rounded-xl` |
-| Secondary | `bg-amber-100 text-amber-800 px-4 py-2 rounded-lg` |
-| Ghost | `text-orange-600 hover:text-orange-700` |
+Two-tier color system aligned with "quiet library" design philosophy:
+
+#### Primary CTAs (Orange-600)
+Page-level actions that drive navigation or major decisions.
+
+| Use Case | Example |
+|----------|---------|
+| Hero buttons | "Get Started", "Explore Verses" |
+| Form submissions | Login, Signup, Submit Consultation |
+| Navigation CTAs | "New Consultation", "Go Home" |
+| Primary filters | Featured/All/Chapter filter pills |
+| Search buttons | Main search submit |
+
+```
+Light:  bg-orange-600 hover:bg-orange-700 text-white
+Dark:   dark:bg-orange-600 dark:hover:bg-orange-500 text-white
+Focus:  focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 focus:ring-orange-500
+
+px-6 py-3 rounded-xl (hero)
+px-4 py-2 rounded-lg (inline)
+```
+
+#### Contextual Actions (Amber-600)
+In-content interactions that feel softer, more contemplative.
+
+| Use Case | Example |
+|----------|---------|
+| Reading mode controls | "Start Reading", "Start Intro" |
+| Secondary filters | Topic/principle pills |
+| Clear/reset actions | "Clear filters" within content |
+| Toggle switches | Translation toggle |
+| Non-destructive confirms | Modal confirms (non-delete) |
+
+```
+bg-amber-600 hover:bg-amber-700 text-white
+px-4 py-2 rounded-lg
+```
+
+#### Secondary (Outline)
+```
+bg-amber-100 text-amber-800 border border-amber-200
+hover:bg-amber-200
+```
+
+#### Ghost
+```
+text-orange-600 hover:text-orange-700
+```
 
 Hero CTAs scale: `px-6 py-3 sm:px-8 sm:py-3.5`
 
@@ -112,20 +223,39 @@ Hero CTAs scale: `px-6 py-3 sm:px-8 sm:py-3.5`
 
 ```
 ┌───────────────────────────────────────────┐
-│  bg-amber-50 rounded-xl border-amber-200  │
-│  p-3 sm:p-4                               │
+│  Light: bg-amber-50 border-amber-200      │
+│  Dark:  dark:bg-gray-800 dark:border-gray-700
+│                                           │
+│  p-3 sm:p-4 rounded-xl                    │
 │  hover:shadow-md hover:-translate-y-0.5   │
 │  transition-all duration-150              │
 └───────────────────────────────────────────┘
 ```
 
+For elevated/highlighted cards:
+```
+Light: bg-white shadow-lg border-amber-200
+Dark:  dark:bg-gray-800 dark:border-gray-700
+```
+
 ### Form Inputs
 
 ```css
+/* Sizing */
 px-3 sm:px-4 py-2.5 sm:py-2
-border border-amber-200 rounded-lg
-focus:ring-2 focus:ring-orange-500
 text-base sm:text-sm
+rounded-lg
+
+/* Light mode */
+bg-white border-amber-200
+text-gray-900 placeholder-gray-500
+
+/* Dark mode */
+dark:bg-gray-800 dark:border-gray-600
+dark:text-gray-100 dark:placeholder-gray-400
+
+/* Focus (both modes) */
+focus:ring-2 focus:ring-orange-500 focus:border-transparent
 ```
 
 Larger touch targets on mobile (py-2.5), compact on desktop (py-2).
@@ -239,6 +369,54 @@ ease-in-out                    /* Natural motion */
 - **Screen readers**: ARIA labels and semantic HTML
 - **Reduced motion**: Respects `prefers-reduced-motion`
 
+## Dark Mode Guidelines
+
+Dark mode is a first-class feature, not a retrofit. Every component should be designed with both themes in mind from the start.
+
+### Principles
+
+1. **Always pair light and dark** — Every color class needs its `dark:` counterpart
+2. **Shift, don't invert** — Dark mode isn't just inverted colors; adjust for visual weight
+3. **Maintain hierarchy** — Text levels (primary → muted) should feel equivalent in both modes
+4. **Test both modes** — Verify readability and aesthetics in light and dark before shipping
+
+### Common Patterns
+
+| Element | Light | Dark |
+|---------|-------|------|
+| Page background | `from-orange-50 to-red-50` | `dark:from-gray-900 dark:to-gray-900` |
+| Card background | `bg-white` | `dark:bg-gray-800` |
+| Primary text | `text-gray-900` | `dark:text-gray-100` |
+| Secondary text | `text-gray-600` | `dark:text-gray-400` |
+| Muted text | `text-gray-500` | `dark:text-gray-400` (not gray-500) |
+| Borders | `border-gray-200` | `dark:border-gray-700` |
+| Warm borders | `border-amber-200` | `dark:border-gray-600` |
+| Focus ring offset | `focus:ring-offset-2` | `dark:focus:ring-offset-gray-900` |
+
+### Opacity for Semantic Backgrounds
+
+Use opacity modifiers for colored backgrounds in dark mode to avoid harsh contrast:
+
+```
+Light: bg-purple-50        →  Dark: dark:bg-purple-900/20
+Light: bg-green-100        →  Dark: dark:bg-green-900/40
+Light: bg-blue-50          →  Dark: dark:bg-blue-900/30
+Light: bg-red-50           →  Dark: dark:bg-red-900/20
+```
+
+### Checklist for New Components
+
+Before considering a component complete:
+
+- [ ] All backgrounds have `dark:` variants
+- [ ] All text colors have `dark:` variants with appropriate contrast
+- [ ] All borders have `dark:` variants
+- [ ] Focus states include `dark:focus:ring-offset-gray-900`
+- [ ] Hover states work in both modes
+- [ ] Placeholder text is visible in dark mode
+- [ ] Semantic colors (success, error, info) have dark variants
+- [ ] Component tested visually in both themes
+
 ## Implementation Notes
 
 ### Font Loading
@@ -262,4 +440,13 @@ fontFamily: {
 
 ### CSS Variables
 
-No CSS variables—all design tokens live in Tailwind classes for consistency and tree-shaking.
+Most design tokens live in Tailwind classes for consistency and tree-shaking. CSS custom properties are used only for values that need runtime access (animations):
+
+```css
+:root {
+  --color-amber-400: 251 191 36;   /* Warm shimmer effects */
+  --color-orange-400: 251 146 60;  /* Processing glow effects */
+}
+```
+
+These RGB values enable opacity modifiers in CSS animations: `rgb(var(--color-amber-400) / 0.2)`
