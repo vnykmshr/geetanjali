@@ -25,7 +25,7 @@ export function NavLogo({
     return (
       <Link
         to={backTo}
-        className="flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 rounded-md"
+        className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 rounded-md"
       >
         <svg
           className="w-5 h-5"
@@ -56,7 +56,7 @@ export function NavLogo({
         alt="Geetanjali"
         className="h-8 w-8 sm:h-10 sm:w-10"
       />
-      <span className="text-xl sm:text-2xl font-heading font-bold text-orange-600">
+      <span className="text-xl sm:text-2xl font-heading font-bold text-orange-600 dark:text-orange-400">
         Geetanjali
       </span>
     </Link>
