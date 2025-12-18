@@ -16,6 +16,64 @@
     {% include head-custom.html %}
   </head>
   <body>
+    <!-- Theme initialization (runs immediately to prevent flash) -->
+    <script>
+      (function() {
+        const STORAGE_KEY = 'geetanjali-docs:theme';
+        const THEMES = ['light', 'dark', 'system'];
+        const ICONS = {
+          light: 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z',
+          dark: 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z',
+          system: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
+        };
+        const LABELS = { light: 'Light mode', dark: 'Dark mode', system: 'System theme' };
+
+        function getStoredTheme() {
+          try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            return THEMES.includes(stored) ? stored : 'system';
+          } catch { return 'system'; }
+        }
+
+        function applyTheme(theme) {
+          const root = document.documentElement;
+          root.classList.remove('light', 'dark');
+          if (theme !== 'system') {
+            root.classList.add(theme);
+          }
+        }
+
+        function updateIcon(theme) {
+          const path = document.querySelector('#theme-toggle path');
+          const btn = document.getElementById('theme-toggle');
+          if (path) path.setAttribute('d', ICONS[theme]);
+          if (btn) {
+            btn.setAttribute('aria-label', LABELS[theme] + '. Click to change.');
+            btn.setAttribute('title', LABELS[theme]);
+          }
+        }
+
+        function cycleTheme() {
+          const current = getStoredTheme();
+          const next = THEMES[(THEMES.indexOf(current) + 1) % THEMES.length];
+          try { localStorage.setItem(STORAGE_KEY, next); } catch {}
+          applyTheme(next);
+          updateIcon(next);
+        }
+
+        // Apply theme immediately
+        const theme = getStoredTheme();
+        applyTheme(theme);
+
+        // Setup toggle after DOM ready
+        document.addEventListener('DOMContentLoaded', function() {
+          updateIcon(theme);
+          const btn = document.getElementById('theme-toggle');
+          if (btn) btn.addEventListener('click', cycleTheme);
+        });
+      })();
+    </script>
+
     <nav class="site-nav" role="banner">
       <div class="nav-content">
         <a href="{{ '/' | relative_url }}" class="brand">
@@ -28,6 +86,12 @@
           {% if site.github.is_project_page %}
             <a href="{{ site.github.repository_url }}" class="nav-link">GitHub</a>
           {% endif %}
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
+            <svg class="theme-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+          </button>
         </div>
       </div>
     </nav>
@@ -134,9 +198,31 @@
         --ascii-bg: var(--amber-50);
       }
 
-      /* Dark mode - respects system preference */
+      /* Dark mode variables */
+      :root.dark {
+        --bg-primary: #111827;
+        --bg-surface: #1f2937;
+        --bg-surface-elevated: #374151;
+        --text-primary: #f3f4f6;
+        --text-secondary: #d1d5db;
+        --text-muted: #9ca3af;
+        --border-default: #374151;
+        --border-accent: #4b5563;
+        --code-bg: #0f172a;
+        --code-text: #e5e7eb;
+        --inline-code-bg: rgba(251, 191, 36, 0.2);
+        --inline-code-text: #fbbf24;
+        --blockquote-bg: rgba(234, 88, 12, 0.1);
+        --table-header-bg: rgba(251, 191, 36, 0.1);
+        --table-row-alt: #1f2937;
+        --table-row-hover: rgba(251, 191, 36, 0.1);
+        --mermaid-bg: #1f2937;
+        --ascii-bg: #1f2937;
+      }
+
+      /* System preference fallback (when theme is 'system') */
       @media (prefers-color-scheme: dark) {
-        :root {
+        :root:not(.light):not(.dark) {
           --bg-primary: #111827;
           --bg-surface: #1f2937;
           --bg-surface-elevated: #374151;
@@ -266,6 +352,32 @@
       .nav-link:hover {
         color: var(--orange-600);
         background-color: var(--blockquote-bg);
+      }
+
+      /* Theme Toggle Button */
+      .theme-toggle {
+        padding: 0.5rem;
+        border: none;
+        background: transparent;
+        border-radius: 0.5rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .theme-toggle:hover {
+        color: var(--orange-600);
+        background-color: var(--blockquote-bg);
+      }
+      .theme-toggle:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px var(--orange-500);
+      }
+      .theme-icon {
+        width: 1.25rem;
+        height: 1.25rem;
       }
 
       /* ============================================
