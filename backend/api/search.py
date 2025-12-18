@@ -4,7 +4,7 @@ Provides transparent, multi-strategy search across verses with intelligent ranki
 """
 
 import logging
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Any, Dict, cast
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -209,7 +209,7 @@ async def search_verses(
     cached = cache.get(cache_key)
     if cached:
         logger.debug(f"Cache hit for search: {q}")
-        return cached
+        return cast(Dict[str, Any], cached)
 
     # Execute search with individual parameters
     search_service = SearchService(db)
@@ -247,7 +247,7 @@ async def get_available_principles(
     cached = cache.get(cache_key)
     if cached:
         logger.debug("Cache hit for principles list")
-        return cached
+        return cast(List[str], cached)
 
     from sqlalchemy import text
     from models.verse import Verse
