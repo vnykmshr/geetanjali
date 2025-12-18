@@ -17,3 +17,4 @@ export { useFavorites } from "./useFavorites";
 export { useAdjacentVerses } from "./useAdjacentVerses";
 export { useSwipeNavigation } from "./useSwipeNavigation";
 export { useSearch } from "./useSearch";
+export { useTaxonomy, preloadTaxonomy } from "./useTaxonomy";

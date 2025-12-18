@@ -330,3 +330,74 @@ export const searchApi = {
     return response.data;
   },
 };
+
+// Taxonomy API - Single source of truth for principles and goals
+export const taxonomyApi = {
+  /** Get all principles with full metadata */
+  getPrinciples: async (): Promise<{
+    principles: Principle[];
+    groups: PrincipleGroup[];
+    count: number;
+  }> => {
+    const response = await api.get(`/taxonomy/principles`);
+    return response.data;
+  },
+
+  /** Get a single principle by ID */
+  getPrinciple: async (principleId: string): Promise<Principle> => {
+    const response = await api.get(`/taxonomy/principles/${principleId}`);
+    return response.data;
+  },
+
+  /** Get all learning goals with principle mappings */
+  getGoals: async (): Promise<{
+    goals: Goal[];
+    count: number;
+  }> => {
+    const response = await api.get(`/taxonomy/goals`);
+    return response.data;
+  },
+
+  /** Get a single goal by ID */
+  getGoal: async (goalId: string): Promise<Goal> => {
+    const response = await api.get(`/taxonomy/goals/${goalId}`);
+    return response.data;
+  },
+
+  /** Get all principle groups (yoga paths) */
+  getGroups: async (): Promise<PrincipleGroup[]> => {
+    const response = await api.get(`/taxonomy/groups`);
+    return response.data;
+  },
+};
+
+// Taxonomy Types
+export interface Principle {
+  id: string;
+  label: string;
+  shortLabel: string;
+  sanskrit: string;
+  transliteration: string;
+  description: string;
+  leadershipContext: string;
+  keywords: string[];
+  group: string;
+  chapterFocus: number[];
+}
+
+export interface PrincipleGroup {
+  id: string;
+  label: string;
+  sanskrit: string;
+  transliteration: string;
+  description: string;
+  principles: string[];
+}
+
+export interface Goal {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+  principles: string[];
+}
