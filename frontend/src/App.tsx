@@ -1,5 +1,11 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import { FloatingActionButton, SkipLink } from "./components";
 
@@ -20,7 +26,16 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const About = lazy(() => import("./pages/About"));
 const PublicCaseView = lazy(() => import("./pages/PublicCaseView"));
 const ReadingMode = lazy(() => import("./pages/ReadingMode"));
-const Search = lazy(() => import("./pages/Search"));
+
+/**
+ * Redirect from old /search to unified /verses page
+ * Preserves query params (e.g., /search?q=karma -> /verses?q=karma)
+ */
+function SearchRedirect() {
+  const [searchParams] = useSearchParams();
+  const queryString = searchParams.toString();
+  return <Navigate to={`/verses${queryString ? `?${queryString}` : ""}`} replace />;
+}
 
 // Loading fallback component
 function PageLoader() {
@@ -76,7 +91,7 @@ function App() {
             <Route path="/cases/:id" element={<CaseView />} />
             <Route path="/consultations" element={<Consultations />} />
             <Route path="/verses" element={<Verses />} />
-            <Route path="/search" element={<Search />} />
+            <Route path="/search" element={<SearchRedirect />} />
             <Route path="/verses/:canonicalId" element={<VerseDetail />} />
             <Route path="/read" element={<ReadingMode />} />
             <Route path="/about" element={<About />} />
