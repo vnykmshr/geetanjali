@@ -139,7 +139,10 @@ class Settings(BaseSettings):
     CACHE_TTL_VERSE: int = 86400  # 24 hours
     CACHE_TTL_VERSE_LIST: int = 3600  # 1 hour
     CACHE_TTL_DAILY_VERSE: int = 0  # Calculated dynamically to midnight
-    CACHE_TTL_USER_PROFILE: int = 900  # 15 minutes
+    CACHE_TTL_METADATA: int = 86400  # 24 hours - book/chapter metadata is static
+    CACHE_TTL_SEARCH: int = 300  # 5 minutes - short TTL for burst protection
+    CACHE_TTL_PRINCIPLES: int = 3600  # 1 hour - principles list rarely changes
+    CACHE_TTL_FEATURED_COUNT: int = 3600  # 1 hour - featured count rarely changes
     CACHE_TTL_PUBLIC_CASE: int = 3600  # 1 hour Redis TTL for public cases
     CACHE_TTL_PUBLIC_CASE_HTTP: int = (
         60  # 1 minute browser cache (short for fast revocation)

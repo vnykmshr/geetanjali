@@ -89,7 +89,9 @@ services:
     # Run as redis user (UID 999 in redis:7-alpine)
     user: "999:999"
     # No external port - only accessible within Docker network
-    command: redis-server --save "" --appendonly no --requirepass ${REDIS_PASSWORD:-redis_dev_pass}
+    # Eviction policy: allkeys-lru removes least recently used keys when memory limit reached
+    # maxmemory set to 100MB to leave headroom within 128M container limit
+    command: redis-server --save "" --appendonly no --maxmemory 100mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD:-redis_dev_pass}
     environment:
       # Used by redis-cli for auth (avoids password in ps output)
       REDISCLI_AUTH: ${REDIS_PASSWORD:-redis_dev_pass}

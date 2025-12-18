@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 from api.dependencies import limiter
 from db import get_db
 from services.search import SearchService, serialize_search_response
+from services.cache import cache, search_key, principles_key
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -202,6 +204,13 @@ async def search_verses(
     - `/search?q=How%20to%20overcome%20fear` → Semantic similarity search
     - `/search?q=कर्म` → Sanskrit text search
     """
+    # Try cache first (short TTL for burst protection)
+    cache_key = search_key(q, chapter, principle, limit, offset)
+    cached = cache.get(cache_key)
+    if cached:
+        logger.debug(f"Cache hit for search: {q}")
+        return cached
+
     # Execute search with individual parameters
     search_service = SearchService(db)
     response = search_service.search(
@@ -213,7 +222,12 @@ async def search_verses(
     )
 
     # Serialize for API response
-    return serialize_search_response(response)
+    result = serialize_search_response(response)
+
+    # Cache the result (short TTL to prevent Redis bloat)
+    cache.set(cache_key, result, settings.CACHE_TTL_SEARCH)
+
+    return result
 
 
 @router.get("/principles", response_model=List[str])
@@ -228,17 +242,24 @@ async def get_available_principles(
     Returns a deduplicated list of all principles used across verses.
     Useful for building filter UIs.
     """
+    # Try cache first (principles rarely change)
+    cache_key = principles_key()
+    cached = cache.get(cache_key)
+    if cached:
+        logger.debug("Cache hit for principles list")
+        return cached
+
     from sqlalchemy import text
     from models.verse import Verse
 
-    # Get all unique principles from JSONB array
-    # PostgreSQL: unnest the JSON array and get distinct values
+    # Get all unique principles from JSON array
+    # PostgreSQL: unnest the JSON array and get distinct values (cast to JSONB for function)
     # For SQLite (tests): fall back to fetching all and processing in Python
     try:
         result = db.execute(
             text(
                 """
-                SELECT DISTINCT jsonb_array_elements_text(consulting_principles) as principle
+                SELECT DISTINCT jsonb_array_elements_text(consulting_principles::jsonb) as principle
                 FROM verses
                 WHERE consulting_principles IS NOT NULL
                 ORDER BY principle
@@ -247,12 +268,21 @@ async def get_available_principles(
         )
         principles = [row[0] for row in result.fetchall()]
     except Exception:
+        # Rollback the failed transaction before fallback query
+        db.rollback()
         # Fallback for SQLite (used in tests) which doesn't have jsonb_array_elements_text
-        verses = db.query(Verse).filter(Verse.consulting_principles.isnot(None)).all()
-        principles_set = set()
-        for verse in verses:
-            if verse.consulting_principles:
-                principles_set.update(verse.consulting_principles)
+        # OPTIMIZATION: Only load consulting_principles column, not entire verse objects
+        # Reduces memory usage significantly for 701 verses
+        result = db.query(Verse.consulting_principles).filter(
+            Verse.consulting_principles.isnot(None)
+        ).all()
+        principles_set: set[str] = set()
+        for (principles_json,) in result:
+            if principles_json:
+                principles_set.update(principles_json)
         principles = sorted(list(principles_set))
+
+    # Cache the result
+    cache.set(cache_key, principles, settings.CACHE_TTL_PRINCIPLES)
 
     return principles

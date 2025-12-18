@@ -194,11 +194,12 @@ def verse_key(canonical_id: str) -> str:
 def verse_list_key(
     chapter: Optional[int] = None,
     featured: Optional[bool] = None,
+    principles: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
 ) -> str:
     """Build cache key for verse list queries."""
-    return f"verses:ch{chapter}:feat{featured}:s{skip}:l{limit}"
+    return f"verses:ch{chapter}:feat{featured}:p{principles}:s{skip}:l{limit}"
 
 
 def daily_verse_key() -> str:
@@ -206,9 +207,58 @@ def daily_verse_key() -> str:
     return f"verse:daily:{datetime.utcnow().date().isoformat()}"
 
 
-def user_profile_key(user_id: str) -> str:
-    """Build cache key for user profile."""
-    return f"user:{user_id}:profile"
+def book_metadata_key() -> str:
+    """Build cache key for book metadata."""
+    return "metadata:book:bhagavad_geeta"
+
+
+def chapters_metadata_key() -> str:
+    """Build cache key for all chapters metadata."""
+    return "metadata:chapters:all"
+
+
+def chapter_metadata_key(chapter_number: int) -> str:
+    """Build cache key for single chapter metadata."""
+    return f"metadata:chapter:{chapter_number}"
+
+
+def search_key(
+    query: str,
+    chapter: int | None = None,
+    principle: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> str:
+    """Build cache key for search results."""
+    # Normalize query for consistent caching
+    normalized = query.lower().strip()
+    return f"search:{normalized}:ch{chapter}:p{principle}:l{limit}:o{offset}"
+
+
+def principles_key() -> str:
+    """Build cache key for principles list."""
+    return "search:principles:all"
+
+
+def featured_count_key() -> str:
+    """Build cache key for featured verse count."""
+    return "verses:featured:count"
+
+
+def featured_verse_ids_key() -> str:
+    """Build cache key for featured verse ID list.
+
+    Used by random verse endpoint to avoid loading all verses.
+    """
+    return "verses:featured:ids"
+
+
+def all_verse_ids_key() -> str:
+    """Build cache key for all verse ID list.
+
+    Used by random verse endpoint when featured_only=False.
+    """
+    return "verses:all:ids"
 
 
 def public_case_key(slug: str) -> str:

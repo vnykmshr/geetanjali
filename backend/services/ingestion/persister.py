@@ -9,7 +9,14 @@ from sqlalchemy.orm import Session
 
 from models.verse import Verse, Translation
 from services.vector_store import get_vector_store
-from services.cache import cache, verse_key
+from services.cache import (
+    cache,
+    verse_key,
+    featured_count_key,
+    featured_verse_ids_key,
+    all_verse_ids_key,
+    principles_key,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -145,14 +152,41 @@ class Persister:
 
     def _invalidate_verse_cache(self, canonical_id: str):
         """
-        Invalidate Redis cache for a verse.
+        Invalidate Redis cache for a verse and related caches.
+
+        When a verse is updated, we invalidate:
+        - Individual verse cache
+        - All verse list caches (pattern match)
+        - Verse ID caches (for random verse endpoint)
+        - Search caches (pattern match - short TTL anyway)
+        - Featured count cache (in case is_featured changed)
+        - Principles list cache (in case consulting_principles changed)
 
         Args:
             canonical_id: Canonical verse ID (e.g., BG_2_47)
         """
         try:
+            # Invalidate individual verse cache
             cache.delete(verse_key(canonical_id))
-            logger.debug(f"Invalidated cache for verse {canonical_id}")
+
+            # Invalidate all verse list caches (covers all filter combinations)
+            # Note: This pattern also covers verses:featured:ids and verses:all:ids
+            cache.invalidate_pattern("verses:*")
+
+            # Explicitly invalidate verse ID caches (for random verse optimization)
+            cache.delete(featured_verse_ids_key())
+            cache.delete(all_verse_ids_key())
+
+            # Invalidate search caches (short TTL, but clear for consistency)
+            cache.invalidate_pattern("search:*")
+
+            # Invalidate featured count (in case is_featured changed)
+            cache.delete(featured_count_key())
+
+            # Invalidate principles list (in case consulting_principles changed)
+            cache.delete(principles_key())
+
+            logger.debug(f"Invalidated all related caches for verse {canonical_id}")
         except Exception as e:
             # Log but don't fail - cache invalidation is best-effort
             logger.warning(f"Failed to invalidate cache for {canonical_id}: {e}")

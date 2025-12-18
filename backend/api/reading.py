@@ -9,6 +9,13 @@ from api.dependencies import limiter
 from db import get_db
 from api.schemas import BookMetadataResponse, ChapterMetadataResponse
 from models.metadata import BookMetadata, ChapterMetadata
+from services.cache import (
+    cache,
+    book_metadata_key,
+    chapters_metadata_key,
+    chapter_metadata_key,
+)
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +40,13 @@ async def get_book_metadata(
     Raises:
         HTTPException: If book metadata not found
     """
+    # Try cache first (book metadata is static)
+    cache_key = book_metadata_key()
+    cached = cache.get(cache_key)
+    if cached:
+        logger.debug("Cache hit for book metadata")
+        return cached
+
     book = db.query(BookMetadata).filter(
         BookMetadata.book_key == "bhagavad_geeta"
     ).first()
@@ -42,6 +56,10 @@ async def get_book_metadata(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Book metadata not found. Run sync-metadata to populate.",
         )
+
+    # Cache the result
+    book_data = BookMetadataResponse.model_validate(book).model_dump()
+    cache.set(cache_key, book_data, settings.CACHE_TTL_METADATA)
 
     return book
 
@@ -60,11 +78,24 @@ async def get_all_chapters(
     Returns:
         List of all chapter metadata
     """
+    # Try cache first (chapter metadata is static)
+    cache_key = chapters_metadata_key()
+    cached = cache.get(cache_key)
+    if cached:
+        logger.debug("Cache hit for all chapters metadata")
+        return cached
+
     chapters = (
         db.query(ChapterMetadata)
         .order_by(ChapterMetadata.chapter_number)
         .all()
     )
+
+    # Cache the result
+    chapters_data = [
+        ChapterMetadataResponse.model_validate(ch).model_dump() for ch in chapters
+    ]
+    cache.set(cache_key, chapters_data, settings.CACHE_TTL_METADATA)
 
     return chapters
 
@@ -94,6 +125,13 @@ async def get_chapter_metadata(
             detail="Chapter number must be between 1 and 18",
         )
 
+    # Try cache first (chapter metadata is static)
+    cache_key = chapter_metadata_key(chapter_number)
+    cached = cache.get(cache_key)
+    if cached:
+        logger.debug(f"Cache hit for chapter {chapter_number} metadata")
+        return cached
+
     chapter = db.query(ChapterMetadata).filter(
         ChapterMetadata.chapter_number == chapter_number
     ).first()
@@ -103,5 +141,9 @@ async def get_chapter_metadata(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Chapter {chapter_number} metadata not found. Run sync-metadata to populate.",
         )
+
+    # Cache the result
+    chapter_data = ChapterMetadataResponse.model_validate(chapter).model_dump()
+    cache.set(cache_key, chapter_data, settings.CACHE_TTL_METADATA)
 
     return chapter

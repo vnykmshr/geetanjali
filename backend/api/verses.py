@@ -19,9 +19,15 @@ from services.cache import (
     verse_key,
     verse_list_key,
     daily_verse_key,
+    featured_count_key,
+    featured_verse_ids_key,
+    all_verse_ids_key,
     calculate_midnight_ttl,
 )
 from config import settings
+
+# Cache TTL for verse ID lists (1 hour)
+VERSE_IDS_CACHE_TTL = 3600
 
 logger = logging.getLogger(__name__)
 
@@ -137,15 +143,13 @@ async def search_verses(
     if featured is not None:
         query = query.filter(Verse.is_featured == featured)
 
-    # Skip caching for principle queries (less common, more variations)
-    if not principles:
-        # P2.3 FIX: Cache filtered verse list queries
-        cache_key = verse_list_key(
-            chapter=chapter, featured=featured, skip=skip, limit=limit
-        )
-        cached_result = cache.get(cache_key)
-        if cached_result:
-            return cached_result
+    # P2.3 FIX: Cache filtered verse list queries (including principle queries)
+    cache_key = verse_list_key(
+        chapter=chapter, featured=featured, principles=principles, skip=skip, limit=limit
+    )
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
 
     # Always sort by chapter, then verse number
     query = query.order_by(Verse.chapter, Verse.verse)
@@ -153,13 +157,12 @@ async def search_verses(
     # Apply pagination
     result = query.offset(skip).limit(limit).all()
 
-    # Cache the result (only for non-principle queries)
-    if not principles:
-        cache.set(
-            cache_key,
-            [VerseResponse.model_validate(v).model_dump() for v in result],
-            settings.CACHE_TTL_VERSE_LIST,
-        )
+    # Cache the result
+    cache.set(
+        cache_key,
+        [VerseResponse.model_validate(v).model_dump() for v in result],
+        settings.CACHE_TTL_VERSE_LIST,
+    )
 
     return result
 
@@ -191,25 +194,75 @@ async def get_random_verse(
     Raises:
         HTTPException: If no verses found
     """
-    # P0.2 FIX: Use Python random.choice instead of ORDER BY RANDOM()
-    # ORDER BY RANDOM() causes full table scan + sort (O(n log n))
-    # Python random.choice on cached list is O(1) after initial load
-    # TODO P2: Cache the verse list itself to avoid DB round trip on every request
-    if featured_only:
-        verses = db.query(Verse).filter(Verse.is_featured.is_(True)).all()
-        if not verses:
-            # Fallback to any verse if no featured verses found
-            logger.warning("No featured verses found, falling back to any verse")
-            verses = db.query(Verse).all()
-    else:
-        verses = db.query(Verse).all()
+    # OPTIMIZATION: Cache verse IDs instead of loading all verse objects
+    # Reduces memory usage from ~5MB (701 full verses) to ~20KB (701 IDs)
+    # Then load single verse by ID (uses existing verse cache)
 
-    if not verses:
+    if featured_only:
+        cache_key = featured_verse_ids_key()
+        verse_ids = cache.get(cache_key)
+
+        if verse_ids is None:
+            # Load only canonical_ids (lightweight query)
+            verse_ids = [
+                row[0]
+                for row in db.query(Verse.canonical_id)
+                .filter(Verse.is_featured.is_(True))
+                .all()
+            ]
+            if verse_ids:
+                cache.set(cache_key, verse_ids, VERSE_IDS_CACHE_TTL)
+
+        if not verse_ids:
+            # Fallback: load all verse IDs
+            logger.warning("No featured verses found, falling back to any verse")
+            cache_key = all_verse_ids_key()
+            verse_ids = cache.get(cache_key)
+            if verse_ids is None:
+                verse_ids = [row[0] for row in db.query(Verse.canonical_id).all()]
+                if verse_ids:
+                    cache.set(cache_key, verse_ids, VERSE_IDS_CACHE_TTL)
+    else:
+        cache_key = all_verse_ids_key()
+        verse_ids = cache.get(cache_key)
+
+        if verse_ids is None:
+            verse_ids = [row[0] for row in db.query(Verse.canonical_id).all()]
+            if verse_ids:
+                cache.set(cache_key, verse_ids, VERSE_IDS_CACHE_TTL)
+
+    if not verse_ids:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=ERR_NO_VERSES_IN_DB
         )
 
-    return random.choice(verses)
+    # Pick random ID and load single verse
+    selected_id = random.choice(verse_ids)
+
+    # Try verse cache first
+    verse_cache_key = verse_key(selected_id)
+    cached_verse = cache.get(verse_cache_key)
+    if cached_verse:
+        return cached_verse
+
+    # Load from database
+    repo = VerseRepository(db)
+    verse = repo.get_by_canonical_id(selected_id)
+
+    if not verse:
+        # Rare race condition: ID cached but verse deleted
+        # Invalidate ID cache and return error (next request will rebuild)
+        cache.delete(cache_key)
+        logger.warning(f"Cached verse ID {selected_id} not found in DB, cache invalidated")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=ERR_VERSE_NOT_FOUND
+        )
+
+    # Cache the verse for future requests
+    verse_data = VerseResponse.model_validate(verse).model_dump()
+    cache.set(verse_cache_key, verse_data, settings.CACHE_TTL_VERSE)
+
+    return verse
 
 
 @router.get("/daily", response_model=VerseResponse)
@@ -241,10 +294,14 @@ async def get_verse_of_the_day(request: Request, db: Session = Depends(get_db)):
     today = date.today()
     day_of_year = today.timetuple().tm_yday
 
-    # Get featured verses count first, fallback to all if none featured
-    featured_count = (
-        db.query(func.count(Verse.id)).filter(Verse.is_featured.is_(True)).scalar()
-    )
+    # Get featured verses count (cached since it rarely changes)
+    count_cache_key = featured_count_key()
+    featured_count = cache.get(count_cache_key)
+    if featured_count is None:
+        featured_count = (
+            db.query(func.count(Verse.id)).filter(Verse.is_featured.is_(True)).scalar()
+        )
+        cache.set(count_cache_key, featured_count, settings.CACHE_TTL_FEATURED_COUNT)
 
     if featured_count and featured_count > 0:
         # Use featured verses only

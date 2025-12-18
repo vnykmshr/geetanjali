@@ -216,6 +216,9 @@ def sync_featured_verses(db: Session) -> dict:
     This updates the is_featured column based on the curated list in code.
     Should be called after ingestion or on startup.
 
+    OPTIMIZATION: Uses bulk UPDATE with IN clause instead of N individual updates.
+    Reduces 180+ queries to 2 queries.
+
     Args:
         db: Database session
 
@@ -224,24 +227,27 @@ def sync_featured_verses(db: Session) -> dict:
     """
     featured_ids = get_featured_verse_ids()
 
-    # Reset all to not featured first
+    # Step 1: Reset all to not featured (1 query)
     db.query(Verse).update({"is_featured": False})
 
-    # Mark featured verses
-    synced = 0
+    # Step 2: Bulk update all featured verses in one query
+    # Uses canonical_id IN (...) instead of loop
+    synced = (
+        db.query(Verse)
+        .filter(Verse.canonical_id.in_(featured_ids))
+        .update({"is_featured": True}, synchronize_session="fetch")
+    )
+
+    # Step 3: Find which IDs weren't found (only if needed for logging)
     not_found = []
-
-    for canonical_id in featured_ids:
-        result = (
-            db.query(Verse)
-            .filter(Verse.canonical_id == canonical_id)
-            .update({"is_featured": True})
+    if synced < len(featured_ids):
+        found_ids = set(
+            row[0]
+            for row in db.query(Verse.canonical_id)
+            .filter(Verse.canonical_id.in_(featured_ids))
+            .all()
         )
-
-        if result > 0:
-            synced += 1
-        else:
-            not_found.append(canonical_id)
+        not_found = [cid for cid in featured_ids if cid not in found_ids]
 
     db.commit()
 
@@ -542,6 +548,11 @@ def run_enrich_task(limit: int = 0, force: bool = False):
     skipped_count = 0
     error_count = 0
 
+    # OPTIMIZATION: Batch commit every N verses instead of per-verse
+    # Reduces 700+ commits to ~15 commits for full enrichment
+    BATCH_SIZE = 50
+    pending_updates = 0
+
     try:
         logger.info("=" * 80)
         logger.info("BACKGROUND ENRICHMENT OF EXISTING VERSES STARTED")
@@ -608,10 +619,16 @@ def run_enrich_task(limit: int = 0, force: bool = False):
                     updated = True
 
                 if updated:
-                    db.commit()
                     enriched_count += 1
+                    pending_updates += 1
                 else:
                     skipped_count += 1
+
+                # OPTIMIZATION: Batch commit every BATCH_SIZE updates
+                if pending_updates >= BATCH_SIZE:
+                    db.commit()
+                    logger.info(f"Committed batch of {pending_updates} updates")
+                    pending_updates = 0
 
                 if (i + 1) % 10 == 0:
                     logger.info(f"Progress: {i + 1}/{total} verses processed")
@@ -620,6 +637,12 @@ def run_enrich_task(limit: int = 0, force: bool = False):
                 logger.error(f"Failed to enrich {verse.canonical_id}: {e}")
                 error_count += 1
                 db.rollback()
+                pending_updates = 0  # Reset pending count after rollback
+
+        # Final commit for remaining updates
+        if pending_updates > 0:
+            db.commit()
+            logger.info(f"Committed final batch of {pending_updates} updates")
 
         logger.info("=" * 80)
         logger.info("BACKGROUND ENRICHMENT COMPLETED")

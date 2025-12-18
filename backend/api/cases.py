@@ -48,6 +48,45 @@ def generate_public_slug(length: int = 10) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
+def generate_unique_public_slug(db: Session, max_candidates: int = 10) -> str:
+    """
+    Generate a unique public slug efficiently using batch query.
+
+    OPTIMIZATION: Instead of checking slugs one-by-one (up to 10 queries),
+    generate multiple candidates and check all at once (1 query).
+
+    Args:
+        db: Database session
+        max_candidates: Number of candidate slugs to generate
+
+    Returns:
+        A unique slug not currently in use
+
+    Raises:
+        HTTPException: If unable to generate unique slug (extremely rare)
+    """
+    # Generate multiple candidates upfront
+    candidates = [generate_public_slug() for _ in range(max_candidates)]
+
+    # Single query to check which candidates already exist
+    existing_slugs = set(
+        row[0]
+        for row in db.query(Case.public_slug)
+        .filter(Case.public_slug.in_(candidates))
+        .all()
+    )
+
+    # Find first non-existing slug
+    for slug in candidates:
+        if slug not in existing_slugs:
+            return slug
+
+    # Extremely rare: all random slugs exist (probability ~0 for 10-char slugs)
+    # Fall back to UUID-based slug (guaranteed unique)
+    logger.warning("All candidate slugs existed, falling back to UUID-based slug")
+    return str(uuid.uuid4()).replace("-", "")[:12]
+
+
 def get_public_case_or_404(slug: str, db: Session) -> Case:
     """
     Fetch a public case by slug or raise 404.
@@ -353,19 +392,8 @@ async def toggle_case_sharing(
     # Generate slug and set shared_at when making public (if not already set)
     if share_data.is_public and not case.public_slug:
         update_data["shared_at"] = datetime.utcnow()
-        # Ensure unique slug
-        max_attempts = 10
-        for _ in range(max_attempts):
-            slug = generate_public_slug()
-            existing = repo.get_by_public_slug(slug)
-            if not existing:
-                update_data["public_slug"] = slug
-                break
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to generate unique public slug",
-            )
+        # OPTIMIZATION: Batch check multiple candidate slugs in single query
+        update_data["public_slug"] = generate_unique_public_slug(db)
 
     # Update case
     updated_case = repo.update(case_id, update_data)
