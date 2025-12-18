@@ -452,42 +452,56 @@ export default function VerseDetail() {
             </div>
           </div>
 
-          {/* More Translations Section - Toggle Switch */}
+          {/* More Translations Section - Collapsible */}
           {otherTranslations.length > 0 && (
             <div
-              className="animate-fade-in bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8"
+              className="animate-fade-in bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg overflow-hidden mb-4 sm:mb-6 lg:mb-8"
               style={{ animationDelay: "100ms" }}
             >
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <h2 className="text-lg sm:text-xl font-bold font-heading text-gray-900 dark:text-gray-100">
-                  More Translations
-                </h2>
-                <button
-                  onClick={() => setShowAllTranslations(!showAllTranslations)}
-                  aria-label={
-                    showAllTranslations
-                      ? "Hide more translations"
-                      : "Show more translations"
-                  }
-                  aria-pressed={showAllTranslations}
-                  className={`relative inline-flex h-7 sm:h-8 w-12 sm:w-14 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 ${
-                    showAllTranslations
-                      ? "bg-amber-600"
-                      : "bg-gray-300 dark:bg-gray-600"
+              {/* Collapsible Header */}
+              <button
+                onClick={() => setShowAllTranslations(!showAllTranslations)}
+                className="w-full flex items-center justify-between p-4 sm:p-6 lg:p-8 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500"
+                aria-expanded={showAllTranslations}
+                aria-controls="more-translations-content"
+              >
+                <div className="flex items-baseline gap-2">
+                  <h2 className="text-lg sm:text-xl font-bold font-heading text-gray-900 dark:text-gray-100">
+                    More Translations
+                  </h2>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    ({otherTranslations.length})
+                  </span>
+                </div>
+                {/* Chevron indicator */}
+                <svg
+                  className={`w-5 h-5 sm:w-6 sm:h-6 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
+                    showAllTranslations ? "rotate-180" : ""
                   }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
-                  <span
-                    className={`inline-block h-5 sm:h-6 w-5 sm:w-6 transform rounded-full bg-white transition-transform ${
-                      showAllTranslations
-                        ? "translate-x-6 sm:translate-x-7"
-                        : "translate-x-1"
-                    }`}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
                   />
-                </button>
-              </div>
+                </svg>
+              </button>
 
-              {showAllTranslations && (
-                <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-in fade-in duration-200">
+              {/* Collapsible Content */}
+              <div
+                id="more-translations-content"
+                className={`transition-all duration-200 ease-in-out ${
+                  showAllTranslations
+                    ? "max-h-[2000px] opacity-100"
+                    : "max-h-0 opacity-0 overflow-hidden"
+                }`}
+              >
+                <div className="px-4 sm:px-6 lg:px-8 pb-4 sm:pb-6 lg:pb-8 space-y-4 sm:space-y-6 lg:space-y-8">
                   {otherTranslations.map((translation, index) => (
                     <div key={translation.id}>
                       <div className="border-l-4 border-amber-300 dark:border-amber-600 pl-4 sm:pl-6 py-2 sm:py-3">
@@ -511,7 +525,7 @@ export default function VerseDetail() {
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
