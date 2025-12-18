@@ -14,34 +14,34 @@ const CASES_PER_PAGE = 10;
 function StatusBadge({ status }: { status?: CaseStatus }) {
   if (!status || status === "completed") {
     return (
-      <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">
+      <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
         Completed
       </span>
     );
   }
   if (status === "policy_violation") {
     return (
-      <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">
+      <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
         Unable to Process
       </span>
     );
   }
   if (status === "processing" || status === "pending") {
     return (
-      <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700 flex items-center gap-1">
+      <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 flex items-center gap-1">
         <span className="animate-pulse">●</span> Processing
       </span>
     );
   }
   if (status === "failed") {
     return (
-      <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">
+      <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">
         Failed
       </span>
     );
   }
   return (
-    <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
+    <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
       Draft
     </span>
   );
@@ -188,17 +188,17 @@ export default function Consultations() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 flex flex-col">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-gray-600">Loading your consultations...</div>
+          <div className="text-gray-600 dark:text-gray-400">Loading your consultations...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 flex flex-col">
       <Navbar />
       <div className="flex-1 py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -206,10 +206,10 @@ export default function Consultations() {
           <div className="mb-6 sm:mb-8">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold font-heading text-gray-900 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold font-heading text-gray-900 dark:text-gray-100 mb-2">
                   My Cases
                 </h1>
-                <p className="text-base sm:text-lg text-gray-600">
+                <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
                   Your consultation history
                 </p>
               </div>
@@ -225,21 +225,21 @@ export default function Consultations() {
 
           {/* Error Alert */}
           {error && (
-            <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 text-red-600 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm">
+            <div className="mb-4 sm:mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm">
               <strong>Error:</strong> {error}
             </div>
           )}
 
           {/* Anonymous user notice */}
           {!isAuthenticated && cases.length > 0 && (
-            <div className="mb-4 sm:mb-6 bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
-              <span className="text-amber-600 text-base sm:text-lg">💡</span>
+            <div className="mb-4 sm:mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
+              <span className="text-amber-600 dark:text-amber-400 text-base sm:text-lg">💡</span>
               <div>
-                <p className="text-amber-800 text-xs sm:text-sm">
+                <p className="text-amber-800 dark:text-amber-300 text-xs sm:text-sm">
                   These consultations are stored in your browser session.
                   <Link
                     to="/signup"
-                    className="ml-1 text-amber-700 hover:text-amber-900 underline font-medium"
+                    className="ml-1 text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 underline font-medium"
                   >
                     Create an account
                   </Link>{" "}
@@ -251,14 +251,14 @@ export default function Consultations() {
 
           {/* Consultations List */}
           {cases.length === 0 ? (
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-8 sm:p-12 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-8 sm:p-12 text-center">
               <img
                 src="/logo.svg"
                 alt="Geetanjali"
                 loading="lazy"
                 className="h-16 w-16 sm:h-20 sm:w-20 mx-auto mb-4 sm:mb-6"
               />
-              <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
+              <p className="text-gray-600 dark:text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base">
                 You haven't asked any questions yet.
               </p>
               <Link
@@ -283,10 +283,10 @@ export default function Consultations() {
                   return (
                     <div
                       key={case_.id}
-                      className={`bg-white rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all border overflow-hidden ${
+                      className={`bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all border overflow-hidden ${
                         case_.is_public
-                          ? "border-green-200 hover:border-green-300"
-                          : "border-gray-100 hover:border-red-200"
+                          ? "border-green-200 dark:border-green-800 hover:border-green-300 dark:hover:border-green-700"
+                          : "border-gray-100 dark:border-gray-700 hover:border-red-200 dark:hover:border-gray-600"
                       }`}
                     >
                       <Link
@@ -296,12 +296,12 @@ export default function Consultations() {
                         <div className="flex justify-between items-start mb-2 sm:mb-3 gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
-                              <h2 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
                                 {case_.title}
                               </h2>
                               <StatusBadge status={case_.status} />
                             </div>
-                            <p className="text-xs sm:text-sm text-gray-400">
+                            <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500">
                               {new Date(
                                 case_.created_at || "",
                               ).toLocaleDateString("en-US", {
@@ -317,31 +317,31 @@ export default function Consultations() {
                             <button
                               onClick={(e) => handleRetry(e, case_.id)}
                               disabled={actionLoading === case_.id}
-                              className="px-2 sm:px-3 py-1 text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-full transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1"
+                              className="px-2 sm:px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800/50 rounded-full transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800"
                               title="Retry analysis"
                             >
                               {actionLoading === case_.id ? "..." : "Retry"}
                             </button>
                           )}
                         </div>
-                        <p className="text-gray-600 text-xs sm:text-sm line-clamp-2 mb-2 sm:mb-3">
+                        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm line-clamp-2 mb-2 sm:mb-3">
                           {case_.description}
                         </p>
                         <div className="flex flex-wrap gap-1.5 sm:gap-2">
                           {case_.role && case_.role !== "Individual" && (
-                            <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                            <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
                               👤 {case_.role}
                             </span>
                           )}
                           {case_.stakeholders &&
                             case_.stakeholders.length > 0 &&
                             case_.stakeholders[0] !== "self" && (
-                              <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                              <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
                                 👥 {case_.stakeholders.join(", ")}
                               </span>
                             )}
                           {case_.horizon && (
-                            <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                            <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
                               ⏱️ {case_.horizon} term
                             </span>
                           )}
@@ -350,10 +350,10 @@ export default function Consultations() {
 
                       {/* Compact share URL (when public) - right aligned */}
                       {case_.is_public && case_.public_slug && (
-                        <div className="px-4 sm:px-5 lg:px-6 py-2 border-t border-green-100 flex justify-end">
-                          <div className="bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
+                        <div className="px-4 sm:px-5 lg:px-6 py-2 border-t border-green-100 dark:border-green-900 flex justify-end">
+                          <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg px-2.5 py-1.5">
                             <div className="flex items-center gap-2">
-                              <code className="text-xs text-green-700 font-mono truncate max-w-[180px] sm:max-w-none">
+                              <code className="text-xs text-green-700 dark:text-green-400 font-mono truncate max-w-[180px] sm:max-w-none">
                                 {window.location.host}/c/{case_.public_slug}
                               </code>
                               <button
@@ -363,7 +363,7 @@ export default function Consultations() {
                                 {copySuccess === case_.id ? "Copied!" : "Copy"}
                               </button>
                             </div>
-                            <p className="text-[10px] text-green-600 mt-1 flex items-center gap-1">
+                            <p className="text-[10px] text-green-600 dark:text-green-500 mt-1 flex items-center gap-1">
                               <svg
                                 className="w-3 h-3"
                                 fill="none"
@@ -384,16 +384,16 @@ export default function Consultations() {
                       )}
 
                       {/* Action bar */}
-                      <div className="px-4 sm:px-5 lg:px-6 py-2.5 sm:py-3 bg-amber-50/50 border-t border-amber-100 flex items-center justify-end gap-2">
+                      <div className="px-4 sm:px-5 lg:px-6 py-2.5 sm:py-3 bg-amber-50/50 dark:bg-gray-700/50 border-t border-amber-100 dark:border-gray-600 flex items-center justify-end gap-2">
                         {/* Share/Unshare button (only for completed cases) */}
                         {canShare && (
                           <button
                             onClick={(e) => handleToggleShare(e, case_)}
                             disabled={shareLoading === case_.id}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 ${
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800 ${
                               case_.is_public
-                                ? "text-green-700 bg-green-100 hover:bg-green-200 focus-visible:ring-green-500"
-                                : "text-amber-700 bg-amber-100 hover:bg-amber-200 focus-visible:ring-amber-500"
+                                ? "text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-800/50 focus-visible:ring-green-500"
+                                : "text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800/50 focus-visible:ring-amber-500"
                             }`}
                             title={
                               case_.is_public
@@ -428,7 +428,7 @@ export default function Consultations() {
                             handleDeleteClick(e, case_.id, case_.title)
                           }
                           disabled={actionLoading === case_.id}
-                          className="px-3 py-1.5 text-xs font-medium text-gray-500 bg-white border border-gray-200 hover:text-red-600 hover:bg-red-50 hover:border-red-200 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
+                          className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-200 dark:hover:border-red-800 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800"
                           title="Delete consultation"
                         >
                           <svg
@@ -461,18 +461,18 @@ export default function Consultations() {
                     className="w-full group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-300/50 to-amber-300/70" />
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-300/50 dark:via-gray-600 to-amber-300/70 dark:to-gray-500" />
                       <div
                         className={`flex flex-col items-center transition-all duration-300 ${loadingMore ? "scale-95 opacity-70" : "group-hover:scale-105"}`}
                       >
                         {loadingMore ? (
-                          <SpinnerIcon className="w-6 h-6 text-amber-500 mb-1.5" />
+                          <SpinnerIcon className="w-6 h-6 text-amber-500 dark:text-amber-400 mb-1.5" />
                         ) : (
-                          <span className="text-amber-400/70 text-xl mb-1">
+                          <span className="text-amber-400/70 dark:text-amber-500/70 text-xl mb-1">
                             ॰
                           </span>
                         )}
-                        <span className="flex items-center gap-1.5 text-base font-medium text-amber-700/80 group-hover:text-amber-800 transition-colors">
+                        <span className="flex items-center gap-1.5 text-base font-medium text-amber-700/80 dark:text-amber-400/80 group-hover:text-amber-800 dark:group-hover:text-amber-300 transition-colors">
                           {loadingMore ? (
                             "Loading"
                           ) : (
@@ -483,20 +483,20 @@ export default function Consultations() {
                           )}
                         </span>
                       </div>
-                      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-300/50 to-amber-300/70" />
+                      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-300/50 dark:via-gray-600 to-amber-300/70 dark:to-gray-500" />
                     </div>
                   </button>
                 ) : (
                   cases.length > 0 && (
                     <div className="flex items-center gap-4">
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/40 to-amber-200/60" />
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/40 dark:via-gray-700 to-amber-200/60 dark:to-gray-600" />
                       <div className="flex flex-col items-center">
-                        <span className="text-amber-300/60 text-xl">ॐ</span>
-                        <span className="text-xs text-amber-600/40 mt-1">
+                        <span className="text-amber-300/60 dark:text-amber-500/50 text-xl">ॐ</span>
+                        <span className="text-xs text-amber-600/70 dark:text-gray-400 mt-1">
                           {cases.length} consultations shown
                         </span>
                       </div>
-                      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-200/40 to-amber-200/60" />
+                      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-200/40 dark:via-gray-700 to-amber-200/60 dark:to-gray-600" />
                     </div>
                   )
                 )}

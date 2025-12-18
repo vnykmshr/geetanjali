@@ -551,10 +551,10 @@ ${messages
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 flex flex-col">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-gray-600">Loading consultation...</div>
+          <div className="text-gray-600 dark:text-gray-400">Loading consultation...</div>
         </div>
       </div>
     );
@@ -562,7 +562,7 @@ ${messages
 
   if (!caseData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 flex flex-col">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <ContentNotFound variant="case" isAuthenticated={isAuthenticated} />
@@ -572,7 +572,7 @@ ${messages
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 flex flex-col overflow-x-hidden">
       <Navbar />
 
       <CaseHeader
@@ -595,8 +595,8 @@ ${messages
             <div
               className={`mb-6 rounded-xl px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 duration-300 ${
                 isPolicyViolation
-                  ? "bg-amber-50 border border-amber-200"
-                  : "bg-green-50 border border-green-200"
+                  ? "bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800"
+                  : "bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800"
               }`}
             >
               <div className="flex items-center gap-3">
@@ -639,8 +639,8 @@ ${messages
                   <p
                     className={
                       isPolicyViolation
-                        ? "text-amber-800 font-medium"
-                        : "text-green-800 font-medium"
+                        ? "text-amber-800 dark:text-amber-300 font-medium"
+                        : "text-green-800 dark:text-green-300 font-medium"
                     }
                   >
                     {isPolicyViolation
@@ -650,8 +650,8 @@ ${messages
                   <p
                     className={
                       isPolicyViolation
-                        ? "text-amber-600 text-sm"
-                        : "text-green-600 text-sm"
+                        ? "text-amber-600 dark:text-amber-400 text-sm"
+                        : "text-green-600 dark:text-green-400 text-sm"
                     }
                   >
                     {isPolicyViolation
@@ -662,10 +662,10 @@ ${messages
               </div>
               <button
                 onClick={() => setShowCompletionBanner(false)}
-                className={`rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                className={`rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 ${
                   isPolicyViolation
-                    ? "text-amber-500 hover:text-amber-700 focus-visible:ring-amber-500"
-                    : "text-green-500 hover:text-green-700 focus-visible:ring-green-500"
+                    ? "text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 focus-visible:ring-amber-500"
+                    : "text-green-500 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 focus-visible:ring-green-500"
                 }`}
               >
                 <svg
@@ -687,18 +687,18 @@ ${messages
 
           {/* Error Alert */}
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+            <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl">
               <strong>Error:</strong> {error}
             </div>
           )}
 
           {/* Signup reminder */}
           {showSignupPrompt && !isAuthenticated && (
-            <div className="mb-6 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between">
-              <p className="text-sm text-gray-600">
+            <div className="mb-6 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 flex items-center justify-between">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 <Link
                   to="/signup"
-                  className="text-orange-600 hover:text-orange-700 font-medium"
+                  className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium"
                 >
                   Sign up
                 </Link>{" "}
@@ -706,7 +706,7 @@ ${messages
               </p>
               <button
                 onClick={() => setShowSignupPrompt(false)}
-                className="text-gray-400 hover:text-gray-600 ml-4 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 ml-4 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
               >
                 <svg
                   className="w-4 h-4"
@@ -730,7 +730,7 @@ ${messages
           {messages.length > 0 && (
             <div className="relative">
               {/* Vertical Line */}
-              <div className="absolute left-2.5 sm:left-3 top-6 bottom-0 w-0.5 bg-gradient-to-b from-amber-300 via-orange-300 to-red-300" />
+              <div className="absolute left-2.5 sm:left-3 top-6 bottom-0 w-0.5 bg-gradient-to-b from-amber-300 via-orange-300 to-red-300 dark:from-amber-600 dark:via-orange-600 dark:to-red-600" />
 
               {/* Exchanges */}
               {exchanges.map((exchange, exchangeIdx) => {
@@ -750,7 +750,7 @@ ${messages
                         className={`absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ${
                           isFirst
                             ? "bg-amber-500 text-white"
-                            : "bg-blue-100 border-2 border-blue-400"
+                            : "bg-blue-100 dark:bg-blue-900/40 border-2 border-blue-400 dark:border-blue-600"
                         }`}
                       >
                         {isFirst ? (
@@ -768,12 +768,12 @@ ${messages
                             />
                           </svg>
                         ) : (
-                          <span className="text-xs text-blue-700">+</span>
+                          <span className="text-xs text-blue-700 dark:text-blue-400">+</span>
                         )}
                       </div>
                       <div
                         className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
-                          isFirst ? "text-amber-700" : "text-blue-600"
+                          isFirst ? "text-amber-700 dark:text-amber-400" : "text-blue-600 dark:text-blue-400"
                         }`}
                       >
                         {isFirst ? "Your Question" : "Follow-up"}
@@ -781,12 +781,12 @@ ${messages
                       <div
                         className={`rounded-xl p-3 sm:p-4 ${
                           isFirst
-                            ? "bg-white shadow-lg border-2 border-amber-200"
-                            : "bg-blue-50 border border-blue-100"
+                            ? "bg-white dark:bg-gray-800 shadow-lg border-2 border-amber-200 dark:border-amber-700"
+                            : "bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800"
                         }`}
                       >
                         <p
-                          className={`leading-relaxed whitespace-pre-wrap ${isFirst ? "text-gray-900 text-sm sm:text-base" : "text-gray-700 text-sm"}`}
+                          className={`leading-relaxed whitespace-pre-wrap ${isFirst ? "text-gray-900 dark:text-gray-100 text-sm sm:text-base" : "text-gray-700 dark:text-gray-300 text-sm"}`}
                         >
                           {exchange.user.content}
                         </p>
@@ -797,7 +797,7 @@ ${messages
                             (caseData.role && caseData.role !== "Individual")) && (
                             <div className="mt-3 flex flex-wrap gap-2">
                               {caseData.role && caseData.role !== "Individual" && (
-                                <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium">
+                                <span className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 px-2 py-1 rounded-full font-medium">
                                   {caseData.role}
                                 </span>
                               )}
@@ -806,7 +806,7 @@ ${messages
                                 .map((s, i) => (
                                   <span
                                     key={i}
-                                    className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
+                                    className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded-full"
                                   >
                                     {s}
                                   </span>
@@ -822,11 +822,11 @@ ${messages
                         {/* Draft state */}
                         {isDraft && (
                           <>
-                            <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center">
+                            <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 border-2 border-amber-300 dark:border-amber-700 flex items-center justify-center">
                               <span className="text-xs">📝</span>
                             </div>
-                            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                              <p className="text-sm text-amber-800 mb-3">
+                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
+                              <p className="text-sm text-amber-800 dark:text-amber-300 mb-3">
                                 <span className="font-medium">Draft</span> — Your question is saved. Click below to receive wisdom from the Bhagavad Geeta.
                               </p>
                               <button
@@ -847,11 +847,11 @@ ${messages
                         {/* Failed state */}
                         {isFailed && (
                           <>
-                            <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-red-100 border-2 border-red-300 flex items-center justify-center">
+                            <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-red-100 dark:bg-red-900/40 border-2 border-red-300 dark:border-red-700 flex items-center justify-center">
                               <span className="text-xs">⚠️</span>
                             </div>
-                            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                              <p className="text-sm text-red-800 mb-3">
+                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3">
+                              <p className="text-sm text-red-800 dark:text-red-300 mb-3">
                                 <span className="font-medium">Unable to Complete</span> — We encountered an issue while preparing your guidance. Please try again.
                               </p>
                               <button
@@ -873,7 +873,7 @@ ${messages
                         className={`absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ${
                           isFirst
                             ? "bg-orange-500 text-white"
-                            : "bg-orange-100 border-2 border-orange-300"
+                            : "bg-orange-100 dark:bg-orange-900/40 border-2 border-orange-300 dark:border-orange-700"
                         }`}
                       >
                         {isFirst ? (
@@ -891,12 +891,12 @@ ${messages
                             />
                           </svg>
                         ) : (
-                          <span className="text-xs text-orange-600">~</span>
+                          <span className="text-xs text-orange-600 dark:text-orange-400">~</span>
                         )}
                       </div>
                       <div
                         className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
-                          isFirst ? "text-orange-700" : "text-orange-600"
+                          isFirst ? "text-orange-700 dark:text-orange-400" : "text-orange-600 dark:text-orange-400"
                         }`}
                       >
                         {isFirst ? "Wisdom from the Geeta" : "Guidance"}
@@ -905,20 +905,20 @@ ${messages
                       <div
                         className={`rounded-xl p-3 sm:p-4 border ${
                           isFirst
-                            ? "bg-white shadow-lg border-orange-200"
-                            : "bg-white shadow-md border-orange-100"
+                            ? "bg-white dark:bg-gray-800 shadow-lg border-orange-200 dark:border-orange-800"
+                            : "bg-white dark:bg-gray-800 shadow-md border-orange-100 dark:border-orange-900"
                         }`}
                       >
                         <GuidanceMarkdown
                           content={exchange.assistant.content}
                           sources={exchange.output?.result_json.sources}
-                          className={`leading-relaxed prose max-w-none ${isFirst ? "text-gray-900" : "text-gray-800"} prose-p:my-2 prose-ul:my-2 prose-li:my-0.5`}
+                          className={`leading-relaxed prose dark:prose-invert max-w-none ${isFirst ? "text-gray-900 dark:text-gray-100" : "text-gray-800 dark:text-gray-200"} prose-p:my-2 prose-ul:my-2 prose-li:my-0.5`}
                         />
 
                         {/* Scholar flag with refine option */}
                         {exchange.output?.scholar_flag && (
-                          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                            <div className="flex items-center gap-2 text-amber-800 text-sm font-medium">
+                          <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 text-sm font-medium">
                               <span>⚠️</span>
                               <span>This guidance has lower confidence</span>
                             </div>
@@ -929,7 +929,7 @@ ${messages
                                     "Can you provide more detail or clarify the recommended approach?",
                                   )
                                 }
-                                className="mt-2 text-sm text-amber-700 hover:text-amber-900 hover:underline flex items-center gap-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+                                className="mt-2 text-sm text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 hover:underline flex items-center gap-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
                               >
                                 <svg
                                   className="w-3.5 h-3.5"
@@ -959,7 +959,7 @@ ${messages
                                   exchange.output &&
                                   toggleSources(exchange.output.id)
                                 }
-                                className="text-xs font-medium text-orange-600 hover:text-orange-700 flex items-center gap-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+                                className="text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 flex items-center gap-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
                               >
                                 <svg
                                   className={`w-3 h-3 transition-transform ${isSourcesExpanded ? "rotate-90" : ""}`}
@@ -987,12 +987,12 @@ ${messages
                                     (source) => (
                                       <div
                                         key={source.canonical_id}
-                                        className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg p-3 border border-orange-100"
+                                        className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-lg p-3 border border-orange-100 dark:border-orange-800"
                                       >
                                         <div className="flex items-center justify-between">
                                           <Link
                                             to={`/verses/${source.canonical_id}`}
-                                            className="font-mono text-orange-700 font-semibold text-sm hover:underline"
+                                            className="font-mono text-orange-700 dark:text-orange-400 font-semibold text-sm hover:underline"
                                           >
                                             {source.canonical_id.replace(
                                               /_/g,
@@ -1000,7 +1000,7 @@ ${messages
                                             )}
                                           </Link>
                                         </div>
-                                        <p className="mt-1.5 text-gray-700 italic text-sm">
+                                        <p className="mt-1.5 text-gray-700 dark:text-gray-300 italic text-sm">
                                           "{source.paraphrase}"
                                         </p>
                                       </div>
@@ -1055,9 +1055,9 @@ ${messages
                   ref={followUpInputRef}
                   className="relative pl-8 sm:pl-10 pt-2 pb-4"
                 >
-                  <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-100 border-2 border-gray-300 flex items-center justify-center">
+                  <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center">
                     <svg
-                      className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-500"
+                      className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-500 dark:text-gray-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -1093,12 +1093,12 @@ ${messages
                 (firstOutput.result_json.recommended_action.steps?.length ??
                   0) > 0) ||
               firstOutput.result_json.reflection_prompts?.length > 0) && (
-              <div className="mt-8 pt-6 border-t border-orange-200/50">
+              <div className="mt-8 pt-6 border-t border-orange-200/50 dark:border-orange-800/50">
                 {/* Section Header */}
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 flex items-center justify-center">
                     <svg
-                      className="w-4 h-4 text-orange-600"
+                      className="w-4 h-4 text-orange-600 dark:text-orange-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -1112,10 +1112,10 @@ ${messages
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold text-gray-900">
+                    <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Guidance Summary
                     </h2>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Key insights from your consultation
                     </p>
                   </div>

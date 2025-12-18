@@ -98,7 +98,7 @@ export default function About() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
@@ -112,10 +112,10 @@ export default function About() {
               className="h-14 w-14 sm:h-16 sm:w-16 lg:h-20 lg:w-20"
             />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-heading text-gray-900 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold font-heading text-gray-900 dark:text-gray-100 mb-2">
             About Geetanjali
           </h1>
-          <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             Ancient wisdom for modern decisions. Navigate life's complex choices
             with timeless principles from the Bhagavad Geeta.
           </p>
@@ -143,7 +143,7 @@ export default function About() {
             </Link>
             <Link
               to="/verses"
-              className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 font-medium px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl transition-all border border-gray-300 hover:border-gray-400 text-base sm:text-lg"
+              className="inline-flex items-center gap-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium px-6 py-3 sm:px-8 sm:py-3.5 rounded-xl transition-all border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-base sm:text-lg"
             >
               <span>Explore Verses</span>
             </Link>
@@ -151,11 +151,11 @@ export default function About() {
         </div>
 
         {/* What is Geetanjali */}
-        <section className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold font-heading text-gray-900 mb-3 sm:mb-4">
+        <section className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold font-heading text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
             What is Geetanjali?
           </h2>
-          <div className="prose prose-orange max-w-none text-gray-600">
+          <div className="prose prose-orange max-w-none text-gray-600 dark:text-gray-300">
             <p className="mb-4">
               Geetanjali is a thoughtful companion for ethical decision-making.
               When you face difficult choices—whether in your career,
@@ -177,43 +177,43 @@ export default function About() {
         </section>
 
         {/* How It Works */}
-        <section className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold font-heading text-gray-900 mb-4 sm:mb-6">
+        <section className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold font-heading text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">
             How It Works
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div className="text-center">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-orange-600">1</span>
+              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">1</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Share Your Dilemma
               </h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Describe the decision you're facing, your role, and the people
                 involved.
               </p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-orange-600">2</span>
+              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">2</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Explore Perspectives
               </h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Receive multiple viewpoints, each grounded in verses from the
                 Geeta.
               </p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-orange-600">3</span>
+              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">3</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Decide Thoughtfully
               </h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Use the insights to make a decision that aligns with your
                 values.
               </p>
@@ -221,10 +221,10 @@ export default function About() {
           </div>
 
           {/* CTA after How It Works */}
-          <div className="text-center mt-6 pt-6 border-t border-gray-100">
+          <div className="text-center mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
             <Link
               to="/cases/new"
-              className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-semibold"
+              className="inline-flex items-center gap-2 text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-semibold"
             >
               Try it now — it's free
               <svg
@@ -245,11 +245,11 @@ export default function About() {
         </section>
 
         {/* Why the Bhagavad Geeta */}
-        <section className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold font-heading text-gray-900 mb-3 sm:mb-4">
+        <section className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold font-heading text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
             Why the Bhagavad Geeta?
           </h2>
-          <div className="prose prose-orange max-w-none text-gray-600">
+          <div className="prose prose-orange max-w-none text-gray-600 dark:text-gray-300">
             <p className="mb-4">
               The Bhagavad Geeta is a 700-verse conversation about life's
               biggest questions: How do we act when the right path isn't clear?
@@ -271,12 +271,12 @@ export default function About() {
         </section>
 
         {/* Privacy Note */}
-        <section className="bg-orange-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 lg:mb-8 border border-orange-100">
+        <section className="bg-orange-50 dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 lg:mb-8 border border-orange-100 dark:border-gray-700">
           <div className="flex items-start gap-4">
             <div className="text-2xl">🔒</div>
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Your Privacy</h3>
-              <p className="text-gray-600 text-sm">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Your Privacy</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Your consultations are stored to help you revisit insights
                 anytime. We don't sell or share your data. Your journey of
                 reflection stays yours.
@@ -287,10 +287,10 @@ export default function About() {
 
         {/* Open Source & Support */}
         <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6 lg:mb-8">
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
             <div className="flex items-center gap-3 mb-4">
               <svg
-                className="w-8 h-8 text-gray-900"
+                className="w-8 h-8 text-gray-900 dark:text-gray-100"
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
@@ -300,9 +300,9 @@ export default function About() {
                   clipRule="evenodd"
                 />
               </svg>
-              <h3 className="text-xl font-bold text-gray-900">Open Source</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Open Source</h3>
             </div>
-            <p className="text-gray-600 text-sm mb-4">
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
               Geetanjali is open source. Explore the code, suggest improvements,
               or contribute to the project.
             </p>
@@ -310,7 +310,7 @@ export default function About() {
               href="https://github.com/geetanjaliapp/geetanjali"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium"
+              className="inline-flex items-center gap-2 text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium"
             >
               View on GitHub
               <svg
@@ -329,14 +329,14 @@ export default function About() {
             </a>
           </div>
 
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-2xl sm:text-3xl">💝</span>
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
                 Support the Project
               </h3>
             </div>
-            <p className="text-gray-600 text-sm mb-4">
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
               Geetanjali is free to use. If you find it valuable, consider
               supporting its development to help cover hosting and API costs.
             </p>
@@ -344,7 +344,7 @@ export default function About() {
               href="https://ko-fi.com/vnykmshr"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-pink-50 text-pink-600 hover:bg-pink-100 px-4 py-2 rounded-lg font-medium transition-colors"
+              className="inline-flex items-center gap-2 bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-pink-900/50 px-4 py-2 rounded-lg font-medium transition-colors"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -357,27 +357,27 @@ export default function About() {
         {/* Contact Form */}
         <section
           id="contact"
-          className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8"
+          className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8"
         >
-          <h2 className="text-xl sm:text-2xl font-bold font-heading text-gray-900 mb-2">
+          <h2 className="text-xl sm:text-2xl font-bold font-heading text-gray-900 dark:text-gray-100 mb-2">
             Get in Touch
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             Have feedback, questions, or ideas? We'd love to hear from you.
           </p>
 
           {submitStatus === "success" ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 text-center">
               <div className="text-4xl mb-3">✓</div>
-              <h3 className="text-lg font-semibold text-green-800 mb-2">
+              <h3 className="text-lg font-semibold text-green-800 dark:text-green-400 mb-2">
                 Message Sent!
               </h3>
-              <p className="text-green-700">
+              <p className="text-green-700 dark:text-green-300">
                 Thank you for reaching out. We'll get back to you soon.
               </p>
               <button
                 onClick={() => setSubmitStatus("idle")}
-                className="mt-4 text-green-600 hover:text-green-700 font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 rounded"
+                className="mt-4 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 rounded"
               >
                 Send another message
               </button>
@@ -388,7 +388,7 @@ export default function About() {
                 <div>
                   <label
                     htmlFor="name"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
                     Name
                   </label>
@@ -400,14 +400,14 @@ export default function About() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-base sm:text-sm"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-amber-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-base sm:text-sm"
                     placeholder="Your name"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
                     Email
                   </label>
@@ -419,7 +419,7 @@ export default function About() {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-base sm:text-sm"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-amber-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-base sm:text-sm"
                     placeholder="you@example.com"
                   />
                 </div>
@@ -429,7 +429,7 @@ export default function About() {
                 <div>
                   <label
                     htmlFor="message_type"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
                     What's this about?
                   </label>
@@ -442,7 +442,7 @@ export default function About() {
                         message_type: e.target.value as ContactType,
                       })
                     }
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-base sm:text-sm"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-amber-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-base sm:text-sm"
                   >
                     <option value="feedback">General Feedback</option>
                     <option value="question">Question</option>
@@ -454,9 +454,9 @@ export default function About() {
                 <div>
                   <label
                     htmlFor="subject"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
-                    Subject <span className="text-gray-400">(optional)</span>
+                    Subject <span className="text-gray-400 dark:text-gray-500">(optional)</span>
                   </label>
                   <input
                     type="text"
@@ -465,7 +465,7 @@ export default function About() {
                     onChange={(e) =>
                       setFormData({ ...formData, subject: e.target.value })
                     }
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-base sm:text-sm"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-amber-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-base sm:text-sm"
                     placeholder="Brief subject"
                   />
                 </div>
@@ -474,7 +474,7 @@ export default function About() {
               <div>
                 <label
                   htmlFor="message"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   Message
                 </label>
@@ -486,13 +486,13 @@ export default function About() {
                   onChange={(e) =>
                     setFormData({ ...formData, message: e.target.value })
                   }
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none text-base sm:text-sm"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-2 border border-amber-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none text-base sm:text-sm"
                   placeholder="Share your thoughts..."
                 />
               </div>
 
               {submitStatus === "error" && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400 text-sm">
                   {errorMessage}
                 </div>
               )}
@@ -509,11 +509,11 @@ export default function About() {
         </section>
 
         {/* Final CTA Section */}
-        <section className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl sm:rounded-2xl p-6 sm:p-8 mb-6 sm:mb-8 text-center border border-amber-200">
-          <h2 className="text-xl sm:text-2xl font-bold font-heading text-gray-900 mb-2">
+        <section className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-800 dark:to-gray-800 rounded-xl sm:rounded-2xl p-6 sm:p-8 mb-6 sm:mb-8 text-center border border-amber-200 dark:border-gray-700">
+          <h2 className="text-xl sm:text-2xl font-bold font-heading text-gray-900 dark:text-gray-100 mb-2">
             Ready to Explore?
           </h2>
-          <p className="text-gray-600 mb-6 max-w-lg mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-lg mx-auto">
             Whether you're facing a difficult decision or simply curious about
             ancient wisdom, we're here to help.
           </p>
@@ -539,7 +539,7 @@ export default function About() {
             </Link>
             <Link
               to="/verses"
-              className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium"
+              className="inline-flex items-center gap-2 text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium"
             >
               <span>Browse All Verses</span>
               <svg
@@ -560,7 +560,7 @@ export default function About() {
         </section>
 
         {/* Credits */}
-        <section className="text-center text-gray-500 text-sm">
+        <section className="text-center text-gray-500 dark:text-gray-500 text-sm">
           <p className="mb-2">
             Dedicated to making ancient wisdom accessible to modern seekers.
           </p>
@@ -568,7 +568,7 @@ export default function About() {
             Verse translations sourced from public domain texts. See our{" "}
             <a
               href="https://github.com/geetanjaliapp/geetanjali"
-              className="text-orange-600 hover:text-orange-700"
+              className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300"
             >
               GitHub repository
             </a>{" "}

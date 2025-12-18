@@ -190,16 +190,16 @@ export default function NewCase() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 flex flex-col">
       <Navbar />
       <div className="flex-1 py-6 sm:py-8">
         <div className="max-w-3xl mx-auto px-4">
           {/* Header */}
           <div className="mb-6 sm:mb-8 text-center">
-            <h1 className="text-2xl sm:text-3xl font-bold font-heading text-gray-900 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold font-heading text-gray-900 dark:text-gray-100 mb-2">
               Seek Guidance
             </h1>
-            <p className="text-base sm:text-lg text-gray-600 mb-4">
+            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 mb-4">
               Describe your situation and receive wisdom from the Bhagavad Geeta
             </p>
             <InspirationVerse />
@@ -207,7 +207,7 @@ export default function NewCase() {
 
           {/* Error Alert */}
           {error && (
-            <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm">
+            <div className="mb-4 sm:mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm">
               <strong>Error:</strong> {error}
             </div>
           )}
@@ -215,13 +215,13 @@ export default function NewCase() {
           {/* Main Form */}
           <form
             onSubmit={handleSubmit}
-            className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6"
+            className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6"
           >
             {/* Main Question */}
             <div>
               <label
                 htmlFor="question"
-                className="block text-base sm:text-lg font-medium text-gray-900 mb-2 sm:mb-3"
+                className="block text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mb-2 sm:mb-3"
               >
                 What dilemma are you facing?
               </label>
@@ -231,15 +231,15 @@ export default function NewCase() {
                 value={formData.question}
                 onChange={handleChange}
                 rows={4}
-                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-lg border rounded-lg sm:rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                  errors.question ? "border-red-500" : "border-gray-300"
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-lg border rounded-lg sm:rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 ${
+                  errors.question ? "border-red-500 dark:border-red-600" : "border-gray-300 dark:border-gray-600"
                 }`}
                 placeholder="e.g., I'm torn between pursuing a promotion that requires relocating, or staying in my current role to care for aging parents..."
                 autoFocus
               />
               <div className="flex justify-between items-center mt-1.5 sm:mt-2">
                 {errors.question ? (
-                  <p className="text-xs sm:text-sm text-red-600">
+                  <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">
                     {errors.question}
                   </p>
                 ) : (
@@ -248,8 +248,8 @@ export default function NewCase() {
                 <span
                   className={`text-xs ${
                     formData.question.length < 10
-                      ? "text-gray-400"
-                      : "text-green-600"
+                      ? "text-gray-400 dark:text-gray-500"
+                      : "text-green-600 dark:text-green-500"
                   }`}
                 >
                   {formData.question.length < 10
@@ -278,10 +278,10 @@ export default function NewCase() {
             <div>
               <label
                 htmlFor="context"
-                className="block text-sm font-medium text-gray-700 mb-1.5"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
               >
                 Background & constraints{" "}
-                <span className="text-gray-400 font-normal">(optional)</span>
+                <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span>
               </label>
               <textarea
                 id="context"
@@ -289,17 +289,17 @@ export default function NewCase() {
                 value={formData.context}
                 onChange={handleChange}
                 rows={2}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm border border-amber-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-amber-50/50"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm border border-amber-200 dark:border-gray-600 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-amber-50/50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                 placeholder="What makes this difficult? Competing values, fears, past experiences..."
               />
             </div>
 
             {/* Context Options Toggle */}
-            <div className="border-t pt-3 sm:pt-4">
+            <div className="border-t dark:border-gray-700 pt-3 sm:pt-4">
               <button
                 type="button"
                 onClick={handlePersonalizationToggle}
-                className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 rounded"
+                className="text-sm text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 rounded"
               >
                 <span>{showAdvanced ? "−" : "+"}</span>
                 <span>Personalize your guidance</span>
@@ -311,7 +311,7 @@ export default function NewCase() {
               <div className="space-y-4 pb-2 sm:pb-4">
                 {/* Role */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     I'm asking as a...
                   </label>
                   <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -322,10 +322,10 @@ export default function NewCase() {
                         onClick={() =>
                           toggleSelection(opt.value, setSelectedRoles)
                         }
-                        className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-1 ${
+                        className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800 ${
                           selectedRoles.has(opt.value)
-                            ? "bg-orange-100 border-orange-300 text-orange-700"
-                            : "bg-amber-50/50 border-amber-200 text-gray-600 hover:bg-amber-100"
+                            ? "bg-orange-100 dark:bg-orange-900/40 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400"
+                            : "bg-amber-50/50 dark:bg-gray-700 border-amber-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-amber-100 dark:hover:bg-gray-600"
                         }`}
                       >
                         {selectedRoles.has(opt.value) && (
@@ -339,7 +339,7 @@ export default function NewCase() {
 
                 {/* Stakeholders */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     This decision affects...
                   </label>
                   <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -350,10 +350,10 @@ export default function NewCase() {
                         onClick={() =>
                           toggleSelection(opt.value, setSelectedStakeholders)
                         }
-                        className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-1 ${
+                        className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800 ${
                           selectedStakeholders.has(opt.value)
-                            ? "bg-orange-100 border-orange-300 text-orange-700"
-                            : "bg-amber-50/50 border-amber-200 text-gray-600 hover:bg-amber-100"
+                            ? "bg-orange-100 dark:bg-orange-900/40 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400"
+                            : "bg-amber-50/50 dark:bg-gray-700 border-amber-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-amber-100 dark:hover:bg-gray-600"
                         }`}
                       >
                         {selectedStakeholders.has(opt.value) && (
@@ -372,7 +372,7 @@ export default function NewCase() {
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="px-4 sm:px-6 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium text-center text-sm sm:text-base inline-flex items-center justify-center gap-1"
+                className="px-4 sm:px-6 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium text-center text-sm sm:text-base inline-flex items-center justify-center gap-1"
               >
                 <span className="hidden sm:inline">←</span>
                 <span>Back</span>
@@ -380,7 +380,7 @@ export default function NewCase() {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 sm:px-8 py-2.5 sm:py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium shadow-lg hover:shadow-xl text-sm sm:text-base"
+                className="px-6 sm:px-8 py-2.5 sm:py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors font-medium shadow-lg hover:shadow-xl text-sm sm:text-base"
               >
                 {loading ? "Getting guidance..." : "Get Guidance"}
               </button>
@@ -388,10 +388,10 @@ export default function NewCase() {
           </form>
 
           {/* Helper Text */}
-          <p className="text-center text-xs sm:text-sm text-gray-500 mt-4 sm:mt-6">
+          <p className="text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-4 sm:mt-6">
             Your question will be analyzed using wisdom from the Bhagavad Geeta.
             <br className="hidden sm:inline" />
-            <span className="text-gray-400">
+            <span className="text-gray-400 dark:text-gray-500">
               {" "}
               You'll receive guidance in under a minute.
             </span>

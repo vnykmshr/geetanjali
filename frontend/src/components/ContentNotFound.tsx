@@ -11,7 +11,7 @@ const CONTENT = {
   verse: {
     icon: (
       <svg
-        className="w-8 h-8 text-amber-600"
+        className="w-8 h-8 text-amber-600 dark:text-amber-400"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -32,7 +32,7 @@ const CONTENT = {
   case: {
     icon: (
       <svg
-        className="w-8 h-8 text-gray-500"
+        className="w-8 h-8 text-gray-500 dark:text-gray-400"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -54,7 +54,7 @@ const CONTENT = {
   shared: {
     icon: (
       <svg
-        className="w-8 h-8 text-orange-500"
+        className="w-8 h-8 text-orange-500 dark:text-orange-400"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -96,21 +96,21 @@ export function ContentNotFound({
   return (
     <div className="text-center max-w-md mx-auto px-4">
       {/* Icon */}
-      <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center">
+      <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-50 to-orange-100 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
         {content.icon}
       </div>
 
       {/* Title */}
-      <h1 className="text-xl font-semibold text-gray-900 mb-3">
+      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
         {content.title}
       </h1>
 
       {/* Message */}
-      <p className="text-gray-600 mb-2">{content.message}</p>
+      <p className="text-gray-600 dark:text-gray-400 mb-2">{content.message}</p>
 
       {/* Subtext (for shared variant) */}
       {"subtext" in content && content.subtext && (
-        <p className="text-sm text-gray-500 mb-6">{content.subtext}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">{content.subtext}</p>
       )}
 
       {!("subtext" in content) && <div className="mb-6" />}
@@ -127,7 +127,7 @@ export function ContentNotFound({
       <div className="mt-4">
         <Link
           to={secondaryCta.to}
-          className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+          className="text-sm text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium"
         >
           {secondaryCta.label}
         </Link>
@@ -135,9 +135,9 @@ export function ContentNotFound({
 
       {/* Auth hint for case variant */}
       {variant === "case" && !isAuthenticated && "authHint" in content && (
-        <p className="mt-6 text-xs text-gray-500">
+        <p className="mt-6 text-xs text-gray-500 dark:text-gray-500">
           Have an account?{" "}
-          <Link to="/login" className="text-orange-600 hover:text-orange-700">
+          <Link to="/login" className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300">
             Log in
           </Link>{" "}
           to access your consultations.

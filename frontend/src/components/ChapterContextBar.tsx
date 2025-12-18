@@ -35,9 +35,9 @@ export function ChapterContextBar({ chapter, verse }: ChapterContextBarProps) {
         {/* Back button */}
         <button
           onClick={handleBack}
-          className="flex-shrink-0 text-amber-700 hover:text-amber-800 font-medium text-sm
+          className="flex-shrink-0 text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium text-sm
                      focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500
-                     focus-visible:ring-offset-2 rounded transition-colors"
+                     focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 rounded transition-colors"
           aria-label="Go back to previous page"
         >
           <span className="flex items-center gap-1">
@@ -49,11 +49,11 @@ export function ChapterContextBar({ chapter, verse }: ChapterContextBarProps) {
         {/* Chapter name - centered */}
         <div className="flex-1 min-w-0 text-center">
           {/* Desktop: Full chapter name */}
-          <h1 className="hidden sm:block text-base lg:text-lg font-semibold text-amber-900 truncate">
+          <h1 className="hidden sm:block text-base lg:text-lg font-semibold text-amber-900 dark:text-amber-200 truncate">
             Chapter {chapter}: {chapterInfo?.name ?? "Unknown"}
           </h1>
           {/* Mobile: Abbreviated */}
-          <h1 className="sm:hidden text-sm font-semibold text-amber-900 truncate">
+          <h1 className="sm:hidden text-sm font-semibold text-amber-900 dark:text-amber-200 truncate">
             Ch.{chapter} {chapterInfo?.shortName ?? ""}
           </h1>
         </div>
@@ -61,11 +61,11 @@ export function ChapterContextBar({ chapter, verse }: ChapterContextBarProps) {
         {/* Verse position */}
         <div className="flex-shrink-0 text-right">
           {/* Desktop: "Verse 47 of 72" */}
-          <span className="hidden sm:inline text-sm text-amber-700">
+          <span className="hidden sm:inline text-sm text-amber-700 dark:text-amber-400">
             Verse {progress.position} of {progress.total}
           </span>
           {/* Mobile: "47/72" */}
-          <span className="sm:hidden text-sm text-amber-700 font-medium">
+          <span className="sm:hidden text-sm text-amber-700 dark:text-amber-400 font-medium">
             {progress.position}/{progress.total}
           </span>
         </div>
