@@ -453,7 +453,14 @@ export default function Verses() {
       clearSearch();
     }
     setSelectedPrinciple(principle);
-    updateSearchParams(filterMode, principle);
+    // Reset filterMode to "featured" when selecting a topic (filters are independent)
+    // This ensures the "Filtering by:" banner doesn't show stale chapter info
+    if (principle) {
+      setFilterMode("featured");
+      updateSearchParams("featured", principle);
+    } else {
+      updateSearchParams(filterMode, principle);
+    }
   };
 
   // Share handler for verse cards
