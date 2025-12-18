@@ -8,7 +8,13 @@
  * Design: Follows warm amber design language, 44px touch targets.
  */
 
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+} from "react";
 import { Link } from "react-router-dom";
 import { formatVerseRef } from "../lib/verseLinker";
 import { getChapterShortName } from "../constants/chapters";
@@ -85,7 +91,9 @@ export function VersePopover({
 
     // Popover is approximately 150px tall
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPosition(spaceBelow < 180 && spaceAbove > spaceBelow ? "above" : "below");
+    setPosition(
+      spaceBelow < 180 && spaceAbove > spaceBelow ? "above" : "below",
+    );
   }, [isOpen]);
 
   const toggle = useCallback(() => {
@@ -147,8 +155,18 @@ export function VersePopover({
                          focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
               aria-label="Close"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -158,9 +176,18 @@ export function VersePopover({
             {loading ? (
               <div className="flex items-center justify-center py-2">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-orange-400 dark:bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-orange-400 dark:bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-orange-400 dark:bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div
+                    className="w-2 h-2 bg-orange-400 dark:bg-orange-500 rounded-full animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <div
+                    className="w-2 h-2 bg-orange-400 dark:bg-orange-500 rounded-full animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <div
+                    className="w-2 h-2 bg-orange-400 dark:bg-orange-500 rounded-full animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </div>
               </div>
             ) : paraphrase ? (
@@ -185,8 +212,18 @@ export function VersePopover({
               onClick={() => setIsOpen(false)}
             >
               View full verse
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </div>

@@ -62,7 +62,9 @@ export function ThinkingIndicator({
       {/* Thinking indicator */}
       <div className="relative pl-8 sm:pl-10 pb-4 sm:pb-6">
         <div className="absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center bg-orange-100 dark:bg-orange-900/40 border-2 border-orange-400 dark:border-orange-600 animate-pulse">
-          <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">~</span>
+          <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+            ~
+          </span>
         </div>
         <div className="text-xs font-semibold uppercase tracking-wide mb-2 text-orange-600 dark:text-orange-400">
           {copy.label}

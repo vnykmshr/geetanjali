@@ -41,7 +41,7 @@ interface GuidanceMarkdownProps {
  * Split text into segments of plain text and verse references
  */
 function splitTextWithVerseRefs(
-  text: string
+  text: string,
 ): Array<{ type: "text"; content: string } | { type: "verse"; ref: VerseRef }> {
   const refs = extractVerseRefs(text);
   if (refs.length === 0) {
@@ -97,9 +97,7 @@ function VerseRefWithPopover({
   // Find paraphrase in sources or fetched cache
   const paraphrase = useMemo(() => {
     // First check sources
-    const source = sources.find(
-      (s) => s.canonical_id === verseRef.canonicalId
-    );
+    const source = sources.find((s) => s.canonical_id === verseRef.canonicalId);
     if (source) return source.paraphrase;
 
     // Then check fetched cache
@@ -147,25 +145,28 @@ export function GuidanceMarkdown({
   >(new Map());
 
   // Fetch paraphrase from API
-  const fetchParaphrase = useCallback(async (canonicalId: string) => {
-    // Skip if already fetched
-    if (fetchedParaphrases.has(canonicalId)) return;
+  const fetchParaphrase = useCallback(
+    async (canonicalId: string) => {
+      // Skip if already fetched
+      if (fetchedParaphrases.has(canonicalId)) return;
 
-    try {
-      const verse = await versesApi.get(canonicalId);
-      if (verse?.paraphrase_en) {
-        const paraphraseText = verse.paraphrase_en;
-        setFetchedParaphrases((prev) => {
-          const next = new Map(prev);
-          next.set(canonicalId, paraphraseText);
-          return next;
-        });
+      try {
+        const verse = await versesApi.get(canonicalId);
+        if (verse?.paraphrase_en) {
+          const paraphraseText = verse.paraphrase_en;
+          setFetchedParaphrases((prev) => {
+            const next = new Map(prev);
+            next.set(canonicalId, paraphraseText);
+            return next;
+          });
+        }
+      } catch (error) {
+        // Silently fail - popover will show "not available"
+        console.warn(`Failed to fetch verse ${canonicalId}:`, error);
       }
-    } catch (error) {
-      // Silently fail - popover will show "not available"
-      console.warn(`Failed to fetch verse ${canonicalId}:`, error);
-    }
-  }, [fetchedParaphrases]);
+    },
+    [fetchedParaphrases],
+  );
 
   // Split content into segments
   const segments = useMemo(() => splitTextWithVerseRefs(content), [content]);

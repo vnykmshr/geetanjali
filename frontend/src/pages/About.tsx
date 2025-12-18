@@ -184,7 +184,9 @@ export default function About() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div className="text-center">
               <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">1</span>
+                <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  1
+                </span>
               </div>
               <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Share Your Dilemma
@@ -196,7 +198,9 @@ export default function About() {
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">2</span>
+                <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  2
+                </span>
               </div>
               <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Explore Perspectives
@@ -208,7 +212,9 @@ export default function About() {
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">3</span>
+                <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  3
+                </span>
               </div>
               <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Decide Thoughtfully
@@ -275,7 +281,9 @@ export default function About() {
           <div className="flex items-start gap-4">
             <div className="text-2xl">🔒</div>
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Your Privacy</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                Your Privacy
+              </h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Your consultations are stored to help you revisit insights
                 anytime. We don't sell or share your data. Your journey of
@@ -300,7 +308,9 @@ export default function About() {
                   clipRule="evenodd"
                 />
               </svg>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Open Source</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                Open Source
+              </h3>
             </div>
             <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
               Geetanjali is open source. Explore the code, suggest improvements,
@@ -456,7 +466,10 @@ export default function About() {
                     htmlFor="subject"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
-                    Subject <span className="text-gray-400 dark:text-gray-500">(optional)</span>
+                    Subject{" "}
+                    <span className="text-gray-400 dark:text-gray-500">
+                      (optional)
+                    </span>
                   </label>
                   <input
                     type="text"

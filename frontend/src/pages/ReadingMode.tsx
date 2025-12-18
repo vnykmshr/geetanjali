@@ -682,12 +682,16 @@ export default function ReadingMode() {
             <div className="text-4xl text-amber-300/60 dark:text-amber-500/40 mb-4 animate-pulse">
               ॐ
             </div>
-            <p className="text-amber-600/70 dark:text-amber-400/70">Loading chapter...</p>
+            <p className="text-amber-600/70 dark:text-amber-400/70">
+              Loading chapter...
+            </p>
           </div>
         ) : state.error ? (
           // Error state
           <div className="text-center max-w-md">
-            <div className="text-4xl text-red-300/60 dark:text-red-400/50 mb-4">⚠</div>
+            <div className="text-4xl text-red-300/60 dark:text-red-400/50 mb-4">
+              ⚠
+            </div>
             <p className="text-red-600 dark:text-red-400 mb-4">{state.error}</p>
             <button
               onClick={() => loadChapter(state.chapter)}
@@ -727,8 +731,12 @@ export default function ReadingMode() {
         ) : (
           // Fallback: No content available
           <div className="text-center">
-            <div className="text-4xl text-amber-300/60 dark:text-amber-500/40 mb-4">ॐ</div>
-            <p className="text-amber-600/70 dark:text-amber-400/70">Loading...</p>
+            <div className="text-4xl text-amber-300/60 dark:text-amber-500/40 mb-4">
+              ॐ
+            </div>
+            <p className="text-amber-600/70 dark:text-amber-400/70">
+              Loading...
+            </p>
           </div>
         )}
       </main>
@@ -849,7 +857,9 @@ export default function ReadingMode() {
               <div className="flex items-start gap-3">
                 <span className="text-xl">👈👉</span>
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">Swipe to navigate</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">
+                    Swipe to navigate
+                  </p>
                   <p className="text-gray-500 dark:text-gray-400">
                     Swipe left/right to move between verses
                   </p>

@@ -70,7 +70,9 @@ export function FollowUpInput({
             }
             rows={2}
             className={`flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border rounded-xl text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors resize-none bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 ${
-              disabled ? "border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/20" : "border-gray-200 dark:border-gray-700"
+              disabled
+                ? "border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/20"
+                : "border-gray-200 dark:border-gray-700"
             }`}
             disabled={isDisabled}
           />

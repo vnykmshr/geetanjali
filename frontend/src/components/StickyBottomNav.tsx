@@ -61,7 +61,10 @@ export function StickyBottomNav({
                        focus-visible:ring-amber-500"
             aria-label={`Previous verse: ${formatVerseRef(prevVerse)}`}
           >
-            <span aria-hidden="true" className="text-amber-700 dark:text-amber-400 text-lg">
+            <span
+              aria-hidden="true"
+              className="text-amber-700 dark:text-amber-400 text-lg"
+            >
               ←
             </span>
             <span className="text-amber-700 dark:text-amber-400 font-medium">
@@ -97,7 +100,10 @@ export function StickyBottomNav({
             <span className="text-amber-700 dark:text-amber-400 font-medium">
               {formatVerseRef(nextVerse)}
             </span>
-            <span aria-hidden="true" className="text-amber-700 dark:text-amber-400 text-lg">
+            <span
+              aria-hidden="true"
+              className="text-amber-700 dark:text-amber-400 text-lg"
+            >
               →
             </span>
           </Link>

@@ -34,7 +34,9 @@ const ReadingMode = lazy(() => import("./pages/ReadingMode"));
 function SearchRedirect() {
   const [searchParams] = useSearchParams();
   const queryString = searchParams.toString();
-  return <Navigate to={`/verses${queryString ? `?${queryString}` : ""}`} replace />;
+  return (
+    <Navigate to={`/verses${queryString ? `?${queryString}` : ""}`} replace />
+  );
 }
 
 // Loading fallback component
@@ -51,7 +53,9 @@ function PageLoader() {
           className="w-8 h-8 border-2 border-orange-600 dark:border-orange-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"
           aria-hidden="true"
         ></div>
-        <div className="text-gray-600 dark:text-gray-400 text-sm">Loading...</div>
+        <div className="text-gray-600 dark:text-gray-400 text-sm">
+          Loading...
+        </div>
       </div>
     </div>
   );

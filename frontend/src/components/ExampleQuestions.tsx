@@ -47,7 +47,9 @@ export function ExampleQuestions({ onSelect }: ExampleQuestionsProps) {
 
   return (
     <div className="mb-4">
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Need inspiration? Try one:</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+        Need inspiration? Try one:
+      </p>
       <div className="flex flex-wrap gap-2">
         {displayQuestions.map((question, idx) => (
           <button

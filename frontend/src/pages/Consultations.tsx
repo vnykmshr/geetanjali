@@ -191,7 +191,9 @@ export default function Consultations() {
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 flex flex-col">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-gray-600 dark:text-gray-400">Loading your consultations...</div>
+          <div className="text-gray-600 dark:text-gray-400">
+            Loading your consultations...
+          </div>
         </div>
       </div>
     );
@@ -233,7 +235,9 @@ export default function Consultations() {
           {/* Anonymous user notice */}
           {!isAuthenticated && cases.length > 0 && (
             <div className="mb-4 sm:mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
-              <span className="text-amber-600 dark:text-amber-400 text-base sm:text-lg">💡</span>
+              <span className="text-amber-600 dark:text-amber-400 text-base sm:text-lg">
+                💡
+              </span>
               <div>
                 <p className="text-amber-800 dark:text-amber-300 text-xs sm:text-sm">
                   These consultations are stored in your browser session.
@@ -491,7 +495,9 @@ export default function Consultations() {
                     <div className="flex items-center gap-4">
                       <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/40 dark:via-gray-700 to-amber-200/60 dark:to-gray-600" />
                       <div className="flex flex-col items-center">
-                        <span className="text-amber-300/60 dark:text-amber-500/50 text-xl">ॐ</span>
+                        <span className="text-amber-300/60 dark:text-amber-500/50 text-xl">
+                          ॐ
+                        </span>
                         <span className="text-xs text-amber-600/70 dark:text-gray-400 mt-1">
                           {cases.length} consultations shown
                         </span>

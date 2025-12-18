@@ -68,7 +68,9 @@ function saveFavorites(favorites: Set<string>): void {
  * ```
  */
 export function useFavorites(): UseFavoritesReturn {
-  const [favorites, setFavorites] = useState<Set<string>>(() => loadFavorites());
+  const [favorites, setFavorites] = useState<Set<string>>(() =>
+    loadFavorites(),
+  );
 
   // Sync with localStorage on changes from other tabs
   useEffect(() => {

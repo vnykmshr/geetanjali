@@ -232,7 +232,9 @@ export default function NewCase() {
                 onChange={handleChange}
                 rows={4}
                 className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-lg border rounded-lg sm:rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 ${
-                  errors.question ? "border-red-500 dark:border-red-600" : "border-gray-300 dark:border-gray-600"
+                  errors.question
+                    ? "border-red-500 dark:border-red-600"
+                    : "border-gray-300 dark:border-gray-600"
                 }`}
                 placeholder="e.g., I'm torn between pursuing a promotion that requires relocating, or staying in my current role to care for aging parents..."
                 autoFocus
@@ -281,7 +283,9 @@ export default function NewCase() {
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
               >
                 Background & constraints{" "}
-                <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span>
+                <span className="text-gray-400 dark:text-gray-500 font-normal">
+                  (optional)
+                </span>
               </label>
               <textarea
                 id="context"

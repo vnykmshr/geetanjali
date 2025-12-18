@@ -7,7 +7,12 @@ import { Footer } from "../components/Footer";
 import { VerseCard, VerseCardSkeleton } from "../components/VerseCard";
 import type { VerseMatch } from "../components/VerseCard";
 import { BackToTopButton } from "../components/BackToTopButton";
-import { CloseIcon, ChevronDownIcon, SpinnerIcon, HeartIcon } from "../components/icons";
+import {
+  CloseIcon,
+  ChevronDownIcon,
+  SpinnerIcon,
+  HeartIcon,
+} from "../components/icons";
 import { errorMessages } from "../lib/errorMessages";
 import { useSEO, useFavorites, useShare, useSearch } from "../hooks";
 import { validateSearchQuery } from "../lib/contentFilter";
@@ -75,7 +80,8 @@ export default function Verses() {
   });
 
   // Favorites hook for heart icon and filtering
-  const { favorites, isFavorite, toggleFavorite, favoritesCount } = useFavorites();
+  const { favorites, isFavorite, toggleFavorite, favoritesCount } =
+    useFavorites();
 
   // Share hook for share button
   const { share, copied: shareCopied } = useShare();
@@ -88,7 +94,9 @@ export default function Verses() {
   const [validationError, setValidationError] = useState<string | null>(() => {
     if (!initialQuery) return null;
     const validation = validateSearchQuery(initialQuery);
-    return validation.valid ? null : validation.reason || "Invalid search query";
+    return validation.valid
+      ? null
+      : validation.reason || "Invalid search query";
   });
 
   // Responsive page size for search results
@@ -107,7 +115,9 @@ export default function Verses() {
   } = useSearch({ limit: searchPageSize });
 
   // Is search mode active? (includes validation error state)
-  const isSearchMode = Boolean(searchInputValue.trim() || searchData || validationError);
+  const isSearchMode = Boolean(
+    searchInputValue.trim() || searchData || validationError,
+  );
 
   // Sync search state with URL changes (e.g., clicking "Verses" in navbar)
   // Use a ref to track the previous URL query to detect actual navigation vs. user typing
@@ -198,8 +208,16 @@ export default function Verses() {
     }
     try {
       // When topic is selected, it's a standalone filter (don't combine with filterMode)
-      const chapter = selectedPrinciple ? undefined : (typeof filterMode === "number" ? filterMode : undefined);
-      const featured = selectedPrinciple ? undefined : (filterMode === "featured" ? true : undefined);
+      const chapter = selectedPrinciple
+        ? undefined
+        : typeof filterMode === "number"
+          ? filterMode
+          : undefined;
+      const featured = selectedPrinciple
+        ? undefined
+        : filterMode === "featured"
+          ? true
+          : undefined;
       const count = await versesApi.count(
         chapter,
         featured,
@@ -234,8 +252,8 @@ export default function Verses() {
           }
 
           // Fetch all favorited verses in parallel
-          const versePromises = favoriteIds.map((id) =>
-            versesApi.get(id).catch(() => null) // Handle deleted/invalid verses gracefully
+          const versePromises = favoriteIds.map(
+            (id) => versesApi.get(id).catch(() => null), // Handle deleted/invalid verses gracefully
           );
           const results = await Promise.all(versePromises);
           const validVerses = results.filter((v): v is Verse => v !== null);
@@ -262,8 +280,16 @@ export default function Verses() {
         setError(null);
 
         // When topic is selected, it's a standalone filter (don't combine with filterMode)
-        const chapter = selectedPrinciple ? undefined : (typeof filterMode === "number" ? filterMode : undefined);
-        const featured = selectedPrinciple ? undefined : (filterMode === "featured" ? true : undefined);
+        const chapter = selectedPrinciple
+          ? undefined
+          : typeof filterMode === "number"
+            ? filterMode
+            : undefined;
+        const featured = selectedPrinciple
+          ? undefined
+          : filterMode === "featured"
+            ? true
+            : undefined;
         const skip = reset ? 0 : undefined;
 
         const data = await versesApi.list(
@@ -344,7 +370,13 @@ export default function Verses() {
     };
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [isSearchMode, clearSearch, filterMode, selectedPrinciple, setSearchParams]);
+  }, [
+    isSearchMode,
+    clearSearch,
+    filterMode,
+    selectedPrinciple,
+    setSearchParams,
+  ]);
 
   const loadMore = useCallback(async () => {
     if (loadingMore) return;
@@ -353,8 +385,16 @@ export default function Verses() {
 
     try {
       // When topic is selected, it's a standalone filter (don't combine with filterMode)
-      const chapter = selectedPrinciple ? undefined : (typeof filterMode === "number" ? filterMode : undefined);
-      const featured = selectedPrinciple ? undefined : (filterMode === "featured" ? true : undefined);
+      const chapter = selectedPrinciple
+        ? undefined
+        : typeof filterMode === "number"
+          ? filterMode
+          : undefined;
+      const featured = selectedPrinciple
+        ? undefined
+        : filterMode === "featured"
+          ? true
+          : undefined;
 
       const data = await versesApi.list(
         verses.length,
@@ -480,7 +520,14 @@ export default function Verses() {
       // Execute search
       search(trimmed);
     },
-    [search, setSearchParams, clearSearch, isSearchMode, filterMode, selectedPrinciple],
+    [
+      search,
+      setSearchParams,
+      clearSearch,
+      isSearchMode,
+      filterMode,
+      selectedPrinciple,
+    ],
   );
 
   const handleClearSearch = useCallback(() => {
@@ -558,14 +605,19 @@ export default function Verses() {
                 onClick={() => handleFilterSelect("favorites")}
                 className={`${FILTER_PILL_BASE} flex items-center gap-1 ${showFavorites && !selectedPrinciple ? FILTER_PILL_ACTIVE : FILTER_PILL_INACTIVE}`}
               >
-                <HeartIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" filled={showFavorites || favoritesCount > 0} />
+                <HeartIcon
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                  filled={showFavorites || favoritesCount > 0}
+                />
                 <span className="hidden sm:inline">Favorites</span>
                 {favoritesCount > 0 && (
-                  <span className={`text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full ${
-                    showFavorites && !selectedPrinciple
-                      ? "bg-white/20 text-white"
-                      : "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400"
-                  }`}>
+                  <span
+                    className={`text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full ${
+                      showFavorites && !selectedPrinciple
+                        ? "bg-white/20 text-white"
+                        : "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400"
+                    }`}
+                  >
                     {favoritesCount}
                   </span>
                 )}
@@ -656,7 +708,9 @@ export default function Verses() {
             /* Search Results Header */
             <div className="flex items-center justify-between">
               {searchLoading ? (
-                <span className="text-sm text-gray-500 dark:text-gray-400">Searching...</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  Searching...
+                </span>
               ) : searchData ? (
                 <>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -669,14 +723,19 @@ export default function Verses() {
                         </span>
                         {searchHasMore && searchData.total_count && (
                           <>
-                            <span className="text-gray-400 dark:text-gray-500"> of </span>
+                            <span className="text-gray-400 dark:text-gray-500">
+                              {" "}
+                              of{" "}
+                            </span>
                             <span className="font-medium text-gray-800 dark:text-gray-200">
                               {searchData.total_count}
                             </span>
                           </>
-                        )}
-                        {" "}result{(searchData.total_count ?? searchData.total) !== 1 && "s"} for "
-                        {searchData.query}"
+                        )}{" "}
+                        result
+                        {(searchData.total_count ?? searchData.total) !== 1 &&
+                          "s"}{" "}
+                        for "{searchData.query}"
                       </>
                     )}
                   </p>
@@ -695,7 +754,9 @@ export default function Verses() {
                   </div>
                 </>
               ) : (
-                <span className="text-sm text-gray-500 dark:text-gray-400">Enter a search query</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  Enter a search query
+                </span>
               )}
             </div>
           ) : selectedChapter || selectedPrinciple ? (
@@ -769,7 +830,9 @@ export default function Verses() {
               <p className="font-semibold text-sm sm:text-base">
                 {validationError ? "Invalid search" : "Error"}
               </p>
-              <p className="text-xs sm:text-sm">{validationError || searchError || error}</p>
+              <p className="text-xs sm:text-sm">
+                {validationError || searchError || error}
+              </p>
             </div>
           )}
 
@@ -792,7 +855,9 @@ export default function Verses() {
                   {searchData.suggestion && (
                     <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4 mb-6">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <p className="text-sm text-orange-800 dark:text-orange-300">{searchData.suggestion.message}</p>
+                        <p className="text-sm text-orange-800 dark:text-orange-300">
+                          {searchData.suggestion.message}
+                        </p>
                         <Link
                           to={`/cases/new?prefill=${encodeURIComponent(searchData.query)}`}
                           className="inline-flex items-center justify-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors whitespace-nowrap"
@@ -803,7 +868,9 @@ export default function Verses() {
                     </div>
                   )}
 
-                  <div className={`${VERSE_GRID_CLASSES} transition-opacity duration-200 ${searchLoading ? "opacity-50" : "opacity-100"}`}>
+                  <div
+                    className={`${VERSE_GRID_CLASSES} transition-opacity duration-200 ${searchLoading ? "opacity-50" : "opacity-100"}`}
+                  >
                     {searchData.results.map((result, index) => (
                       <div
                         key={result.canonical_id}
@@ -813,12 +880,14 @@ export default function Verses() {
                         }}
                       >
                         <VerseCard
-                          verse={{
-                            ...result,
-                            id: result.canonical_id,
-                            consulting_principles: result.principles,
-                            created_at: "",
-                          } as Verse}
+                          verse={
+                            {
+                              ...result,
+                              id: result.canonical_id,
+                              consulting_principles: result.principles,
+                              created_at: "",
+                            } as Verse
+                          }
                           displayMode="compact"
                           showSpeaker={false}
                           showCitation={true}
@@ -846,14 +915,25 @@ export default function Verses() {
                       >
                         <div className="flex items-center gap-4">
                           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-300/50 dark:via-amber-600/30 to-amber-300/70 dark:to-amber-600/50" />
-                          <div className={`flex flex-col items-center transition-all duration-300 ${searchLoadingMore ? "scale-95 opacity-70" : "group-hover:scale-105"}`}>
+                          <div
+                            className={`flex flex-col items-center transition-all duration-300 ${searchLoadingMore ? "scale-95 opacity-70" : "group-hover:scale-105"}`}
+                          >
                             {searchLoadingMore ? (
                               <SpinnerIcon className="w-6 h-6 text-amber-500 dark:text-amber-400 mb-1.5" />
                             ) : (
-                              <span className="text-amber-400/70 dark:text-amber-500/60 text-xl mb-1">॰</span>
+                              <span className="text-amber-400/70 dark:text-amber-500/60 text-xl mb-1">
+                                ॰
+                              </span>
                             )}
                             <span className="flex items-center gap-1.5 text-base font-medium text-amber-700/80 dark:text-amber-400/80 group-hover:text-amber-800 dark:group-hover:text-amber-300 transition-colors">
-                              {searchLoadingMore ? "Loading" : (<>Load More <ChevronDownIcon className="w-4 h-4" /></>)}
+                              {searchLoadingMore ? (
+                                "Loading"
+                              ) : (
+                                <>
+                                  Load More{" "}
+                                  <ChevronDownIcon className="w-4 h-4" />
+                                </>
+                              )}
                             </span>
                             {!searchLoadingMore && searchData.total_count && (
                               <span className="text-xs text-amber-600/70 dark:text-amber-500/70 mt-1">
@@ -868,9 +948,12 @@ export default function Verses() {
                       <div className="flex items-center gap-4">
                         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/40 dark:via-amber-600/20 to-amber-200/60 dark:to-amber-600/40" />
                         <div className="flex flex-col items-center">
-                          <span className="text-amber-300/60 dark:text-amber-500/40 text-xl">ॐ</span>
+                          <span className="text-amber-300/60 dark:text-amber-500/40 text-xl">
+                            ॐ
+                          </span>
                           <span className="text-xs text-amber-600/70 dark:text-amber-500/60 mt-1">
-                            {searchData.total_count ?? searchData.total} results shown
+                            {searchData.total_count ?? searchData.total} results
+                            shown
                           </span>
                         </div>
                         <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-200/40 dark:via-amber-600/20 to-amber-200/60 dark:to-amber-600/40" />
@@ -883,14 +966,21 @@ export default function Verses() {
               {/* Empty Search Results */}
               {searchData && searchData.results.length === 0 && (
                 <div className="text-center py-12 bg-white/50 dark:bg-gray-800/50 rounded-2xl border border-amber-100 dark:border-gray-700">
-                  <div className="text-4xl text-amber-300/60 dark:text-amber-500/50 mb-4">ॐ</div>
-                  <h3 className="text-lg font-serif text-gray-700 dark:text-gray-300 mb-2">No verses found</h3>
+                  <div className="text-4xl text-amber-300/60 dark:text-amber-500/50 mb-4">
+                    ॐ
+                  </div>
+                  <h3 className="text-lg font-serif text-gray-700 dark:text-gray-300 mb-2">
+                    No verses found
+                  </h3>
 
                   {/* Show consultation CTA if query looks like a personal question */}
-                  {searchData.suggestion || searchData.query.split(" ").length >= 5 ? (
+                  {searchData.suggestion ||
+                  searchData.query.split(" ").length >= 5 ? (
                     <>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                        Your question sounds like you're seeking personal guidance. Our consultation feature can provide tailored insights from the Geeta.
+                        Your question sounds like you're seeking personal
+                        guidance. Our consultation feature can provide tailored
+                        insights from the Geeta.
                       </p>
                       <Link
                         to={`/cases/new?prefill=${encodeURIComponent(searchData.query)}`}
@@ -901,7 +991,8 @@ export default function Verses() {
                     </>
                   ) : (
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-                      Try different keywords or a verse reference (e.g., "2.47").
+                      Try different keywords or a verse reference (e.g.,
+                      "2.47").
                     </p>
                   )}
 
@@ -939,171 +1030,177 @@ export default function Verses() {
                   ))}
                 </div>
               ) : displayedVerses.length === 0 ? (
-            <div className="text-center py-12 sm:py-16">
-              <div className="max-w-md mx-auto">
-                {/* Decorative element */}
-                <div className="text-4xl sm:text-5xl text-amber-300/60 dark:text-amber-500/40 mb-4">
-                  {showFavorites ? "♡" : "ॐ"}
-                </div>
+                <div className="text-center py-12 sm:py-16">
+                  <div className="max-w-md mx-auto">
+                    {/* Decorative element */}
+                    <div className="text-4xl sm:text-5xl text-amber-300/60 dark:text-amber-500/40 mb-4">
+                      {showFavorites ? "♡" : "ॐ"}
+                    </div>
 
-                <h3 className="text-lg sm:text-xl font-serif text-gray-700 dark:text-gray-300 mb-2">
-                  {showFavorites ? "No favorites yet" : "No verses found"}
-                </h3>
+                    <h3 className="text-lg sm:text-xl font-serif text-gray-700 dark:text-gray-300 mb-2">
+                      {showFavorites ? "No favorites yet" : "No verses found"}
+                    </h3>
 
-                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-6">
-                  {showFavorites ? (
-                    <>
-                      Browse verses and tap the{" "}
-                      <HeartIcon className="w-4 h-4 inline-block align-text-bottom text-red-400" />{" "}
-                      to save your favorites.
-                    </>
-                  ) : selectedPrinciple && selectedChapter ? (
-                    <>
-                      No verses in Chapter {selectedChapter} match the "
-                      {getPrincipleShortLabel(selectedPrinciple)}" principle.
-                    </>
-                  ) : selectedPrinciple ? (
-                    <>
-                      No verses found with the "
-                      {getPrincipleShortLabel(selectedPrinciple)}" principle in
-                      this selection.
-                    </>
-                  ) : selectedChapter ? (
-                    <>No featured verses found in Chapter {selectedChapter}.</>
-                  ) : (
-                    <>Try adjusting your filters to discover more verses.</>
-                  )}
-                </p>
-
-                {/* Action buttons */}
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
-                  {showFavorites ? (
-                    <button
-                      onClick={() => handleFilterSelect("featured")}
-                      className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors"
-                    >
-                      Browse featured verses
-                    </button>
-                  ) : (
-                    <>
-                      {(selectedChapter || selectedPrinciple) && (
-                        <button
-                          onClick={() => {
-                            setFilterMode("featured");
-                            setSelectedPrinciple(null);
-                            updateSearchParams("featured", null);
-                          }}
-                          className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
-                        >
-                          Clear filters
-                        </button>
+                    <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-6">
+                      {showFavorites ? (
+                        <>
+                          Browse verses and tap the{" "}
+                          <HeartIcon className="w-4 h-4 inline-block align-text-bottom text-red-400" />{" "}
+                          to save your favorites.
+                        </>
+                      ) : selectedPrinciple && selectedChapter ? (
+                        <>
+                          No verses in Chapter {selectedChapter} match the "
+                          {getPrincipleShortLabel(selectedPrinciple)}"
+                          principle.
+                        </>
+                      ) : selectedPrinciple ? (
+                        <>
+                          No verses found with the "
+                          {getPrincipleShortLabel(selectedPrinciple)}" principle
+                          in this selection.
+                        </>
+                      ) : selectedChapter ? (
+                        <>
+                          No featured verses found in Chapter {selectedChapter}.
+                        </>
+                      ) : (
+                        <>Try adjusting your filters to discover more verses.</>
                       )}
-                      <button
-                        onClick={() => handleFilterSelect("all")}
-                        className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        Browse all 701 verses
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Verse Grid */}
-              <div
-                className={`${VERSE_GRID_CLASSES} transition-opacity duration-200 ${loading ? "opacity-50" : "opacity-100"}`}
-              >
-                {displayedVerses.map((verse, index) => (
-                  <div
-                    key={verse.id}
-                    className="animate-fade-in"
-                    style={{
-                      animationDelay: `${Math.min(index * CARD_ANIMATION_DELAY_MS, CARD_ANIMATION_MAX_DELAY_MS)}ms`,
-                    }}
-                  >
-                    <VerseCard
-                      verse={verse}
-                      displayMode="compact"
-                      showSpeaker={false}
-                      showCitation={true}
-                      showTranslation={false}
-                      showTranslationPreview={true}
-                      onPrincipleClick={handlePrincipleSelect}
-                      linkTo={`/verses/${verse.canonical_id}?from=browse`}
-                      isFavorite={isFavorite(verse.canonical_id)}
-                      onToggleFavorite={toggleFavorite}
-                      onShare={handleShare}
-                      shareCopied={shareCopied}
-                    />
-                  </div>
-                ))}
-              </div>
+                    </p>
 
-              {/* Load More / End of Results */}
-              <div className="mt-8 sm:mt-12">
-                {hasMore ? (
-                  <button
-                    onClick={loadMore}
-                    disabled={loadingMore}
-                    className="w-full group"
-                  >
-                    <div className="flex items-center gap-4">
-                      {/* Left decorative line */}
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-300/50 dark:via-amber-600/30 to-amber-300/70 dark:to-amber-600/50" />
-
-                      {/* Center content */}
-                      <div
-                        className={`flex flex-col items-center transition-all duration-300 ${loadingMore ? "scale-95 opacity-70" : "group-hover:scale-105"}`}
-                      >
-                        {loadingMore ? (
-                          <SpinnerIcon className="w-6 h-6 text-amber-500 dark:text-amber-400 mb-1.5" />
-                        ) : (
-                          <span className="text-amber-400/70 dark:text-amber-500/60 text-xl mb-1">
-                            ॰
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1.5 text-base font-medium text-amber-700/80 dark:text-amber-400/80 group-hover:text-amber-800 dark:group-hover:text-amber-300 transition-colors">
-                          {loadingMore ? (
-                            "Loading"
-                          ) : (
-                            <>
-                              Load More
-                              <ChevronDownIcon className="w-4 h-4" />
-                            </>
+                    {/* Action buttons */}
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
+                      {showFavorites ? (
+                        <button
+                          onClick={() => handleFilterSelect("featured")}
+                          className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors"
+                        >
+                          Browse featured verses
+                        </button>
+                      ) : (
+                        <>
+                          {(selectedChapter || selectedPrinciple) && (
+                            <button
+                              onClick={() => {
+                                setFilterMode("featured");
+                                setSelectedPrinciple(null);
+                                updateSearchParams("featured", null);
+                              }}
+                              className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
+                            >
+                              Clear filters
+                            </button>
                           )}
-                        </span>
-                        {!loadingMore && totalCount && (
-                          <span className="text-xs text-amber-600/70 dark:text-amber-500/70 mt-1">
-                            {totalCount - verses.length} more
-                          </span>
-                        )}
+                          <button
+                            onClick={() => handleFilterSelect("all")}
+                            className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            Browse all 701 verses
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Verse Grid */}
+                  <div
+                    className={`${VERSE_GRID_CLASSES} transition-opacity duration-200 ${loading ? "opacity-50" : "opacity-100"}`}
+                  >
+                    {displayedVerses.map((verse, index) => (
+                      <div
+                        key={verse.id}
+                        className="animate-fade-in"
+                        style={{
+                          animationDelay: `${Math.min(index * CARD_ANIMATION_DELAY_MS, CARD_ANIMATION_MAX_DELAY_MS)}ms`,
+                        }}
+                      >
+                        <VerseCard
+                          verse={verse}
+                          displayMode="compact"
+                          showSpeaker={false}
+                          showCitation={true}
+                          showTranslation={false}
+                          showTranslationPreview={true}
+                          onPrincipleClick={handlePrincipleSelect}
+                          linkTo={`/verses/${verse.canonical_id}?from=browse`}
+                          isFavorite={isFavorite(verse.canonical_id)}
+                          onToggleFavorite={toggleFavorite}
+                          onShare={handleShare}
+                          shareCopied={shareCopied}
+                        />
                       </div>
+                    ))}
+                  </div>
 
-                      {/* Right decorative line */}
-                      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-300/50 dark:via-amber-600/30 to-amber-300/70 dark:to-amber-600/50" />
-                    </div>
-                  </button>
-                ) : (
-                  displayedVerses.length > 0 && (
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/40 dark:via-amber-600/20 to-amber-200/60 dark:to-amber-600/40" />
-                      <div className="flex flex-col items-center">
-                        <span className="text-amber-300/60 dark:text-amber-500/40 text-xl">
-                          {showFavorites ? "♡" : "ॐ"}
-                        </span>
-                        <span className="text-xs text-amber-600/70 dark:text-amber-500/60 mt-1">
-                          {displayedVerses.length} {showFavorites ? "favorite" : "verse"}{displayedVerses.length !== 1 ? "s" : ""}{showFavorites ? "" : " explored"}
-                        </span>
-                      </div>
-                      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-200/40 dark:via-amber-600/20 to-amber-200/60 dark:to-amber-600/40" />
-                    </div>
-                  )
-                )}
-              </div>
-            </>
-          )}
+                  {/* Load More / End of Results */}
+                  <div className="mt-8 sm:mt-12">
+                    {hasMore ? (
+                      <button
+                        onClick={loadMore}
+                        disabled={loadingMore}
+                        className="w-full group"
+                      >
+                        <div className="flex items-center gap-4">
+                          {/* Left decorative line */}
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-300/50 dark:via-amber-600/30 to-amber-300/70 dark:to-amber-600/50" />
+
+                          {/* Center content */}
+                          <div
+                            className={`flex flex-col items-center transition-all duration-300 ${loadingMore ? "scale-95 opacity-70" : "group-hover:scale-105"}`}
+                          >
+                            {loadingMore ? (
+                              <SpinnerIcon className="w-6 h-6 text-amber-500 dark:text-amber-400 mb-1.5" />
+                            ) : (
+                              <span className="text-amber-400/70 dark:text-amber-500/60 text-xl mb-1">
+                                ॰
+                              </span>
+                            )}
+                            <span className="flex items-center gap-1.5 text-base font-medium text-amber-700/80 dark:text-amber-400/80 group-hover:text-amber-800 dark:group-hover:text-amber-300 transition-colors">
+                              {loadingMore ? (
+                                "Loading"
+                              ) : (
+                                <>
+                                  Load More
+                                  <ChevronDownIcon className="w-4 h-4" />
+                                </>
+                              )}
+                            </span>
+                            {!loadingMore && totalCount && (
+                              <span className="text-xs text-amber-600/70 dark:text-amber-500/70 mt-1">
+                                {totalCount - verses.length} more
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Right decorative line */}
+                          <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-300/50 dark:via-amber-600/30 to-amber-300/70 dark:to-amber-600/50" />
+                        </div>
+                      </button>
+                    ) : (
+                      displayedVerses.length > 0 && (
+                        <div className="flex items-center gap-4">
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/40 dark:via-amber-600/20 to-amber-200/60 dark:to-amber-600/40" />
+                          <div className="flex flex-col items-center">
+                            <span className="text-amber-300/60 dark:text-amber-500/40 text-xl">
+                              {showFavorites ? "♡" : "ॐ"}
+                            </span>
+                            <span className="text-xs text-amber-600/70 dark:text-amber-500/60 mt-1">
+                              {displayedVerses.length}{" "}
+                              {showFavorites ? "favorite" : "verse"}
+                              {displayedVerses.length !== 1 ? "s" : ""}
+                              {showFavorites ? "" : " explored"}
+                            </span>
+                          </div>
+                          <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-200/40 dark:via-amber-600/20 to-amber-200/60 dark:to-amber-600/40" />
+                        </div>
+                      )
+                    )}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

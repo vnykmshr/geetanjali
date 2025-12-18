@@ -71,8 +71,10 @@ export default function ForgotPassword() {
               </h2>
               <p className="mt-3 text-sm text-gray-600 dark:text-gray-400 max-w-sm mx-auto">
                 If an account exists with{" "}
-                <span className="font-medium text-gray-900 dark:text-gray-100">{email}</span>, you
-                will receive a password reset link shortly.
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  {email}
+                </span>
+                , you will receive a password reset link shortly.
               </p>
               <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
                 Don't see the email? Check your spam folder.
@@ -121,7 +123,9 @@ export default function ForgotPassword() {
           <form className="space-y-5 sm:space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-3 sm:p-4">
-                <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  {error}
+                </div>
               </div>
             )}
 

@@ -203,9 +203,14 @@ export const VerseCard = memo(function VerseCard({
                     ? "text-red-500 dark:text-red-400"
                     : "text-amber-600/50 dark:text-amber-400/60 hover:text-red-400 dark:hover:text-red-400 hover:scale-110"
                 }`}
-                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                aria-label={
+                  isFavorite ? "Remove from favorites" : "Add to favorites"
+                }
               >
-                <HeartIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" filled={isFavorite} />
+                <HeartIcon
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                  filled={isFavorite}
+                />
               </button>
             )}
 
@@ -251,7 +256,8 @@ export const VerseCard = memo(function VerseCard({
           </div>
 
           {/* Translation preview - with match highlighting when available */}
-          {(match?.highlight || (showTranslationPreview && translationText)) && (
+          {(match?.highlight ||
+            (showTranslationPreview && translationText)) && (
             <>
               {/* Subtle divider */}
               <div className="my-2 sm:my-3 border-t border-amber-200/50 dark:border-gray-700" />

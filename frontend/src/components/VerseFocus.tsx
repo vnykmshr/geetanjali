@@ -383,9 +383,16 @@ export function VerseFocus({
                   ? "text-red-500 dark:text-red-400"
                   : "text-gray-500/60 dark:text-gray-400/60 hover:text-red-400 dark:hover:text-red-400 hover:scale-110"
               }`}
-              aria-label={isFavorite(verse.canonical_id) ? "Remove from favorites" : "Add to favorites"}
+              aria-label={
+                isFavorite(verse.canonical_id)
+                  ? "Remove from favorites"
+                  : "Add to favorites"
+              }
             >
-              <HeartIcon className="w-4 h-4" filled={isFavorite(verse.canonical_id)} />
+              <HeartIcon
+                className="w-4 h-4"
+                filled={isFavorite(verse.canonical_id)}
+              />
             </button>
 
             {/* Verse reference */}
@@ -450,7 +457,9 @@ export function VerseFocus({
           ) : translationError ? (
             // Error state
             <div className="text-center py-4">
-              <p className="text-sm text-red-600 dark:text-red-400">{translationError}</p>
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {translationError}
+              </p>
               <button
                 onClick={loadTranslations}
                 className="mt-2 text-sm text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 underline"

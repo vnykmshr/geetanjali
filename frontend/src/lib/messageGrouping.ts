@@ -46,7 +46,9 @@ export function groupMessagesIntoExchanges(
     exchanges.push({
       user: userMsg,
       assistant: latestAssistant,
-      output: latestAssistant ? getOutput(latestAssistant.output_id) : undefined,
+      output: latestAssistant
+        ? getOutput(latestAssistant.output_id)
+        : undefined,
     });
   });
 

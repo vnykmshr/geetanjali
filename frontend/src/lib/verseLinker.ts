@@ -97,7 +97,7 @@ export function formatVerseRef(canonicalId: string): string {
  * @returns Object with chapter and verse, or null if invalid
  */
 export function parseCanonicalId(
-  canonicalId: string
+  canonicalId: string,
 ): { chapter: number; verse: number } | null {
   const match = canonicalId.match(/BG_(\d+)_(\d+)/);
   if (!match) return null;

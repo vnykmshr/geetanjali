@@ -47,7 +47,10 @@ export function Footer() {
           <p className="text-xs text-gray-400 dark:text-gray-500">
             <span className="inline-block -scale-x-100">©</span>{" "}
             {new Date().getFullYear()}{" "}
-            <Link to="/" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+            <Link
+              to="/"
+              className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+            >
               Geetanjali
             </Link>
           </p>
@@ -92,7 +95,10 @@ export function Footer() {
           <span className="text-gray-400 dark:text-gray-500">
             <span className="inline-block -scale-x-100">©</span>{" "}
             {new Date().getFullYear()}{" "}
-            <Link to="/" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+            <Link
+              to="/"
+              className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+            >
               Geetanjali
             </Link>
           </span>

@@ -319,9 +319,16 @@ export default function VerseDetail() {
                         ? "text-red-500 dark:text-red-400"
                         : "text-amber-600/50 dark:text-amber-400/60 hover:text-red-400 dark:hover:text-red-400 hover:scale-110"
                     }`}
-                    aria-label={isFavorite(verse.canonical_id) ? "Remove from favorites" : "Add to favorites"}
+                    aria-label={
+                      isFavorite(verse.canonical_id)
+                        ? "Remove from favorites"
+                        : "Add to favorites"
+                    }
                   >
-                    <HeartIcon className="w-5 h-5 sm:w-6 sm:h-6" filled={isFavorite(verse.canonical_id)} />
+                    <HeartIcon
+                      className="w-5 h-5 sm:w-6 sm:h-6"
+                      filled={isFavorite(verse.canonical_id)}
+                    />
                   </button>
 
                   {/* Verse reference */}
@@ -337,7 +344,9 @@ export default function VerseDetail() {
                         ? "text-green-500 dark:text-green-400"
                         : "text-amber-600/50 dark:text-amber-400/60 hover:text-amber-600 dark:hover:text-amber-400 hover:scale-110"
                     }`}
-                    aria-label={shareCopied ? "Copied to clipboard" : "Share verse"}
+                    aria-label={
+                      shareCopied ? "Copied to clipboard" : "Share verse"
+                    }
                   >
                     {shareCopied ? (
                       <CheckIcon className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -389,7 +398,10 @@ export default function VerseDetail() {
                           aria-label={`View all verses about ${principle?.label || principleId}`}
                         >
                           <span>{principle?.shortLabel || principleId}</span>
-                          <span aria-hidden="true" className="text-amber-600 dark:text-amber-400">
+                          <span
+                            aria-hidden="true"
+                            className="text-amber-600 dark:text-amber-400"
+                          >
                             →
                           </span>
                         </Link>
@@ -459,7 +471,9 @@ export default function VerseDetail() {
                   }
                   aria-pressed={showAllTranslations}
                   className={`relative inline-flex h-7 sm:h-8 w-12 sm:w-14 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 ${
-                    showAllTranslations ? "bg-amber-600" : "bg-gray-300 dark:bg-gray-600"
+                    showAllTranslations
+                      ? "bg-amber-600"
+                      : "bg-gray-300 dark:bg-gray-600"
                   }`}
                 >
                   <span

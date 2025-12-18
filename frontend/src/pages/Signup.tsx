@@ -86,7 +86,9 @@ export default function Signup() {
           <form className="space-y-5 sm:space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-3 sm:p-4">
-                <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  {error}
+                </div>
               </div>
             )}
 
@@ -183,7 +185,9 @@ export default function Signup() {
             </div>
 
             <div className="text-center text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Already a member? </span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Already a member?{" "}
+              </span>
               <Link
                 to="/login"
                 className="font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-500 dark:hover:text-orange-300 hover:underline"

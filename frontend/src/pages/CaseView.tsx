@@ -135,7 +135,11 @@ export default function CaseView() {
         const userMessages = messagesData.filter((m) => m.role === "user");
         const lastUserMessage = userMessages[userMessages.length - 1];
 
-        if (lastUserMessage && outputsData.length > 0 && outputsData.length < userMessages.length) {
+        if (
+          lastUserMessage &&
+          outputsData.length > 0 &&
+          outputsData.length < userMessages.length
+        ) {
           // There's a user message without a response - that's the pending follow-up
           // Note: outputsData.length > 0 ensures this only triggers for follow-ups, not initial consultation
           setPendingFollowUp(lastUserMessage.content);
@@ -554,7 +558,9 @@ ${messages
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 flex flex-col">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-gray-600 dark:text-gray-400">Loading consultation...</div>
+          <div className="text-gray-600 dark:text-gray-400">
+            Loading consultation...
+          </div>
         </div>
       </div>
     );
@@ -768,12 +774,16 @@ ${messages
                             />
                           </svg>
                         ) : (
-                          <span className="text-xs text-blue-700 dark:text-blue-400">+</span>
+                          <span className="text-xs text-blue-700 dark:text-blue-400">
+                            +
+                          </span>
                         )}
                       </div>
                       <div
                         className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
-                          isFirst ? "text-amber-700 dark:text-amber-400" : "text-blue-600 dark:text-blue-400"
+                          isFirst
+                            ? "text-amber-700 dark:text-amber-400"
+                            : "text-blue-600 dark:text-blue-400"
                         }`}
                       >
                         {isFirst ? "Your Question" : "Follow-up"}
@@ -792,15 +802,18 @@ ${messages
                         </p>
                         {isFirst &&
                           ((caseData.stakeholders?.length ?? 0) > 1 ||
-                            (caseData.stakeholders?.[0] && caseData.stakeholders[0] !== "self") ||
+                            (caseData.stakeholders?.[0] &&
+                              caseData.stakeholders[0] !== "self") ||
                             (caseData.constraints?.length ?? 0) > 0 ||
-                            (caseData.role && caseData.role !== "Individual")) && (
+                            (caseData.role &&
+                              caseData.role !== "Individual")) && (
                             <div className="mt-3 flex flex-wrap gap-2">
-                              {caseData.role && caseData.role !== "Individual" && (
-                                <span className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 px-2 py-1 rounded-full font-medium">
-                                  {caseData.role}
-                                </span>
-                              )}
+                              {caseData.role &&
+                                caseData.role !== "Individual" && (
+                                  <span className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 px-2 py-1 rounded-full font-medium">
+                                    {caseData.role}
+                                  </span>
+                                )}
                               {caseData.stakeholders
                                 ?.filter((s) => s !== "self")
                                 .map((s, i) => (
@@ -827,7 +840,9 @@ ${messages
                             </div>
                             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
                               <p className="text-sm text-amber-800 dark:text-amber-300 mb-3">
-                                <span className="font-medium">Draft</span> — Your question is saved. Click below to receive wisdom from the Bhagavad Geeta.
+                                <span className="font-medium">Draft</span> —
+                                Your question is saved. Click below to receive
+                                wisdom from the Bhagavad Geeta.
                               </p>
                               <button
                                 onClick={handleRetry}
@@ -852,7 +867,11 @@ ${messages
                             </div>
                             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3">
                               <p className="text-sm text-red-800 dark:text-red-300 mb-3">
-                                <span className="font-medium">Unable to Complete</span> — We encountered an issue while preparing your guidance. Please try again.
+                                <span className="font-medium">
+                                  Unable to Complete
+                                </span>{" "}
+                                — We encountered an issue while preparing your
+                                guidance. Please try again.
                               </p>
                               <button
                                 onClick={handleRetry}
@@ -868,167 +887,172 @@ ${messages
 
                     {/* Response - only show if assistant message exists */}
                     {exchange.assistant && (
-                    <div className="relative pl-8 sm:pl-10 pb-4 sm:pb-6">
-                      <div
-                        className={`absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ${
-                          isFirst
-                            ? "bg-orange-500 text-white"
-                            : "bg-orange-100 dark:bg-orange-900/40 border-2 border-orange-300 dark:border-orange-700"
-                        }`}
-                      >
-                        {isFirst ? (
-                          <svg
-                            className="w-3.5 h-3.5 sm:w-4 sm:h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                            />
-                          </svg>
-                        ) : (
-                          <span className="text-xs text-orange-600 dark:text-orange-400">~</span>
-                        )}
-                      </div>
-                      <div
-                        className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
-                          isFirst ? "text-orange-700 dark:text-orange-400" : "text-orange-600 dark:text-orange-400"
-                        }`}
-                      >
-                        {isFirst ? "Wisdom from the Geeta" : "Guidance"}
-                      </div>
+                      <div className="relative pl-8 sm:pl-10 pb-4 sm:pb-6">
+                        <div
+                          className={`absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ${
+                            isFirst
+                              ? "bg-orange-500 text-white"
+                              : "bg-orange-100 dark:bg-orange-900/40 border-2 border-orange-300 dark:border-orange-700"
+                          }`}
+                        >
+                          {isFirst ? (
+                            <svg
+                              className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                              />
+                            </svg>
+                          ) : (
+                            <span className="text-xs text-orange-600 dark:text-orange-400">
+                              ~
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
+                            isFirst
+                              ? "text-orange-700 dark:text-orange-400"
+                              : "text-orange-600 dark:text-orange-400"
+                          }`}
+                        >
+                          {isFirst ? "Wisdom from the Geeta" : "Guidance"}
+                        </div>
 
-                      <div
-                        className={`rounded-xl p-3 sm:p-4 border ${
-                          isFirst
-                            ? "bg-white dark:bg-gray-800 shadow-lg border-orange-200 dark:border-orange-800"
-                            : "bg-white dark:bg-gray-800 shadow-md border-orange-100 dark:border-orange-900"
-                        }`}
-                      >
-                        <GuidanceMarkdown
-                          content={exchange.assistant.content}
-                          sources={exchange.output?.result_json.sources}
-                          className={`leading-relaxed prose dark:prose-invert max-w-none ${isFirst ? "text-gray-900 dark:text-gray-100" : "text-gray-800 dark:text-gray-200"} prose-p:my-2 prose-ul:my-2 prose-li:my-0.5`}
-                        />
+                        <div
+                          className={`rounded-xl p-3 sm:p-4 border ${
+                            isFirst
+                              ? "bg-white dark:bg-gray-800 shadow-lg border-orange-200 dark:border-orange-800"
+                              : "bg-white dark:bg-gray-800 shadow-md border-orange-100 dark:border-orange-900"
+                          }`}
+                        >
+                          <GuidanceMarkdown
+                            content={exchange.assistant.content}
+                            sources={exchange.output?.result_json.sources}
+                            className={`leading-relaxed prose dark:prose-invert max-w-none ${isFirst ? "text-gray-900 dark:text-gray-100" : "text-gray-800 dark:text-gray-200"} prose-p:my-2 prose-ul:my-2 prose-li:my-0.5`}
+                          />
 
-                        {/* Scholar flag with refine option */}
-                        {exchange.output?.scholar_flag && (
-                          <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 text-sm font-medium">
-                              <span>⚠️</span>
-                              <span>This guidance has lower confidence</span>
-                            </div>
-                            {showFollowUpInput && (
-                              <button
-                                onClick={() =>
-                                  handleRefineGuidance(
-                                    "Can you provide more detail or clarify the recommended approach?",
-                                  )
-                                }
-                                className="mt-2 text-sm text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 hover:underline flex items-center gap-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
-                              >
-                                <svg
-                                  className="w-3.5 h-3.5"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
+                          {/* Scholar flag with refine option */}
+                          {exchange.output?.scholar_flag && (
+                            <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 text-sm font-medium">
+                                <span>⚠️</span>
+                                <span>This guidance has lower confidence</span>
+                              </div>
+                              {showFollowUpInput && (
+                                <button
+                                  onClick={() =>
+                                    handleRefineGuidance(
+                                      "Can you provide more detail or clarify the recommended approach?",
+                                    )
+                                  }
+                                  className="mt-2 text-sm text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 hover:underline flex items-center gap-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
                                 >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                                  />
-                                </svg>
-                                Ask a follow-up to refine this guidance
-                              </button>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Verse Sources */}
-                        {exchange.output &&
-                          exchange.output.result_json.sources?.length > 0 && (
-                            <div className="mt-4">
-                              <button
-                                onClick={() =>
-                                  exchange.output &&
-                                  toggleSources(exchange.output.id)
-                                }
-                                className="text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 flex items-center gap-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
-                              >
-                                <svg
-                                  className={`w-3 h-3 transition-transform ${isSourcesExpanded ? "rotate-90" : ""}`}
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 5l7 7-7 7"
-                                  />
-                                </svg>
-                                {exchange.output.result_json.sources.length}{" "}
-                                verse reference
-                                {exchange.output.result_json.sources.length > 1
-                                  ? "s"
-                                  : ""}
-                              </button>
-
-                              {isSourcesExpanded && (
-                                <div className="mt-3 space-y-2">
-                                  {exchange.output.result_json.sources.map(
-                                    (source) => (
-                                      <div
-                                        key={source.canonical_id}
-                                        className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-lg p-3 border border-orange-100 dark:border-orange-800"
-                                      >
-                                        <div className="flex items-center justify-between">
-                                          <Link
-                                            to={`/verses/${source.canonical_id}`}
-                                            className="font-mono text-orange-700 dark:text-orange-400 font-semibold text-sm hover:underline"
-                                          >
-                                            {source.canonical_id.replace(
-                                              /_/g,
-                                              " ",
-                                            )}
-                                          </Link>
-                                        </div>
-                                        <p className="mt-1.5 text-gray-700 dark:text-gray-300 italic text-sm">
-                                          "{source.paraphrase}"
-                                        </p>
-                                      </div>
-                                    ),
-                                  )}
-                                </div>
+                                  <svg
+                                    className="w-3.5 h-3.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                                    />
+                                  </svg>
+                                  Ask a follow-up to refine this guidance
+                                </button>
                               )}
                             </div>
                           )}
 
-                        {/* Feedback row */}
-                        {exchange.output && (
-                          <OutputFeedback
-                            output={exchange.output}
-                            feedback={feedback}
-                            feedbackLoading={feedbackLoading}
-                            expandedFeedback={expandedFeedback}
-                            feedbackText={feedbackText}
-                            onFeedback={handleFeedback}
-                            onSubmitNegativeFeedback={
-                              handleSubmitNegativeFeedback
-                            }
-                            onCancelFeedback={handleCancelFeedback}
-                            onFeedbackTextChange={handleFeedbackTextChange}
-                          />
-                        )}
+                          {/* Verse Sources */}
+                          {exchange.output &&
+                            exchange.output.result_json.sources?.length > 0 && (
+                              <div className="mt-4">
+                                <button
+                                  onClick={() =>
+                                    exchange.output &&
+                                    toggleSources(exchange.output.id)
+                                  }
+                                  className="text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 flex items-center gap-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
+                                >
+                                  <svg
+                                    className={`w-3 h-3 transition-transform ${isSourcesExpanded ? "rotate-90" : ""}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 5l7 7-7 7"
+                                    />
+                                  </svg>
+                                  {exchange.output.result_json.sources.length}{" "}
+                                  verse reference
+                                  {exchange.output.result_json.sources.length >
+                                  1
+                                    ? "s"
+                                    : ""}
+                                </button>
+
+                                {isSourcesExpanded && (
+                                  <div className="mt-3 space-y-2">
+                                    {exchange.output.result_json.sources.map(
+                                      (source) => (
+                                        <div
+                                          key={source.canonical_id}
+                                          className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-lg p-3 border border-orange-100 dark:border-orange-800"
+                                        >
+                                          <div className="flex items-center justify-between">
+                                            <Link
+                                              to={`/verses/${source.canonical_id}`}
+                                              className="font-mono text-orange-700 dark:text-orange-400 font-semibold text-sm hover:underline"
+                                            >
+                                              {source.canonical_id.replace(
+                                                /_/g,
+                                                " ",
+                                              )}
+                                            </Link>
+                                          </div>
+                                          <p className="mt-1.5 text-gray-700 dark:text-gray-300 italic text-sm">
+                                            "{source.paraphrase}"
+                                          </p>
+                                        </div>
+                                      ),
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                          {/* Feedback row */}
+                          {exchange.output && (
+                            <OutputFeedback
+                              output={exchange.output}
+                              feedback={feedback}
+                              feedbackLoading={feedbackLoading}
+                              expandedFeedback={expandedFeedback}
+                              feedbackText={feedbackText}
+                              onFeedback={handleFeedback}
+                              onSubmitNegativeFeedback={
+                                handleSubmitNegativeFeedback
+                              }
+                              onCancelFeedback={handleCancelFeedback}
+                              onFeedbackTextChange={handleFeedbackTextChange}
+                            />
+                          )}
+                        </div>
                       </div>
-                    </div>
                     )}
                   </div>
                 );

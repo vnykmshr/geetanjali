@@ -110,7 +110,9 @@ export function ContentNotFound({
 
       {/* Subtext (for shared variant) */}
       {"subtext" in content && content.subtext && (
-        <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">{content.subtext}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
+          {content.subtext}
+        </p>
       )}
 
       {!("subtext" in content) && <div className="mb-6" />}
@@ -137,7 +139,10 @@ export function ContentNotFound({
       {variant === "case" && !isAuthenticated && "authHint" in content && (
         <p className="mt-6 text-xs text-gray-500 dark:text-gray-500">
           Have an account?{" "}
-          <Link to="/login" className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300">
+          <Link
+            to="/login"
+            className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300"
+          >
             Log in
           </Link>{" "}
           to access your consultations.

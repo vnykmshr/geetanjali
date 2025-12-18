@@ -59,7 +59,10 @@ export function ReflectionsSection({
         <div className="mt-2 sm:mt-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-3 sm:p-4 border border-purple-100 dark:border-purple-800">
           <ul className="space-y-2.5 sm:space-y-3">
             {prompts.map((prompt, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
+              <li
+                key={idx}
+                className="flex items-start gap-2 text-gray-700 dark:text-gray-300"
+              >
                 <span className="text-purple-400 dark:text-purple-500 mt-0.5 text-xs sm:text-sm">
                   ◆
                 </span>

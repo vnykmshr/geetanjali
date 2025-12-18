@@ -36,6 +36,7 @@ function getRecentSearches(): string[] {
 /**
  * Save a search to recent searches
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function saveRecentSearch(query: string): void {
   try {
     const trimmed = query.trim();
@@ -174,9 +175,11 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(
     // Handle keyboard navigation
     const handleKeyDown = useCallback(
       (e: KeyboardEvent<HTMLInputElement>) => {
-        const items = value ? [] : showExamples && recentSearches.length === 0
-          ? SEARCH_EXAMPLES.map((ex) => ex.query)
-          : recentSearches;
+        const items = value
+          ? []
+          : showExamples && recentSearches.length === 0
+            ? SEARCH_EXAMPLES.map((ex) => ex.query)
+            : recentSearches;
 
         if (!showDropdown || items.length === 0) return;
 
@@ -205,7 +208,14 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(
             break;
         }
       },
-      [showDropdown, value, showExamples, recentSearches, selectedIndex, handleSelect],
+      [
+        showDropdown,
+        value,
+        showExamples,
+        recentSearches,
+        selectedIndex,
+        handleSelect,
+      ],
     );
 
     // Handle clearing
@@ -227,8 +237,10 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(
     }, []);
 
     // Determine what to show in dropdown
-    const showRecentDropdown = showDropdown && !value && recentSearches.length > 0;
-    const showExamplesDropdown = showDropdown && !value && showExamples && recentSearches.length === 0;
+    const showRecentDropdown =
+      showDropdown && !value && recentSearches.length > 0;
+    const showExamplesDropdown =
+      showDropdown && !value && showExamples && recentSearches.length === 0;
 
     return (
       <form onSubmit={handleSubmit} className={className}>

@@ -2,7 +2,12 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { casesApi } from "../lib/api";
 import type { Case, Message, Output } from "../types";
-import { Navbar, ContentNotFound, Footer, GuidanceMarkdown } from "../components";
+import {
+  Navbar,
+  ContentNotFound,
+  Footer,
+  GuidanceMarkdown,
+} from "../components";
 import { groupMessagesIntoExchanges } from "../lib/messageGrouping";
 import { useSEO } from "../hooks";
 
@@ -92,7 +97,9 @@ export default function PublicCaseView() {
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 flex flex-col overflow-x-hidden">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-gray-600 dark:text-gray-400">Loading consultation...</div>
+          <div className="text-gray-600 dark:text-gray-400">
+            Loading consultation...
+          </div>
         </div>
       </div>
     );
@@ -181,12 +188,16 @@ export default function PublicCaseView() {
                           />
                         </svg>
                       ) : (
-                        <span className="text-xs text-blue-700 dark:text-blue-400">+</span>
+                        <span className="text-xs text-blue-700 dark:text-blue-400">
+                          +
+                        </span>
                       )}
                     </div>
                     <div
                       className={`text-xs font-semibold uppercase tracking-wide mb-1.5 sm:mb-2 ${
-                        isFirst ? "text-amber-700 dark:text-amber-400" : "text-blue-600 dark:text-blue-400"
+                        isFirst
+                          ? "text-amber-700 dark:text-amber-400"
+                          : "text-blue-600 dark:text-blue-400"
                       }`}
                     >
                       {isFirst ? "Question" : "Follow-up"}
@@ -208,139 +219,143 @@ export default function PublicCaseView() {
 
                   {/* Response - only show if assistant message exists */}
                   {exchange.assistant && (
-                  <div className="relative pl-8 sm:pl-10 pb-4 sm:pb-6">
-                    <div
-                      className={`absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ${
-                        isFirst
-                          ? "bg-orange-500 text-white"
-                          : "bg-orange-100 dark:bg-orange-900/40 border-2 border-orange-300 dark:border-orange-700"
-                      }`}
-                    >
-                      {isFirst ? (
-                        <svg
-                          className="w-3 h-3 sm:w-4 sm:h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                          />
-                        </svg>
-                      ) : (
-                        <span className="text-xs text-orange-600 dark:text-orange-400">~</span>
-                      )}
-                    </div>
-                    <div
-                      className={`text-xs font-semibold uppercase tracking-wide mb-1.5 sm:mb-2 ${
-                        isFirst ? "text-orange-700 dark:text-orange-400" : "text-orange-600 dark:text-orange-400"
-                      }`}
-                    >
-                      {isFirst ? "Wisdom from the Geeta" : "Guidance"}
-                    </div>
+                    <div className="relative pl-8 sm:pl-10 pb-4 sm:pb-6">
+                      <div
+                        className={`absolute left-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ${
+                          isFirst
+                            ? "bg-orange-500 text-white"
+                            : "bg-orange-100 dark:bg-orange-900/40 border-2 border-orange-300 dark:border-orange-700"
+                        }`}
+                      >
+                        {isFirst ? (
+                          <svg
+                            className="w-3 h-3 sm:w-4 sm:h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                            />
+                          </svg>
+                        ) : (
+                          <span className="text-xs text-orange-600 dark:text-orange-400">
+                            ~
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        className={`text-xs font-semibold uppercase tracking-wide mb-1.5 sm:mb-2 ${
+                          isFirst
+                            ? "text-orange-700 dark:text-orange-400"
+                            : "text-orange-600 dark:text-orange-400"
+                        }`}
+                      >
+                        {isFirst ? "Wisdom from the Geeta" : "Guidance"}
+                      </div>
 
-                    <div
-                      className={`rounded-xl p-3 sm:p-4 border ${
-                        isFirst
-                          ? "bg-white dark:bg-gray-800 shadow-lg border-orange-200 dark:border-orange-800"
-                          : "bg-white dark:bg-gray-800 shadow-md border-orange-100 dark:border-orange-900"
-                      }`}
-                    >
-                      <GuidanceMarkdown
-                        content={exchange.assistant.content}
-                        sources={exchange.output?.result_json.sources}
-                        className={`leading-relaxed prose dark:prose-invert max-w-none ${isFirst ? "text-gray-900 dark:text-gray-100" : "text-gray-800 dark:text-gray-200"} prose-p:my-2 prose-ul:my-2 prose-li:my-0.5`}
-                      />
+                      <div
+                        className={`rounded-xl p-3 sm:p-4 border ${
+                          isFirst
+                            ? "bg-white dark:bg-gray-800 shadow-lg border-orange-200 dark:border-orange-800"
+                            : "bg-white dark:bg-gray-800 shadow-md border-orange-100 dark:border-orange-900"
+                        }`}
+                      >
+                        <GuidanceMarkdown
+                          content={exchange.assistant.content}
+                          sources={exchange.output?.result_json.sources}
+                          className={`leading-relaxed prose dark:prose-invert max-w-none ${isFirst ? "text-gray-900 dark:text-gray-100" : "text-gray-800 dark:text-gray-200"} prose-p:my-2 prose-ul:my-2 prose-li:my-0.5`}
+                        />
 
-                      {/* Verse Sources */}
-                      {exchange.output &&
-                        exchange.output.result_json.sources?.length > 0 && (
-                          <div className="mt-3 sm:mt-4">
-                            <button
-                              onClick={() =>
-                                exchange.output &&
-                                toggleSources(exchange.output.id)
-                              }
-                              className="text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 flex items-center gap-1"
-                            >
-                              <svg
-                                className={`w-3 h-3 transition-transform ${isSourcesExpanded ? "rotate-90" : ""}`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                        {/* Verse Sources */}
+                        {exchange.output &&
+                          exchange.output.result_json.sources?.length > 0 && (
+                            <div className="mt-3 sm:mt-4">
+                              <button
+                                onClick={() =>
+                                  exchange.output &&
+                                  toggleSources(exchange.output.id)
+                                }
+                                className="text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 flex items-center gap-1"
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 5l7 7-7 7"
-                                />
-                              </svg>
-                              {exchange.output.result_json.sources.length} verse
-                              reference
-                              {exchange.output.result_json.sources.length > 1
-                                ? "s"
-                                : ""}
-                            </button>
+                                <svg
+                                  className={`w-3 h-3 transition-transform ${isSourcesExpanded ? "rotate-90" : ""}`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 5l7 7-7 7"
+                                  />
+                                </svg>
+                                {exchange.output.result_json.sources.length}{" "}
+                                verse reference
+                                {exchange.output.result_json.sources.length > 1
+                                  ? "s"
+                                  : ""}
+                              </button>
 
-                            {isSourcesExpanded && (
-                              <div className="mt-2 sm:mt-3 space-y-2">
-                                {exchange.output.result_json.sources.map(
-                                  (source) => (
-                                    <div
-                                      key={source.canonical_id}
-                                      className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-lg p-2.5 sm:p-3 border border-orange-100 dark:border-orange-800"
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <Link
-                                          to={`/verses/${source.canonical_id}`}
-                                          className="font-mono text-orange-700 dark:text-orange-400 font-semibold text-xs sm:text-sm hover:underline"
-                                        >
-                                          {source.canonical_id.replace(
-                                            /_/g,
-                                            " ",
-                                          )}
-                                        </Link>
+                              {isSourcesExpanded && (
+                                <div className="mt-2 sm:mt-3 space-y-2">
+                                  {exchange.output.result_json.sources.map(
+                                    (source) => (
+                                      <div
+                                        key={source.canonical_id}
+                                        className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-lg p-2.5 sm:p-3 border border-orange-100 dark:border-orange-800"
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <Link
+                                            to={`/verses/${source.canonical_id}`}
+                                            className="font-mono text-orange-700 dark:text-orange-400 font-semibold text-xs sm:text-sm hover:underline"
+                                          >
+                                            {source.canonical_id.replace(
+                                              /_/g,
+                                              " ",
+                                            )}
+                                          </Link>
+                                        </div>
+                                        <p className="mt-1 sm:mt-1.5 text-gray-700 dark:text-gray-300 italic text-xs sm:text-sm">
+                                          "{source.paraphrase}"
+                                        </p>
                                       </div>
-                                      <p className="mt-1 sm:mt-1.5 text-gray-700 dark:text-gray-300 italic text-xs sm:text-sm">
-                                        "{source.paraphrase}"
-                                      </p>
-                                    </div>
-                                  ),
-                                )}
-                              </div>
-                            )}
+                                    ),
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                        {/* Confidence */}
+                        {exchange.output && (
+                          <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                            <span>Confidence:</span>
+                            <div className="w-10 sm:w-12 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                              <div
+                                className={`h-1.5 rounded-full ${
+                                  exchange.output.confidence >= 0.8
+                                    ? "bg-green-500"
+                                    : exchange.output.confidence >= 0.6
+                                      ? "bg-yellow-500"
+                                      : "bg-red-500"
+                                }`}
+                                style={{
+                                  width: `${exchange.output.confidence * 100}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="font-medium">
+                              {(exchange.output.confidence * 100).toFixed(0)}%
+                            </span>
                           </div>
                         )}
-
-                      {/* Confidence */}
-                      {exchange.output && (
-                        <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                          <span>Confidence:</span>
-                          <div className="w-10 sm:w-12 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                            <div
-                              className={`h-1.5 rounded-full ${
-                                exchange.output.confidence >= 0.8
-                                  ? "bg-green-500"
-                                  : exchange.output.confidence >= 0.6
-                                    ? "bg-yellow-500"
-                                    : "bg-red-500"
-                              }`}
-                              style={{
-                                width: `${exchange.output.confidence * 100}%`,
-                              }}
-                            />
-                          </div>
-                          <span className="font-medium">
-                            {(exchange.output.confidence * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                      )}
+                      </div>
                     </div>
-                  </div>
                   )}
                 </div>
               );

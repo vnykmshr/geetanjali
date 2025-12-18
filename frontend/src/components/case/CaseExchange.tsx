@@ -75,7 +75,9 @@ export function CaseExchange({
         </div>
         <div
           className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
-            isFirst ? "text-amber-700 dark:text-amber-400" : "text-blue-600 dark:text-blue-400"
+            isFirst
+              ? "text-amber-700 dark:text-amber-400"
+              : "text-blue-600 dark:text-blue-400"
           }`}
         >
           {isFirst ? "Your Question" : "Follow-up"}
@@ -142,12 +144,16 @@ export function CaseExchange({
               />
             </svg>
           ) : (
-            <span className="text-xs text-orange-600 dark:text-orange-400">~</span>
+            <span className="text-xs text-orange-600 dark:text-orange-400">
+              ~
+            </span>
           )}
         </div>
         <div
           className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
-            isFirst ? "text-orange-700 dark:text-orange-400" : "text-orange-600 dark:text-orange-400"
+            isFirst
+              ? "text-orange-700 dark:text-orange-400"
+              : "text-orange-600 dark:text-orange-400"
           }`}
         >
           {isFirst ? "Wisdom from the Geeta" : "Guidance"}
