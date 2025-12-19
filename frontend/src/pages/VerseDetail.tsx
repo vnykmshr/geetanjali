@@ -82,8 +82,10 @@ export default function VerseDetail() {
     }
   }, [canonicalId, canonicalUppercase, navigate]);
 
-  // Track verse views for newsletter nudge
+  // Track unique verse views for newsletter nudge
   useEffect(() => {
+    if (!canonicalId) return;
+
     try {
       // Don't show nudge if user is subscribed
       const isSubscribed =
@@ -93,16 +95,18 @@ export default function VerseDetail() {
         return;
       }
 
-      // Increment view count in session
-      const currentCount = parseInt(
-        sessionStorage.getItem(VERSE_VIEW_COUNT_KEY) || "0",
-        10
-      );
-      const newCount = currentCount + 1;
-      sessionStorage.setItem(VERSE_VIEW_COUNT_KEY, newCount.toString());
+      // Track unique verses viewed (prevents double-counting when revisiting)
+      const seenJson = sessionStorage.getItem(VERSE_VIEW_COUNT_KEY) || "[]";
+      const seenVerses: string[] = JSON.parse(seenJson);
 
-      // Show nudge after threshold
-      setShowNewsletterNudge(newCount >= NUDGE_THRESHOLD);
+      // Add to seen list if new
+      if (!seenVerses.includes(canonicalId)) {
+        seenVerses.push(canonicalId);
+        sessionStorage.setItem(VERSE_VIEW_COUNT_KEY, JSON.stringify(seenVerses));
+      }
+
+      // Show nudge after threshold unique verses
+      setShowNewsletterNudge(seenVerses.length >= NUDGE_THRESHOLD);
     } catch {
       // Ignore storage errors
     }

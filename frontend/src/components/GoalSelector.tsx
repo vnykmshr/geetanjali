@@ -28,6 +28,7 @@ function GoalCard({ goal, isSelected, onToggle }: GoalCardProps) {
         }
       `}
       aria-pressed={isSelected}
+      aria-label={`${isSelected ? "Deselect" : "Select"} ${goal.label} learning goal`}
     >
       {/* Selection indicator */}
       {isSelected && (
@@ -118,11 +119,13 @@ export function GoalSelector({
   } = useLearningGoal();
 
   const handleToggle = (goalId: string) => {
-    toggleGoal(goalId);
-    // Callback with updated selection (need to compute new state)
-    const newSelection = isSelected(goalId)
+    // Compute new selection BEFORE toggle to avoid stale closure
+    const wasSelected = isSelected(goalId);
+    const newSelection = wasSelected
       ? selectedGoalIds.filter((id) => id !== goalId)
       : [...selectedGoalIds, goalId];
+
+    toggleGoal(goalId);
     onGoalsChange?.(newSelection);
   };
 

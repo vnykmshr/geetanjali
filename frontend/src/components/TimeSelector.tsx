@@ -1,3 +1,4 @@
+import { useRef, useCallback } from "react";
 import { SunriseIcon, SunMediumIcon, SunsetIcon } from "./icons";
 
 export type SendTime = "morning" | "afternoon" | "evening";
@@ -25,20 +26,61 @@ interface TimeSelectorProps {
 /**
  * Time preference selector using laid-out toggle buttons.
  * Follows the "no dropdowns, keep it fluid" design principle.
+ *
+ * Keyboard navigation (WAI-ARIA radiogroup pattern):
+ * - Arrow keys move between options and select
+ * - Only selected option is tabbable (roving tabindex)
  */
 export function TimeSelector({ value, onChange, disabled }: TimeSelectorProps) {
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent, currentIndex: number) => {
+      if (disabled) return;
+
+      let nextIndex: number | null = null;
+
+      switch (e.key) {
+        case "ArrowRight":
+        case "ArrowDown":
+          e.preventDefault();
+          nextIndex = (currentIndex + 1) % TIME_OPTIONS.length;
+          break;
+        case "ArrowLeft":
+        case "ArrowUp":
+          e.preventDefault();
+          nextIndex = (currentIndex - 1 + TIME_OPTIONS.length) % TIME_OPTIONS.length;
+          break;
+        default:
+          return;
+      }
+
+      if (nextIndex !== null) {
+        const nextOption = TIME_OPTIONS[nextIndex];
+        onChange(nextOption.id);
+        buttonRefs.current[nextIndex]?.focus();
+      }
+    },
+    [disabled, onChange]
+  );
+
+  const currentIndex = TIME_OPTIONS.findIndex((o) => o.id === value);
+
   return (
     <div
       className="flex flex-col sm:flex-row gap-2"
       role="radiogroup"
       aria-label="When would you like to receive verses?"
     >
-      {TIME_OPTIONS.map((option) => (
+      {TIME_OPTIONS.map((option, index) => (
         <button
           key={option.id}
+          ref={(el) => { buttonRefs.current[index] = el; }}
           type="button"
           onClick={() => onChange(option.id)}
+          onKeyDown={(e) => handleKeyDown(e, index)}
           disabled={disabled}
+          tabIndex={index === currentIndex ? 0 : -1}
           className={`
             flex-1 flex items-center gap-3 p-3 rounded-lg border-2 transition-all duration-150
             focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2

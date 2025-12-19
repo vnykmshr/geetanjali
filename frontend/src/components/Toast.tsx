@@ -26,18 +26,36 @@ export function Toast({
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
+  // Track mounted state to prevent updates after unmount
+  const isMountedRef = useRef(true);
   // Track timers for proper cleanup
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Store latest onDismiss to avoid stale closures
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+
+  // Track unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Stable dismiss function that properly cleans up
   const triggerDismiss = useCallback(() => {
+    if (!isMountedRef.current) return;
     setIsLeaving(true);
     // Clear any existing exit timer
     if (exitTimerRef.current) {
       clearTimeout(exitTimerRef.current);
     }
-    exitTimerRef.current = setTimeout(onDismiss, 300);
-  }, [onDismiss]);
+    exitTimerRef.current = setTimeout(() => {
+      if (isMountedRef.current) {
+        onDismissRef.current();
+      }
+    }, 300);
+  }, []);
 
   // Entrance animation
   useEffect(() => {

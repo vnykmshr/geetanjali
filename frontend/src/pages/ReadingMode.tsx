@@ -222,10 +222,13 @@ export default function ReadingMode() {
     }
   }, []);
 
-  // Track verses read and show newsletter toast
+  // Track unique verses read and show newsletter toast
   useEffect(() => {
     // Only count actual verses (not intro pages)
-    if (state.pageIndex < 0) return;
+    if (state.pageIndex < 0 || state.chapterVerses.length === 0) return;
+
+    const verse = state.chapterVerses[state.pageIndex];
+    if (!verse?.canonical_id) return;
 
     try {
       // Skip if already subscribed
@@ -237,21 +240,26 @@ export default function ReadingMode() {
         return;
       }
 
-      // Increment verses read count
-      const count =
-        parseInt(sessionStorage.getItem(SESSION_VERSES_READ_KEY) || "0", 10) +
-        1;
-      sessionStorage.setItem(SESSION_VERSES_READ_KEY, count.toString());
+      // Track unique verses read (prevents double-counting when navigating back)
+      const seenJson = sessionStorage.getItem(SESSION_VERSES_READ_KEY) || "[]";
+      const seenVerses: string[] = JSON.parse(seenJson);
 
-      // Show toast after threshold
-      if (count === TOAST_THRESHOLD) {
+      // Skip if already seen this verse
+      if (seenVerses.includes(verse.canonical_id)) return;
+
+      // Add to seen list
+      seenVerses.push(verse.canonical_id);
+      sessionStorage.setItem(SESSION_VERSES_READ_KEY, JSON.stringify(seenVerses));
+
+      // Show toast after threshold unique verses
+      if (seenVerses.length === TOAST_THRESHOLD) {
         setShowNewsletterToast(true);
         localStorage.setItem(NEWSLETTER_TOAST_KEY, Date.now().toString());
       }
     } catch {
       // Ignore storage errors
     }
-  }, [state.pageIndex]);
+  }, [state.pageIndex, state.chapterVerses]);
 
   // Dismiss newsletter toast
   const dismissNewsletterToast = useCallback(() => {
