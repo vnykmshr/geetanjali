@@ -1,13 +1,14 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   CheckCircleIcon,
   XCircleIcon,
   SpinnerIcon,
+  MailIcon,
 } from "../components/icons";
 import { api } from "../lib/api";
 
-type UnsubscribeState = "loading" | "success" | "already_unsubscribed" | "error";
+type UnsubscribeState = "confirm" | "loading" | "success" | "already_unsubscribed" | "error";
 
 export default function NewsletterUnsubscribe() {
   const { token } = useParams<{ token: string }>();
@@ -20,47 +21,67 @@ export default function NewsletterUnsubscribe() {
     if (!token) {
       return { state: "error", error: "Invalid unsubscribe link" };
     }
-    return { state: "loading", error: "" };
+    return { state: "confirm", error: "" };
   }, [token]);
 
   const [state, setState] = useState<UnsubscribeState>(initialState.state);
   const [email, setEmail] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>(initialState.error);
 
-  useEffect(() => {
-    // Skip API call if already in error state (invalid token)
-    if (!token || initialState.state === "error") {
-      return;
-    }
+  const handleConfirm = useCallback(async () => {
+    if (!token) return;
 
-    const unsubscribe = async () => {
-      try {
-        const response = await api.get(`/api/v1/newsletter/unsubscribe/${token}`);
-        setEmail(response.data.email);
-        if (response.data.message.includes("already")) {
-          setState("already_unsubscribed");
-        } else {
-          setState("success");
-        }
-      } catch (err: unknown) {
-        setState("error");
-        if (err && typeof err === "object" && "response" in err) {
-          const axiosErr = err as { response?: { data?: { detail?: string } } };
-          setErrorMessage(
-            axiosErr.response?.data?.detail || "Failed to unsubscribe"
-          );
-        } else {
-          setErrorMessage("Failed to unsubscribe");
-        }
+    setState("loading");
+    try {
+      const response = await api.post(`/api/v1/newsletter/unsubscribe/${token}`);
+      setEmail(response.data.email);
+      if (response.data.message.includes("already")) {
+        setState("already_unsubscribed");
+      } else {
+        setState("success");
       }
-    };
-
-    unsubscribe();
-  }, [token, initialState.state]);
+    } catch (err: unknown) {
+      setState("error");
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosErr = err as { response?: { data?: { detail?: string } } };
+        setErrorMessage(
+          axiosErr.response?.data?.detail || "Failed to unsubscribe"
+        );
+      } else {
+        setErrorMessage("Failed to unsubscribe");
+      }
+    }
+  }, [token]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 px-4">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
+        {state === "confirm" && (
+          <>
+            <MailIcon className="w-16 h-16 text-orange-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Unsubscribe from Daily Wisdom?
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              You'll stop receiving daily verse emails. You can always subscribe again later.
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={handleConfirm}
+                className="w-full px-6 py-3 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-all focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              >
+                Yes, Unsubscribe
+              </button>
+              <Link
+                to="/"
+                className="block px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+              >
+                Cancel
+              </Link>
+            </div>
+          </>
+        )}
+
         {state === "loading" && (
           <>
             <SpinnerIcon className="w-16 h-16 text-orange-500 animate-spin mx-auto mb-4" />

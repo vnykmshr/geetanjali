@@ -26,6 +26,18 @@ router = APIRouter(prefix="/api/v1/newsletter")
 VERIFICATION_TOKEN_EXPIRY_HOURS = 24
 
 
+def _mask_email(email: str) -> str:
+    """Mask email for logging (PII protection)."""
+    if not email or "@" not in email:
+        return "***"
+    local, domain = email.rsplit("@", 1)
+    if len(local) <= 2:
+        masked_local = "*" * len(local)
+    else:
+        masked_local = local[0] + "*" * (len(local) - 2) + local[-1]
+    return f"{masked_local}@{domain}"
+
+
 # =============================================================================
 # Request/Response Schemas
 # =============================================================================
@@ -37,8 +49,8 @@ class SubscribeRequest(BaseModel):
     email: EmailStr = Field(..., description="Email address for newsletter")
     name: Optional[str] = Field(
         None,
-        max_length=100,  # Reasonable limit for names
-        pattern=r"^[a-zA-Z\s\-'\.]+$",  # Only letters, spaces, hyphens, apostrophes, periods
+        min_length=1,
+        max_length=100,
         description="How to greet subscriber",
     )
     goal_ids: List[str] = Field(
@@ -76,8 +88,8 @@ class PreferencesRequest(BaseModel):
 
     name: Optional[str] = Field(
         None,
+        min_length=1,
         max_length=100,
-        pattern=r"^[a-zA-Z\s\-'\.]+$",
     )
     goal_ids: Optional[List[str]] = Field(None, max_length=10)
     send_time: Optional[str] = None
@@ -191,9 +203,9 @@ async def subscribe(
                 db.commit()
             except Exception as e:
                 db.rollback()
-                logger.exception(f"Error reactivating subscription for {email}: {e}")
+                logger.exception(f"Error reactivating subscription for {_mask_email(email)}")
                 raise HTTPException(status_code=500, detail="An error occurred. Please try again.")
-            logger.info(f"Reactivating subscription for {email}")
+            logger.info(f"Reactivating subscription for {_mask_email(email)}")
         elif subscriber.verified:
             # Already subscribed and verified
             return SubscribeResponse(
@@ -215,9 +227,9 @@ async def subscribe(
                 db.commit()
             except Exception as e:
                 db.rollback()
-                logger.exception(f"Error resending verification for {email}: {e}")
+                logger.exception(f"Error resending verification for {_mask_email(email)}")
                 raise HTTPException(status_code=500, detail="An error occurred. Please try again.")
-            logger.info(f"Resending verification for {email}")
+            logger.info(f"Resending verification for {_mask_email(email)}")
     else:
         # Create new subscriber
         subscriber = Subscriber(
@@ -234,7 +246,7 @@ async def subscribe(
         try:
             db.commit()
             db.refresh(subscriber)
-            logger.info(f"New subscription created for {email}")
+            logger.info(f"New subscription created for {_mask_email(email)}")
         except IntegrityError:
             # Race condition: another request created the same email
             db.rollback()
@@ -252,10 +264,10 @@ async def subscribe(
                     hours=VERIFICATION_TOKEN_EXPIRY_HOURS
                 )
                 db.commit()
-                logger.info(f"Race condition handled, resending verification for {email}")
+                logger.info(f"Race condition handled, resending verification for {_mask_email(email)}")
             else:
                 # Unexpected: IntegrityError but no subscriber found
-                logger.error(f"IntegrityError but subscriber not found for {email}")
+                logger.error(f"IntegrityError but subscriber not found for {_mask_email(email)}")
                 raise HTTPException(
                     status_code=500,
                     detail="An error occurred. Please try again.",
@@ -276,7 +288,7 @@ async def subscribe(
     )
 
 
-@router.get("/verify/{token}", response_model=VerifyResponse)
+@router.post("/verify/{token}", response_model=VerifyResponse)
 @limiter.limit("10/hour")
 async def verify_subscription(
     request: Request,
@@ -285,9 +297,10 @@ async def verify_subscription(
     db: Session = Depends(get_db),
 ):
     """
-    Verify email subscription via magic link.
+    Verify email subscription via confirmation.
 
-    Called when user clicks verification link in email.
+    Called when user clicks confirm button on verification page.
+    Using POST prevents CSRF via img tags or browser prefetch.
     """
     subscriber = get_subscriber_by_token(db, token)
 
@@ -320,10 +333,10 @@ async def verify_subscription(
         db.commit()
     except Exception as e:
         db.rollback()
-        logger.exception(f"Error verifying subscription for {subscriber.email}: {e}")
+        logger.exception(f"Error verifying subscription for {_mask_email(subscriber.email)}")
         raise HTTPException(status_code=500, detail="An error occurred. Please try again.")
 
-    logger.info(f"Subscription verified for {subscriber.email}")
+    logger.info(f"Subscription verified for {_mask_email(subscriber.email)}")
 
     unsubscribe_url = f"{settings.FRONTEND_URL}/n/unsubscribe/{unsubscribe_token}"
     preferences_url = f"{settings.FRONTEND_URL}/n/preferences/{unsubscribe_token}"
@@ -343,7 +356,7 @@ async def verify_subscription(
     )
 
 
-@router.get("/unsubscribe/{token}", response_model=UnsubscribeResponse)
+@router.post("/unsubscribe/{token}", response_model=UnsubscribeResponse)
 async def unsubscribe(
     request: Request,
     token: str,
@@ -352,7 +365,8 @@ async def unsubscribe(
     """
     Unsubscribe from Daily Wisdom newsletter.
 
-    One-click unsubscribe via token in email footer.
+    Called when user confirms unsubscribe on the unsubscribe page.
+    Using POST prevents CSRF via img tags or browser prefetch.
     No rate limit - always allow unsubscribe.
     """
     subscriber = get_subscriber_by_token(db, token)
@@ -372,10 +386,10 @@ async def unsubscribe(
         db.commit()
     except Exception as e:
         db.rollback()
-        logger.exception(f"Error unsubscribing {subscriber.email}: {e}")
+        logger.exception(f"Error unsubscribing {_mask_email(subscriber.email)}")
         raise HTTPException(status_code=500, detail="An error occurred. Please try again.")
 
-    logger.info(f"Unsubscribed: {subscriber.email}")
+    logger.info(f"Unsubscribed: {_mask_email(subscriber.email)}")
 
     return UnsubscribeResponse(
         message="You've been unsubscribed from Daily Wisdom. We're sorry to see you go!",
@@ -448,10 +462,10 @@ async def update_preferences(
         db.refresh(subscriber)
     except Exception as e:
         db.rollback()
-        logger.exception(f"Error updating preferences for {subscriber.email}: {e}")
+        logger.exception(f"Error updating preferences for {_mask_email(subscriber.email)}")
         raise HTTPException(status_code=500, detail="An error occurred. Please try again.")
 
-    logger.info(f"Preferences updated for {subscriber.email}")
+    logger.info(f"Preferences updated for {_mask_email(subscriber.email)}")
 
     return PreferencesResponse(
         email=subscriber.email,

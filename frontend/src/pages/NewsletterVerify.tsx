@@ -1,14 +1,15 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   CheckCircleIcon,
   XCircleIcon,
   SpinnerIcon,
+  MailIcon,
 } from "../components/icons";
 import { markNewsletterSubscribed } from "../components";
 import { api } from "../lib/api";
 
-type VerifyState = "loading" | "success" | "error" | "already_verified";
+type VerifyState = "confirm" | "loading" | "success" | "error" | "already_verified";
 
 export default function NewsletterVerify() {
   const { token } = useParams<{ token: string }>();
@@ -21,49 +22,61 @@ export default function NewsletterVerify() {
     if (!token) {
       return { state: "error", error: "Invalid verification link" };
     }
-    return { state: "loading", error: "" };
+    return { state: "confirm", error: "" };
   }, [token]);
 
   const [state, setState] = useState<VerifyState>(initialState.state);
   const [email, setEmail] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>(initialState.error);
 
-  useEffect(() => {
-    // Skip API call if already in error state (invalid token)
-    if (!token || initialState.state === "error") {
-      return;
-    }
+  const handleConfirm = useCallback(async () => {
+    if (!token) return;
 
-    const verify = async () => {
-      try {
-        const response = await api.get(`/api/v1/newsletter/verify/${token}`);
-        setEmail(response.data.email);
-        // Mark as subscribed in localStorage (hides home page card)
-        markNewsletterSubscribed();
-        if (response.data.message.includes("already")) {
-          setState("already_verified");
-        } else {
-          setState("success");
-        }
-      } catch (err: unknown) {
-        setState("error");
-        if (err && typeof err === "object" && "response" in err) {
-          const axiosErr = err as { response?: { data?: { detail?: string } } };
-          setErrorMessage(
-            axiosErr.response?.data?.detail || "Failed to verify subscription"
-          );
-        } else {
-          setErrorMessage("Failed to verify subscription");
-        }
+    setState("loading");
+    try {
+      const response = await api.post(`/api/v1/newsletter/verify/${token}`);
+      setEmail(response.data.email);
+      // Mark as subscribed in localStorage (hides home page card)
+      markNewsletterSubscribed();
+      if (response.data.message.includes("already")) {
+        setState("already_verified");
+      } else {
+        setState("success");
       }
-    };
-
-    verify();
-  }, [token, initialState.state]);
+    } catch (err: unknown) {
+      setState("error");
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosErr = err as { response?: { data?: { detail?: string } } };
+        setErrorMessage(
+          axiosErr.response?.data?.detail || "Failed to verify subscription"
+        );
+      } else {
+        setErrorMessage("Failed to verify subscription");
+      }
+    }
+  }, [token]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 px-4">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
+        {state === "confirm" && (
+          <>
+            <MailIcon className="w-16 h-16 text-orange-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Confirm Your Subscription
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Click the button below to complete your Daily Wisdom subscription.
+            </p>
+            <button
+              onClick={handleConfirm}
+              className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium rounded-lg hover:from-orange-600 hover:to-red-600 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+            >
+              Confirm Subscription
+            </button>
+          </>
+        )}
+
         {state === "loading" && (
           <>
             <SpinnerIcon className="w-16 h-16 text-orange-500 animate-spin mx-auto mb-4" />
