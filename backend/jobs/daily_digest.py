@@ -1,19 +1,18 @@
 """
 Daily Digest Job - Send personalized daily verse emails to subscribers.
 
-Usage:
+DEPRECATED: This batch processor is deprecated in favor of the worker-based approach.
+Use `jobs.newsletter_scheduler` instead, which enqueues individual jobs to RQ workers.
+
+New architecture:
+    Cron → newsletter_scheduler.py → enqueues jobs → Worker processes each subscriber
+
+Legacy usage (still works for testing/fallback):
     python -m jobs.daily_digest --send-time morning
     python -m jobs.daily_digest --send-time morning --dry-run
-    python -m jobs.daily_digest --send-time afternoon --dry-run
 
-Environment:
-    NEWSLETTER_DRY_RUN=true  - Log emails without sending (default in dev)
-    NEWSLETTER_DRY_RUN=false - Actually send emails (set in production)
-
-Cron Schedule (UTC):
-    Morning (6 AM IST):    30 0 * * * ... --send-time morning
-    Afternoon (12:30 PM):  0 7 * * *  ... --send-time afternoon
-    Evening (6 PM IST):    30 12 * * * ... --send-time evening
+Note: Helper functions in this module (select_verse_for_subscriber, get_goal_labels, etc.)
+are still used by the new worker job in jobs/newsletter.py.
 """
 
 import argparse
@@ -446,7 +445,22 @@ def send_daily_digest(
 
 
 def main():
-    """CLI entry point for daily digest job."""
+    """CLI entry point for daily digest job.
+
+    DEPRECATED: Use newsletter_scheduler.py instead for production.
+    This batch processor is kept for testing and fallback scenarios.
+    """
+    import warnings
+    warnings.warn(
+        "daily_digest.py is deprecated. Use newsletter_scheduler.py instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    logger.warning(
+        "DEPRECATED: Using legacy batch processor. "
+        "Consider switching to: python -m jobs.newsletter_scheduler --send-time <time>"
+    )
+
     parser = argparse.ArgumentParser(
         description="Send daily verse digest emails to subscribers",
         formatter_class=argparse.RawDescriptionHelpFormatter,
