@@ -11,14 +11,68 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
+# =============================================================================
+# Exception Types
+# =============================================================================
+
+
+class EmailError(Exception):
+    """Base exception for email service errors."""
+
+    pass
+
+
+class EmailConfigurationError(EmailError):
+    """
+    Email service is not configured properly.
+
+    This is a non-retryable error - configuration must be fixed.
+    Examples: Missing API key, missing FROM address.
+    """
+
+    pass
+
+
+class EmailServiceUnavailable(EmailError):
+    """
+    Email service is unavailable.
+
+    This may be transient (network issue) or permanent (library not installed).
+    Caller should check the underlying cause.
+    """
+
+    pass
+
+
+class EmailSendError(EmailError):
+    """
+    Failed to send email via provider.
+
+    This wraps errors from the email provider (Resend).
+    May be transient (rate limit, network) or permanent (invalid recipient).
+    """
+
+    def __init__(self, message: str, cause: Optional[Exception] = None):
+        super().__init__(message)
+        self.cause = cause
+
 # Lazy import resend to avoid import errors if not installed
 _resend_client: Optional[object] = None
+_resend_init_error: Optional[str] = None
 
 
 def _get_resend():
-    """Get or initialize Resend client."""
-    global _resend_client
-    if _resend_client is None:
+    """
+    Get or initialize Resend client.
+
+    Returns:
+        Resend module if available and configured, None otherwise.
+
+    Note: Does not raise - caller should handle None return.
+    """
+    global _resend_client, _resend_init_error
+    if _resend_client is None and _resend_init_error is None:
         try:
             import resend
 
@@ -27,12 +81,35 @@ def _get_resend():
                 _resend_client = resend
                 logger.info("Resend email client initialized")
             else:
-                logger.warning(
-                    "RESEND_API_KEY not configured - emails will not be sent"
-                )
+                _resend_init_error = "RESEND_API_KEY not configured"
+                logger.warning(f"{_resend_init_error} - emails will not be sent")
         except ImportError:
-            logger.warning("Resend library not installed - emails will not be sent")
+            _resend_init_error = "Resend library not installed"
+            logger.warning(f"{_resend_init_error} - emails will not be sent")
     return _resend_client
+
+
+def _get_resend_or_raise():
+    """
+    Get Resend client, raising specific exceptions on failure.
+
+    Returns:
+        Resend module
+
+    Raises:
+        EmailConfigurationError: If API key not configured
+        EmailServiceUnavailable: If resend library not installed
+    """
+    global _resend_init_error
+    client = _get_resend()
+    if client is None:
+        if _resend_init_error and "not configured" in _resend_init_error:
+            raise EmailConfigurationError(_resend_init_error)
+        elif _resend_init_error:
+            raise EmailServiceUnavailable(_resend_init_error)
+        else:
+            raise EmailServiceUnavailable("Email service unavailable")
+    return client
 
 
 def send_alert_email(subject: str, message: str) -> bool:
@@ -518,10 +595,14 @@ def send_newsletter_digest_email(
     Returns:
         True if email sent successfully, False otherwise
     """
-    resend = _get_resend()
-
-    if not resend:
-        logger.warning("Email service not available - digest email not sent")
+    # Check email service availability with specific error categorization
+    try:
+        resend = _get_resend_or_raise()
+    except EmailConfigurationError as e:
+        logger.warning(f"Email not configured - digest email not sent: {e}")
+        return False
+    except EmailServiceUnavailable as e:
+        logger.warning(f"Email service unavailable - digest email not sent: {e}")
         return False
 
     if not settings.CONTACT_EMAIL_FROM:
@@ -707,5 +788,7 @@ Manage preferences: {preferences_url}
         return True
 
     except Exception as e:
-        logger.error(f"Failed to send newsletter digest email: {e}")
+        # Log with categorized error type for easier debugging
+        error = EmailSendError(f"Failed to send newsletter digest email: {e}", cause=e)
+        logger.error(str(error))
         return False
