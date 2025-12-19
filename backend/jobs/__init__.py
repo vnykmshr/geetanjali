@@ -5,7 +5,6 @@ Worker Jobs:
 
 Schedulers (run by cron):
 - newsletter_scheduler: Enqueues individual digest jobs
-- daily_digest: Legacy batch processor (deprecated, use newsletter_scheduler)
 """
 
 from jobs.newsletter import send_subscriber_digest

@@ -9,28 +9,227 @@ This provides:
 """
 
 import logging
+import random
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import List, Optional, Set
+
+from sqlalchemy import or_, cast
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Session
 
 from config import settings
 from db.connection import SessionLocal
 from models import Subscriber, Verse, SendTime
-from jobs.daily_digest import (
-    select_verse_for_subscriber,
-    get_subscriber_name,
-    get_goal_labels,
-    update_30d_window,
-    TIME_GREETINGS,
-    MILESTONE_MESSAGES,
-    get_reflection_prompt,
-)
+from api.taxonomy import get_goals
 from services.email import send_newsletter_digest_email
 
 logger = logging.getLogger(__name__)
 
 # Idempotency window: skip if email was sent within this time
 IDEMPOTENCY_WINDOW_SECONDS = 3600  # 1 hour
+
+
+# =============================================================================
+# Time-based Greetings
+# =============================================================================
+
+TIME_GREETINGS = {
+    "morning": "Good morning",
+    "afternoon": "Take a breath",
+    "evening": "As the day winds down",
+}
+
+
+# =============================================================================
+# Milestone Messages
+# =============================================================================
+
+MILESTONE_MESSAGES = {
+    7: "One week of wisdom. The journey continues.",
+    30: "A month of daily verses. May they bring clarity.",
+    100: "100 verses. A remarkable commitment to growth.",
+    365: "One year together. Thank you for walking this path.",
+}
+
+
+# =============================================================================
+# Reflection Prompts (shown every ~7 emails)
+# =============================================================================
+
+REFLECTION_PROMPTS = [
+    "How did yesterday's verse sit with you?",
+    "What wisdom from this week resonates most?",
+    "Is there a verse you'd like to revisit?",
+    "What small shift might today's verse inspire?",
+]
+
+
+# =============================================================================
+# Helper Functions
+# =============================================================================
+
+
+def get_principles_for_goals(goal_ids: List[str]) -> Set[str]:
+    """
+    Get union of all principles from the given goal IDs.
+
+    If goal_ids is empty or only contains "exploring", returns empty set
+    (which triggers featured-only verse selection).
+    """
+    if not goal_ids:
+        return set()
+
+    # Filter out "exploring" since it has no principles
+    real_goals = [g for g in goal_ids if g != "exploring"]
+    if not real_goals:
+        return set()
+
+    goals_data = get_goals()
+    principles: Set[str] = set()
+
+    for goal_id in real_goals:
+        goal = goals_data.get(goal_id)
+        if goal and "principles" in goal:
+            principles.update(goal["principles"])
+
+    return principles
+
+
+def select_verse_for_subscriber(
+    db: Session,
+    subscriber: Subscriber,
+    exclude_ids: List[str],
+    fallback_to_featured: bool = False,
+) -> Optional[Verse]:
+    """
+    Select a verse for the subscriber based on their goals.
+
+    Strategy:
+    1. Get union of principles from subscriber's goals
+    2. If no principles (exploring or no goals), use featured verses
+    3. Filter out recently sent verses (exclude_ids)
+    4. Random selection from remaining
+    5. Fallback: if no verses available and fallback_to_featured=True, try featured
+
+    Args:
+        db: Database session
+        subscriber: The subscriber to select verse for
+        exclude_ids: List of verse IDs to exclude (recently sent)
+        fallback_to_featured: If True, fall back to featured verses when principle-based fails
+    """
+    principles = get_principles_for_goals(subscriber.goal_ids or [])
+
+    # Build base query
+    query = db.query(Verse)
+
+    if principles:
+        # Filter by principles (OR logic - any matching principle)
+        conditions = [
+            cast(Verse.consulting_principles, JSONB).contains([p])
+            for p in principles
+        ]
+        query = query.filter(Verse.consulting_principles.isnot(None))
+        query = query.filter(or_(*conditions))
+    else:
+        # No principles = exploring or no goals → use featured verses only
+        query = query.filter(Verse.is_featured == True)  # noqa: E712
+
+    # Exclude recently sent verses
+    if exclude_ids:
+        query = query.filter(Verse.canonical_id.notin_(exclude_ids))
+
+    # Get all matching verses
+    verses = query.all()
+
+    if verses:
+        return random.choice(verses)
+
+    # No verses found with principle filter, try featured as fallback
+    if fallback_to_featured and principles:
+        logger.info(
+            f"No principle-based verses for {subscriber.email}, falling back to featured"
+        )
+        featured_query = db.query(Verse).filter(Verse.is_featured == True)  # noqa: E712
+        if exclude_ids:
+            featured_query = featured_query.filter(Verse.canonical_id.notin_(exclude_ids))
+        featured_verses = featured_query.all()
+        if featured_verses:
+            return random.choice(featured_verses)
+
+    return None
+
+
+def get_goal_labels(goal_ids: List[str]) -> str:
+    """Get human-readable labels for goal IDs."""
+    if not goal_ids:
+        return "exploring the Gita's wisdom"
+
+    goals_data = get_goals()
+    labels: List[str] = []
+
+    for goal_id in goal_ids:
+        goal = goals_data.get(goal_id)
+        if goal:
+            label: str = goal.get("label", goal_id)
+            labels.append(label)
+
+    if not labels:
+        return "exploring the Gita's wisdom"
+
+    if len(labels) == 1:
+        return labels[0]
+    elif len(labels) == 2:
+        return f"{labels[0]} and {labels[1]}"
+    else:
+        return ", ".join(labels[:-1]) + f", and {labels[-1]}"
+
+
+def get_subscriber_name(subscriber: Subscriber) -> str:
+    """Get subscriber's display name (name or email prefix)."""
+    if subscriber.name:
+        return subscriber.name
+
+    # Extract prefix from email
+    email_prefix = subscriber.email.split("@")[0]
+    # Capitalize first letter
+    return email_prefix.capitalize()
+
+
+def should_show_reflection(verses_sent_count: int) -> bool:
+    """Show reflection prompt every 7th email (not on milestones)."""
+    if verses_sent_count in MILESTONE_MESSAGES:
+        return False
+    return verses_sent_count > 0 and verses_sent_count % 7 == 0
+
+
+def get_reflection_prompt(verses_sent_count: int) -> Optional[str]:
+    """Get a reflection prompt if applicable."""
+    if not should_show_reflection(verses_sent_count):
+        return None
+    # Rotate through prompts based on count
+    idx = (verses_sent_count // 7) % len(REFLECTION_PROMPTS)
+    return REFLECTION_PROMPTS[idx]
+
+
+def update_30d_window(
+    current_list: List[str],
+    new_verse_id: str,
+    max_size: int = 30,
+) -> List[str]:
+    """
+    Update the 30-day rolling window of sent verses.
+
+    Adds new verse, removes oldest if exceeds max_size.
+    """
+    updated = current_list.copy() if current_list else []
+    updated.append(new_verse_id)
+
+    # Keep only the last max_size entries
+    if len(updated) > max_size:
+        updated = updated[-max_size:]
+
+    return updated
 
 
 def _mask_email(email: str) -> str:
