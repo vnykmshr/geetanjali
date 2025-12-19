@@ -20,6 +20,7 @@ import {
   ProgressBar,
   ChapterSelector,
   IntroCard,
+  Toast,
 } from "../components";
 import { useSEO, useSwipeNavigation } from "../hooks";
 import {
@@ -34,6 +35,15 @@ import { errorMessages } from "../lib/errorMessages";
 const READING_POSITION_KEY = "geetanjali:readingPosition";
 const READING_SETTINGS_KEY = "geetanjali:readingSettings";
 const ONBOARDING_SEEN_KEY = "geetanjali:readingOnboardingSeen";
+const NEWSLETTER_SUBSCRIBED_KEY = "geetanjali:newsletterSubscribed";
+const NEWSLETTER_TOAST_KEY = "geetanjali:readingToastShown";
+
+// sessionStorage key for verses read in this session
+const SESSION_VERSES_READ_KEY = "geetanjali:readingVersesRead";
+// Show toast after reading this many verses
+const TOAST_THRESHOLD = 5;
+// Rate limit: once per week (7 days in ms)
+const TOAST_RATE_LIMIT = 7 * 24 * 60 * 60 * 1000;
 
 // Special page indices for intro cards
 // -2 = book cover, -1 = chapter intro, >= 0 = verse index
@@ -188,6 +198,7 @@ export default function ReadingMode() {
       return false;
     }
   });
+  const [showNewsletterToast, setShowNewsletterToast] = useState(false);
 
   // Book and chapter metadata for intro cards
   const [bookMetadata, setBookMetadata] = useState<BookMetadata | null>(null);
@@ -209,6 +220,42 @@ export default function ReadingMode() {
     } catch {
       // Ignore
     }
+  }, []);
+
+  // Track verses read and show newsletter toast
+  useEffect(() => {
+    // Only count actual verses (not intro pages)
+    if (state.pageIndex < 0) return;
+
+    try {
+      // Skip if already subscribed
+      if (localStorage.getItem(NEWSLETTER_SUBSCRIBED_KEY) === "true") return;
+
+      // Skip if toast shown within rate limit
+      const lastShown = localStorage.getItem(NEWSLETTER_TOAST_KEY);
+      if (lastShown && Date.now() - parseInt(lastShown, 10) < TOAST_RATE_LIMIT) {
+        return;
+      }
+
+      // Increment verses read count
+      const count =
+        parseInt(sessionStorage.getItem(SESSION_VERSES_READ_KEY) || "0", 10) +
+        1;
+      sessionStorage.setItem(SESSION_VERSES_READ_KEY, count.toString());
+
+      // Show toast after threshold
+      if (count === TOAST_THRESHOLD) {
+        setShowNewsletterToast(true);
+        localStorage.setItem(NEWSLETTER_TOAST_KEY, Date.now().toString());
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [state.pageIndex]);
+
+  // Dismiss newsletter toast
+  const dismissNewsletterToast = useCallback(() => {
+    setShowNewsletterToast(false);
   }, []);
 
   // Cycle font size: small → medium → large → small
@@ -888,6 +935,17 @@ export default function ReadingMode() {
             </button>
           </div>
         </>
+      )}
+
+      {/* Newsletter Toast - shown after reading 5+ verses */}
+      {showNewsletterToast && (
+        <Toast
+          message="Enjoying your reading?"
+          linkText="Get daily verses"
+          linkTo="/settings"
+          duration={6000}
+          onDismiss={dismissNewsletterToast}
+        />
       )}
     </div>
   );
