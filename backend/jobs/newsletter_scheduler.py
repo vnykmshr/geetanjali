@@ -21,7 +21,7 @@ import argparse
 import logging
 import sys
 from datetime import datetime, date
-from typing import Optional
+from typing import Optional, Any
 
 from config import settings
 from db.connection import SessionLocal
@@ -98,7 +98,7 @@ def get_active_subscribers(db, send_time: str) -> list[Subscriber]:
 
     Active = verified AND not unsubscribed.
     """
-    return (
+    result: list[Subscriber] = (
         db.query(Subscriber)
         .filter(
             Subscriber.verified == True,  # noqa: E712
@@ -107,9 +107,10 @@ def get_active_subscribers(db, send_time: str) -> list[Subscriber]:
         )
         .all()
     )
+    return result
 
 
-def schedule_daily_digests(send_time: str, dry_run: bool = False) -> dict:
+def schedule_daily_digests(send_time: str, dry_run: bool = False) -> dict[str, Any]:
     """
     Query subscribers and enqueue individual digest jobs.
 
@@ -123,13 +124,15 @@ def schedule_daily_digests(send_time: str, dry_run: bool = False) -> dict:
     if send_time not in [t.value for t in SendTime]:
         raise ValueError(f"Invalid send_time: {send_time}")
 
-    stats = {
+    # Use explicit counters to satisfy mypy's type checking
+    jobs_queued: int = 0
+    jobs_failed: int = 0
+
+    stats: dict[str, Any] = {
         "send_time": send_time,
         "dry_run": dry_run,
         "started_at": datetime.utcnow().isoformat(),
         "subscribers_found": 0,
-        "jobs_queued": 0,
-        "jobs_failed": 0,
     }
 
     logger.info(f"Starting newsletter scheduler for send_time={send_time} (dry_run={dry_run})")
@@ -167,7 +170,7 @@ def schedule_daily_digests(send_time: str, dry_run: bool = False) -> dict:
         for subscriber in subscribers:
             if dry_run:
                 logger.info(f"[DRY-RUN] Would enqueue job for subscriber {subscriber.id}")
-                stats["jobs_queued"] += 1
+                jobs_queued += 1
             else:
                 try:
                     job_id = enqueue_task(
@@ -177,21 +180,24 @@ def schedule_daily_digests(send_time: str, dry_run: bool = False) -> dict:
                         retry_delays=[60, 300, 900],  # 1m, 5m, 15m
                     )
                     if job_id:
-                        stats["jobs_queued"] += 1
+                        jobs_queued += 1
                         logger.debug(f"Queued job {job_id} for subscriber {subscriber.id}")
                     else:
-                        stats["jobs_failed"] += 1
+                        jobs_failed += 1
                         logger.error(f"Failed to enqueue job for subscriber {subscriber.id}")
-                except Exception as e:
-                    stats["jobs_failed"] += 1
+                except Exception:
+                    jobs_failed += 1
                     logger.exception(f"Error enqueueing job for subscriber {subscriber.id}")
 
+        # Store counters back in stats for return value
+        stats["jobs_queued"] = jobs_queued
+        stats["jobs_failed"] = jobs_failed
         stats["completed_at"] = datetime.utcnow().isoformat()
         logger.info(
             f"Scheduler complete: "
             f"found={stats['subscribers_found']}, "
-            f"queued={stats['jobs_queued']}, "
-            f"failed={stats['jobs_failed']}"
+            f"queued={jobs_queued}, "
+            f"failed={jobs_failed}"
         )
 
         return stats
