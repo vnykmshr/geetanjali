@@ -27,6 +27,13 @@ const About = lazy(() => import("./pages/About"));
 const PublicCaseView = lazy(() => import("./pages/PublicCaseView"));
 const ReadingMode = lazy(() => import("./pages/ReadingMode"));
 const Settings = lazy(() => import("./pages/Settings"));
+const NewsletterVerify = lazy(() => import("./pages/NewsletterVerify"));
+const NewsletterUnsubscribe = lazy(
+  () => import("./pages/NewsletterUnsubscribe")
+);
+const NewsletterPreferences = lazy(
+  () => import("./pages/NewsletterPreferences")
+);
 
 /**
  * Redirect from old /search to unified /verses page
@@ -104,6 +111,17 @@ function App() {
 
             {/* Public shared consultation view */}
             <Route path="/c/:slug" element={<PublicCaseView />} />
+
+            {/* Newsletter routes */}
+            <Route path="/n/verify/:token" element={<NewsletterVerify />} />
+            <Route
+              path="/n/unsubscribe/:token"
+              element={<NewsletterUnsubscribe />}
+            />
+            <Route
+              path="/n/preferences/:token"
+              element={<NewsletterPreferences />}
+            />
 
             {/* 404 fallback */}
             <Route path="*" element={<NotFound />} />
