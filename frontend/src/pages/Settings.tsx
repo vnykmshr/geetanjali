@@ -276,7 +276,11 @@ export default function Settings() {
 
               {/* Error Message */}
               {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400 text-sm">
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400 text-sm"
+                >
                   {error}
                 </div>
               )}

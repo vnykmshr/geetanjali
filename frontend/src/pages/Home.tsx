@@ -16,7 +16,9 @@ export default function Home() {
   useSEO({ canonical: "/" });
   const [error, setError] = useState<string | null>(null);
   const [recentCases, setRecentCases] = useState<Case[]>([]);
+  const [casesError, setCasesError] = useState(false);
   const [dailyVerse, setDailyVerse] = useState<Verse | null>(null);
+  const [verseError, setVerseError] = useState(false);
   const [verseLoading, setVerseLoading] = useState(true);
   const { isAuthenticated } = useAuth();
 
@@ -48,7 +50,7 @@ export default function Home() {
         if (!cancelled) setRecentCases(data);
       })
       .catch(() => {
-        /* Silent fail - cases section just won't show */
+        if (!cancelled) setCasesError(true);
       })
       .finally(() => {
         if (!cancelled) setCasesLoading(false);
@@ -70,7 +72,7 @@ export default function Home() {
         }
       })
       .catch(() => {
-        /* Silent fail - verse section just won't show */
+        if (!cancelled) setVerseError(true);
       })
       .finally(() => {
         if (!cancelled) setVerseLoading(false);
@@ -122,7 +124,11 @@ export default function Home() {
 
           {/* Backend Status - Only show errors */}
           {error && (
-            <div className="mb-6 sm:mb-8 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 sm:px-6 py-3 sm:py-4 rounded-lg max-w-2xl mx-auto">
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="mb-6 sm:mb-8 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 sm:px-6 py-3 sm:py-4 rounded-lg max-w-2xl mx-auto"
+            >
               <div className="flex items-start gap-3">
                 <span className="text-lg sm:text-xl">⚠️</span>
                 <div className="text-left">
@@ -139,7 +145,11 @@ export default function Home() {
 
           {/* Featured Verse of the Day */}
           <div className="mb-6 sm:mb-8 lg:mb-10">
-            <FeaturedVerse verse={dailyVerse} loading={verseLoading} />
+            <FeaturedVerse
+              verse={dailyVerse}
+              loading={verseLoading}
+              error={verseError}
+            />
           </div>
 
           {/* CTA Section - visible on all screen sizes */}
@@ -216,6 +226,23 @@ export default function Home() {
                     </span>
                   </Link>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Consultations Error State */}
+          {!casesLoading && casesError && isAuthenticated && (
+            <div className="mb-8 sm:mb-10 max-w-4xl mx-auto">
+              <div className="p-4 bg-amber-50/50 dark:bg-gray-800/50 rounded-lg border border-amber-200 dark:border-gray-700 text-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Unable to load your consultations.{" "}
+                  <Link
+                    to="/consultations"
+                    className="text-orange-600 dark:text-orange-400 hover:underline"
+                  >
+                    View all consultations →
+                  </Link>
+                </p>
               </div>
             </div>
           )}

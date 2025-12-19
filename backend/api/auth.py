@@ -1,5 +1,6 @@
 """Authentication API endpoints."""
 
+import hashlib
 import logging
 import secrets
 from datetime import datetime, timedelta
@@ -354,13 +355,17 @@ async def forgot_password(
 
     # Generate secure reset token
     reset_token = secrets.token_urlsafe(RESET_TOKEN_BYTES)
+    # Token ID: SHA-256 hash for O(1) indexed lookup
+    reset_token_id = hashlib.sha256(reset_token.encode()).hexdigest()
+    # Token hash: bcrypt for verification (defense in depth)
     reset_token_hash = hash_password(reset_token)
     reset_token_expires = datetime.utcnow() + timedelta(hours=RESET_TOKEN_EXPIRE_HOURS)
 
-    # Store hashed token in database
+    # Store both token ID (for lookup) and hash (for verification)
     user_repo.update(
         user.id,
         {
+            "reset_token_id": reset_token_id,
             "reset_token_hash": reset_token_hash,
             "reset_token_expires": reset_token_expires,
         },
@@ -404,28 +409,27 @@ async def reset_password(
     if not is_valid:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-    # Find user with matching reset token
-    # Note: Bcrypt hashes include random salt, so we must iterate and verify.
-    # For high-scale scenarios, consider adding an indexable token prefix.
+    # O(1) lookup by token ID (SHA-256 hash of token)
     user_repo = UserRepository(db)
-    users_with_tokens = user_repo.get_users_with_valid_reset_tokens()
+    reset_token_id = hashlib.sha256(reset_data.token.encode()).hexdigest()
+    user = user_repo.get_by_reset_token_id(reset_token_id)
 
-    matching_user = None
-    for user in users_with_tokens:
-        if user.reset_token_hash and verify_password(
-            reset_data.token, user.reset_token_hash
-        ):
-            matching_user = user
-            break
-
-    if not matching_user:
+    if not user:
         logger.warning("Invalid or expired password reset token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired reset link. Please request a new one.",
         )
 
-    user = matching_user
+    # Verify with bcrypt hash (defense in depth - prevents DB tampering)
+    if not user.reset_token_hash or not verify_password(
+        reset_data.token, user.reset_token_hash
+    ):
+        logger.warning("Reset token hash mismatch - possible tampering")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset link. Please request a new one.",
+        )
 
     # Update password and clear reset token
     new_password_hash = hash_password(reset_data.password)
@@ -433,6 +437,7 @@ async def reset_password(
         user.id,
         {
             "password_hash": new_password_hash,
+            "reset_token_id": None,
             "reset_token_hash": None,
             "reset_token_expires": None,
         },

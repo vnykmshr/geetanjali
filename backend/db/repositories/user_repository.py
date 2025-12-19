@@ -63,18 +63,22 @@ class UserRepository(BaseRepository):
         result: User = self.create(user_data)  # type: ignore[assignment]
         return result
 
-    def get_users_with_valid_reset_tokens(self) -> list[User]:
+    def get_by_reset_token_id(self, token_id: str) -> Optional[User]:
         """
-        Get all users with non-expired reset tokens.
+        Get user by reset token ID (O(1) indexed lookup).
 
-        Used for password reset token verification (must iterate and verify hash).
+        Used for password reset token verification.
+        Token ID is a SHA-256 hash of the token, allowing indexed lookup.
+
+        Args:
+            token_id: SHA-256 hash of the reset token
 
         Returns:
-            List of users with valid (non-expired) reset tokens
+            User if found with valid (non-expired) token, None otherwise
         """
         return (
             self.db.query(User)
-            .filter(User.reset_token_hash.isnot(None))
+            .filter(User.reset_token_id == token_id)
             .filter(User.reset_token_expires > datetime.utcnow())
-            .all()
+            .first()
         )
