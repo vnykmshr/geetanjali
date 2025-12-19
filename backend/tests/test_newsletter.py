@@ -257,42 +257,87 @@ class TestSubscribe:
             )
             assert set(subscriber.goal_ids) == {"inner_peace", "resilience"}
 
-    def test_subscribe_concurrent_requests_race_condition(self, client, db_session):
-        """Test concurrent subscribe requests for same email don't cause errors.
+    def test_subscribe_race_condition_integrity_error(self, client, db_session):
+        """Test race condition handling when IntegrityError occurs on duplicate email.
 
-        This tests the race condition fix where two requests simultaneously
-        try to create a subscriber with the same email, triggering IntegrityError.
-        The second request should handle this gracefully.
+        When two requests simultaneously try to create a subscriber with the same email,
+        the second commit will raise IntegrityError. This tests that the error is handled
+        gracefully by re-fetching the existing subscriber.
         """
-        email = "concurrent@example.com"
-        results = []
-        errors = []
+        from sqlalchemy.exc import IntegrityError
+        from sqlalchemy.orm import Session
 
-        def make_request():
-            try:
-                with patch("api.newsletter.send_newsletter_verification_email"):
-                    response = client.post(
-                        "/api/v1/newsletter/subscribe",
-                        json={"email": email, "send_time": "morning"},
-                    )
-                    results.append(response.status_code)
-            except Exception as e:
-                errors.append(str(e))
+        email = "race@example.com"
 
-        # Launch concurrent requests
-        threads = [threading.Thread(target=make_request) for _ in range(3)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
+        # First, create the subscriber that will exist when we retry
+        existing_subscriber = Subscriber(
+            email=email,
+            verified=True,
+            verification_token="existing-token",
+            send_time="morning",
+        )
+        db_session.add(existing_subscriber)
+        db_session.commit()
 
-        # All requests should succeed (200 OK)
-        assert len(errors) == 0, f"Unexpected errors: {errors}"
-        assert all(code == 200 for code in results), f"Non-200 responses: {results}"
+        # Track commit calls to simulate race condition
+        original_commit = Session.commit
+        call_count = [0]
+
+        def mock_commit(self):
+            call_count[0] += 1
+            # On the first commit (creating new subscriber), raise IntegrityError
+            # to simulate another request having just created it
+            if call_count[0] == 1:
+                # Create a mock SQL error with proper format
+                raise IntegrityError(
+                    statement="INSERT INTO subscribers",
+                    params={},
+                    orig=Exception("duplicate key value violates unique constraint"),
+                )
+            return original_commit(self)
+
+        with patch("api.newsletter.send_newsletter_verification_email"):
+            with patch.object(Session, "commit", mock_commit):
+                # This request should:
+                # 1. Try to create new subscriber
+                # 2. Get IntegrityError on commit
+                # 3. Rollback and re-fetch existing subscriber
+                # 4. Return "already subscribed" message
+                response = client.post(
+                    "/api/v1/newsletter/subscribe",
+                    json={"email": email, "send_time": "morning"},
+                )
+
+        # Should return 200 with "already subscribed" message
+        assert response.status_code == 200
+        data = response.json()
+        assert data["requires_verification"] is False
+        assert "already subscribed" in data["message"].lower()
+
+    def test_subscribe_sequential_requests_same_email(self, client, db_session):
+        """Test sequential subscribe requests for same email work correctly."""
+        email = "sequential@example.com"
+
+        with patch("api.newsletter.send_newsletter_verification_email"):
+            # First request - creates new subscriber
+            response1 = client.post(
+                "/api/v1/newsletter/subscribe",
+                json={"email": email, "send_time": "morning"},
+            )
+            assert response1.status_code == 200
+            assert response1.json()["requires_verification"] is True
+
+            # Second request - finds pending subscriber and resends
+            response2 = client.post(
+                "/api/v1/newsletter/subscribe",
+                json={"email": email, "send_time": "morning"},
+            )
+            assert response2.status_code == 200
+            assert response2.json()["requires_verification"] is True
 
         # Only one subscriber should exist
         count = db_session.query(Subscriber).filter(Subscriber.email == email).count()
-        assert count == 1, f"Expected 1 subscriber, got {count}"
+        assert count == 1
 
 
 # =============================================================================
@@ -301,7 +346,7 @@ class TestSubscribe:
 
 
 class TestVerify:
-    """Tests for GET /api/v1/newsletter/verify/{token}."""
+    """Tests for POST /api/v1/newsletter/verify/{token}."""
 
     def test_verify_success(self, client, db_session):
         """Test successful email verification."""
@@ -321,7 +366,7 @@ class TestVerify:
         ) as mock_send:
             mock_send.return_value = True
 
-            response = client.get("/api/v1/newsletter/verify/valid-token-123")
+            response = client.post("/api/v1/newsletter/verify/valid-token-123")
 
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
@@ -336,7 +381,7 @@ class TestVerify:
 
     def test_verify_invalid_token(self, client):
         """Test verification with invalid token."""
-        response = client.get("/api/v1/newsletter/verify/invalid-token")
+        response = client.post("/api/v1/newsletter/verify/invalid-token")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "invalid" in response.json()["detail"].lower()
@@ -353,7 +398,7 @@ class TestVerify:
         db_session.add(subscriber)
         db_session.commit()
 
-        response = client.get("/api/v1/newsletter/verify/expired-token")
+        response = client.post("/api/v1/newsletter/verify/expired-token")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "expired" in response.json()["detail"].lower()
@@ -370,7 +415,7 @@ class TestVerify:
         db_session.add(subscriber)
         db_session.commit()
 
-        response = client.get("/api/v1/newsletter/verify/some-token")
+        response = client.post("/api/v1/newsletter/verify/some-token")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -384,7 +429,7 @@ class TestVerify:
 
 
 class TestUnsubscribe:
-    """Tests for GET /api/v1/newsletter/unsubscribe/{token}."""
+    """Tests for POST /api/v1/newsletter/unsubscribe/{token}."""
 
     def test_unsubscribe_success(self, client, db_session):
         """Test successful unsubscribe."""
@@ -397,7 +442,7 @@ class TestUnsubscribe:
         db_session.add(subscriber)
         db_session.commit()
 
-        response = client.get("/api/v1/newsletter/unsubscribe/unsub-token")
+        response = client.post("/api/v1/newsletter/unsubscribe/unsub-token")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -410,7 +455,7 @@ class TestUnsubscribe:
 
     def test_unsubscribe_invalid_token(self, client):
         """Test unsubscribe with invalid token."""
-        response = client.get("/api/v1/newsletter/unsubscribe/invalid-token")
+        response = client.post("/api/v1/newsletter/unsubscribe/invalid-token")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -426,7 +471,7 @@ class TestUnsubscribe:
         db_session.add(subscriber)
         db_session.commit()
 
-        response = client.get(
+        response = client.post(
             "/api/v1/newsletter/unsubscribe/already-unsub-token"
         )
 

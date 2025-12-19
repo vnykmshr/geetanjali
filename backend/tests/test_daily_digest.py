@@ -490,3 +490,101 @@ class TestDigestErrorHandling:
 
         # Should return the featured verse
         assert result == mock_verse
+
+    def test_select_verse_exhaustion_falls_back_to_featured(self):
+        """Test verse selection falls back to featured when all principle-based verses exhausted."""
+        mock_db = MagicMock()
+        mock_subscriber = MagicMock()
+        mock_subscriber.email = "test@example.com"
+        mock_subscriber.goal_ids = ["inner_peace"]  # Has principles
+
+        # Featured verse that should be returned as fallback
+        featured_verse = MagicMock()
+        featured_verse.canonical_id = "BG_2_47"
+
+        # Create a mock query chain that:
+        # 1. Returns empty for principle-based query (all exhausted)
+        # 2. Returns featured verse for fallback query
+        principle_query = MagicMock()
+        principle_query.filter.return_value = principle_query
+        principle_query.all.return_value = []  # No principle-based verses available
+
+        featured_query = MagicMock()
+        featured_query.filter.return_value = featured_query
+        featured_query.all.return_value = [featured_verse]  # Featured verses available
+
+        # Track which call we're on
+        call_count = [0]
+
+        def mock_query_side_effect(*args):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return principle_query  # First query is for principle-based
+            else:
+                return featured_query  # Second query is for featured fallback
+
+        mock_db.query.side_effect = mock_query_side_effect
+
+        result = select_verse_for_subscriber(
+            mock_db, mock_subscriber, [], fallback_to_featured=True
+        )
+
+        # Should return the featured verse as fallback
+        assert result == featured_verse
+
+    def test_select_verse_exhaustion_with_exclude_ids(self):
+        """Test verse selection with all verses in exclude list falls back to featured."""
+        mock_db = MagicMock()
+        mock_subscriber = MagicMock()
+        mock_subscriber.email = "test@example.com"
+        mock_subscriber.goal_ids = ["inner_peace"]
+
+        # Featured verse that wasn't in exclude list
+        featured_verse = MagicMock()
+        featured_verse.canonical_id = "BG_2_47"
+
+        # Simulate all principle-based verses being in exclude list
+        principle_query = MagicMock()
+        principle_query.filter.return_value = principle_query
+        principle_query.all.return_value = []  # All excluded
+
+        featured_query = MagicMock()
+        featured_query.filter.return_value = featured_query
+        featured_query.all.return_value = [featured_verse]
+
+        call_count = [0]
+
+        def mock_query_side_effect(*args):
+            call_count[0] += 1
+            return principle_query if call_count[0] == 1 else featured_query
+
+        mock_db.query.side_effect = mock_query_side_effect
+
+        # Exclude IDs that would normally match
+        exclude_ids = ["BG_2_48", "BG_2_49", "BG_2_50"]  # All exhausted
+
+        result = select_verse_for_subscriber(
+            mock_db, mock_subscriber, exclude_ids, fallback_to_featured=True
+        )
+
+        # Should return featured verse since all principle-based were excluded
+        assert result == featured_verse
+
+    def test_select_verse_exhaustion_no_fallback_returns_none(self):
+        """Test verse selection returns None when exhausted and fallback disabled."""
+        mock_db = MagicMock()
+        mock_subscriber = MagicMock()
+        mock_subscriber.goal_ids = ["inner_peace"]
+
+        # All verses exhausted
+        mock_query = MagicMock()
+        mock_query.filter.return_value = mock_query
+        mock_query.all.return_value = []  # Nothing available
+        mock_db.query.return_value = mock_query
+
+        result = select_verse_for_subscriber(
+            mock_db, mock_subscriber, [], fallback_to_featured=False
+        )
+
+        # Should return None without fallback
+        assert result is None
