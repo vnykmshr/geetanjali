@@ -50,6 +50,7 @@ class User(Base, TimestampMixin):
         "RefreshToken", back_populates="user", cascade="all, delete-orphan"
     )
     feedback = relationship("Feedback", back_populates="user")
+    subscriptions = relationship("Subscriber", back_populates="user")
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"

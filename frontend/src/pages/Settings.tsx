@@ -6,6 +6,7 @@ import { TimeSelector, type SendTime } from "../components/TimeSelector";
 import { SunIcon, CheckIcon, MailIcon } from "../components/icons";
 import { useLearningGoal, useSEO } from "../hooks";
 import { useAuth } from "../contexts/AuthContext";
+import { api } from "../lib/api";
 
 type SubscriptionStatus = "idle" | "pending" | "subscribed";
 
@@ -77,21 +78,30 @@ export default function Settings() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Replace with actual API call when backend is ready
-      // await api.post("/newsletter/subscribe", {
-      //   email: email.trim(),
-      //   name: effectiveName,
-      //   goal_ids: selectedGoals.map(g => g.id),
-      //   send_time: sendTime,
-      // });
+      const response = await api.post("/api/v1/newsletter/subscribe", {
+        email: email.trim(),
+        name: effectiveName || null,
+        goal_ids: selectedGoals.map((g) => g.id),
+        send_time: sendTime,
+      });
 
-      // Simulate API call for now
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // For now, just show pending state
-      setStatus("pending");
-    } catch {
-      setError("Something went wrong. Please try again.");
+      if (response.data.requires_verification === false) {
+        // Already subscribed
+        setStatus("subscribed");
+      } else {
+        // Verification email sent
+        setStatus("pending");
+      }
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosErr = err as { response?: { data?: { detail?: string } } };
+        setError(
+          axiosErr.response?.data?.detail ||
+            "Something went wrong. Please try again."
+        );
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
