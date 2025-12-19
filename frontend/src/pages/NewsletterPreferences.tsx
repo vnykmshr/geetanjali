@@ -51,7 +51,7 @@ export default function NewsletterPreferences() {
 
     const loadPreferences = async () => {
       try {
-        const response = await api.get(`/api/v1/newsletter/preferences/${token}`);
+        const response = await api.get(`/newsletter/preferences/${token}`);
         const prefs = response.data as Preferences;
         setPreferences(prefs);
         setName(prefs.name || "");
@@ -85,7 +85,7 @@ export default function NewsletterPreferences() {
     setErrorMessage("");
 
     try {
-      await api.patch(`/api/v1/newsletter/preferences/${token}`, {
+      await api.patch(`/newsletter/preferences/${token}`, {
         name: name.trim() || null,
         goal_ids: selectedGoalIds,
         send_time: sendTime,

@@ -34,7 +34,7 @@ export default function NewsletterVerify() {
 
     setState("loading");
     try {
-      const response = await api.post(`/api/v1/newsletter/verify/${token}`);
+      const response = await api.post(`/newsletter/verify/${token}`);
       setEmail(response.data.email);
       // Mark as subscribed in localStorage (hides home page card)
       markNewsletterSubscribed();

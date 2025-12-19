@@ -33,7 +33,7 @@ export default function NewsletterUnsubscribe() {
 
     setState("loading");
     try {
-      const response = await api.post(`/api/v1/newsletter/unsubscribe/${token}`);
+      const response = await api.post(`/newsletter/unsubscribe/${token}`);
       setEmail(response.data.email);
       if (response.data.message.includes("already")) {
         setState("already_unsubscribed");
