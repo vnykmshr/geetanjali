@@ -26,6 +26,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const About = lazy(() => import("./pages/About"));
 const PublicCaseView = lazy(() => import("./pages/PublicCaseView"));
 const ReadingMode = lazy(() => import("./pages/ReadingMode"));
+const Settings = lazy(() => import("./pages/Settings"));
 
 /**
  * Redirect from old /search to unified /verses page
@@ -99,6 +100,7 @@ function App() {
             <Route path="/verses/:canonicalId" element={<VerseDetail />} />
             <Route path="/read" element={<ReadingMode />} />
             <Route path="/about" element={<About />} />
+            <Route path="/settings" element={<Settings />} />
 
             {/* Public shared consultation view */}
             <Route path="/c/:slug" element={<PublicCaseView />} />
