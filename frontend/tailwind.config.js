@@ -8,6 +8,19 @@ export default {
   theme: {
     extend: {
       /*
+       * Animations (v1.13.0)
+       * Smooth page transitions and UI feedback
+       */
+      animation: {
+        fadeIn: 'fadeIn 0.3s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      /*
        * Typography System (v1.11.0)
        * - Headings: Spectral (classical serif)
        * - Body: Source Sans 3 (clean sans-serif)
