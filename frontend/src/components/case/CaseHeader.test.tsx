@@ -18,7 +18,9 @@ describe("CaseHeader", () => {
     copySuccess: false,
     onSave: vi.fn(),
     onDeleteClick: vi.fn(),
-    onToggleShare: vi.fn(),
+    onShare: vi.fn(),
+    onModeChange: vi.fn(),
+    onStopSharing: vi.fn(),
     onCopyShareLink: vi.fn(),
   };
 
@@ -108,7 +110,7 @@ describe("CaseHeader", () => {
       ).not.toBeInTheDocument();
     });
 
-    it('should show "Stop sharing" aria-label when case is public', () => {
+    it('should show "Shared" indicator when case is public', () => {
       renderWithRouter(
         <CaseHeader
           {...defaultProps}
@@ -116,19 +118,15 @@ describe("CaseHeader", () => {
         />,
       );
 
-      expect(
-        screen.getByRole("button", { name: /stop sharing/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Shared")).toBeInTheDocument();
     });
 
-    it("should call onToggleShare when clicked", () => {
-      const onToggleShare = vi.fn();
-      renderWithRouter(
-        <CaseHeader {...defaultProps} onToggleShare={onToggleShare} />,
-      );
+    it("should call onShare when share button is clicked", () => {
+      const onShare = vi.fn();
+      renderWithRouter(<CaseHeader {...defaultProps} onShare={onShare} />);
 
       fireEvent.click(screen.getByRole("button", { name: /share/i }));
-      expect(onToggleShare).toHaveBeenCalledTimes(1);
+      expect(onShare).toHaveBeenCalledTimes(1);
     });
 
     it("should be disabled when shareLoading is true", () => {
@@ -138,8 +136,8 @@ describe("CaseHeader", () => {
     });
   });
 
-  describe("Inline share URL", () => {
-    it("should show share URL when case is public", () => {
+  describe("ShareBar popover", () => {
+    it("should show share URL when clicking Shared button", () => {
       renderWithRouter(
         <CaseHeader
           {...defaultProps}
@@ -147,7 +145,9 @@ describe("CaseHeader", () => {
         />,
       );
 
-      expect(screen.getByText(/\/c\/abc123/)).toBeInTheDocument();
+      // Click "Shared" to open the ShareBar popover
+      fireEvent.click(screen.getByRole("button", { name: /toggle share options/i }));
+      expect(screen.getByText(/abc123/)).toBeInTheDocument();
     });
 
     it("should not show share URL when case is private", () => {
@@ -161,7 +161,7 @@ describe("CaseHeader", () => {
       expect(screen.queryByText(/\/c\//)).not.toBeInTheDocument();
     });
 
-    it("should show copy button when case is public", () => {
+    it("should show copy button when ShareBar is open", () => {
       renderWithRouter(
         <CaseHeader
           {...defaultProps}
@@ -169,6 +169,8 @@ describe("CaseHeader", () => {
         />,
       );
 
+      // Click "Shared" to open the ShareBar popover
+      fireEvent.click(screen.getByRole("button", { name: /toggle share options/i }));
       expect(screen.getByRole("button", { name: /copy/i })).toBeInTheDocument();
     });
 
@@ -182,6 +184,8 @@ describe("CaseHeader", () => {
         />,
       );
 
+      // Click "Shared" to open the ShareBar popover
+      fireEvent.click(screen.getByRole("button", { name: /toggle share options/i }));
       fireEvent.click(screen.getByRole("button", { name: /copy/i }));
       expect(onCopyShareLink).toHaveBeenCalledTimes(1);
     });
@@ -195,6 +199,8 @@ describe("CaseHeader", () => {
         />,
       );
 
+      // Click "Shared" to open the ShareBar popover
+      fireEvent.click(screen.getByRole("button", { name: /toggle share options/i }));
       expect(screen.getByText("Copied!")).toBeInTheDocument();
     });
   });
