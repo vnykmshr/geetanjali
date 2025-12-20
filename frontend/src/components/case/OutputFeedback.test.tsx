@@ -9,6 +9,7 @@ describe("OutputFeedback", () => {
     feedback: null as "up" | "down" | null,
     feedbackLoading: null as string | null,
     expandedFeedback: null as string | null,
+    savedComment: {} as Record<string, string>,
     feedbackText: {} as Record<string, string>,
     onFeedback: vi.fn(),
     onEditFeedback: vi.fn(),

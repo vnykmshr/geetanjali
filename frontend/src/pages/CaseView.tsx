@@ -66,7 +66,8 @@ export default function CaseView() {
   >({});
   const [feedbackLoading, setFeedbackLoading] = useState<string | null>(null);
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
-  const [feedbackText, setFeedbackText] = useState<Record<string, string>>({});
+  const [feedbackText, setFeedbackText] = useState<Record<string, string>>({}); // Draft text being edited
+  const [savedComment, setSavedComment] = useState<Record<string, string>>({}); // Last persisted comment
 
   // Share state
   const [shareLoading, setShareLoading] = useState(false);
@@ -119,20 +120,21 @@ export default function CaseView() {
 
       // Initialize feedback state from loaded outputs
       const initialFeedback: Record<string, "up" | "down" | null> = {};
-      const initialFeedbackText: Record<string, string> = {};
+      const initialComments: Record<string, string> = {};
       for (const output of outputsData) {
         if (output.user_feedback) {
           initialFeedback[output.id] = output.user_feedback.rating ? "up" : "down";
           if (output.user_feedback.comment) {
-            initialFeedbackText[output.id] = output.user_feedback.comment;
+            initialComments[output.id] = output.user_feedback.comment;
           }
         }
       }
       if (Object.keys(initialFeedback).length > 0) {
         setFeedbackGiven(initialFeedback);
       }
-      if (Object.keys(initialFeedbackText).length > 0) {
-        setFeedbackText(initialFeedbackText);
+      if (Object.keys(initialComments).length > 0) {
+        setSavedComment(initialComments);
+        setFeedbackText(initialComments); // Also set as current draft
       }
 
       // When completed/failed/policy_violation, clear pending state and set up UI
@@ -223,22 +225,23 @@ export default function CaseView() {
 
           // Initialize feedback state from loaded outputs
           const initialFeedback: Record<string, "up" | "down" | null> = {};
-          const initialFeedbackText: Record<string, string> = {};
+          const initialComments: Record<string, string> = {};
           for (const output of outputsData) {
             if (output.user_feedback) {
               initialFeedback[output.id] = output.user_feedback.rating
                 ? "up"
                 : "down";
               if (output.user_feedback.comment) {
-                initialFeedbackText[output.id] = output.user_feedback.comment;
+                initialComments[output.id] = output.user_feedback.comment;
               }
             }
           }
           if (Object.keys(initialFeedback).length > 0) {
             setFeedbackGiven((prev) => ({ ...prev, ...initialFeedback }));
           }
-          if (Object.keys(initialFeedbackText).length > 0) {
-            setFeedbackText((prev) => ({ ...prev, ...initialFeedbackText }));
+          if (Object.keys(initialComments).length > 0) {
+            setSavedComment((prev) => ({ ...prev, ...initialComments }));
+            setFeedbackText((prev) => ({ ...prev, ...initialComments }));
           }
 
           setPendingFollowUp(null);
@@ -294,38 +297,69 @@ export default function CaseView() {
     });
   };
 
+  /**
+   * Handle thumbs up/down click.
+   *
+   * Behavior:
+   * - Click up when none/down: Submit positive feedback immediately
+   * - Click up when already up: No-op (can't un-vote)
+   * - Click down when none/up: Expand form for comment
+   * - Click down when already down: Expand form to edit (if collapsed)
+   */
   const handleFeedback = async (outputId: string, type: "up" | "down") => {
     if (feedbackLoading === outputId) return;
 
     const current = feedbackGiven[outputId];
 
-    if (type === "down" && current !== "down") {
-      // Clear any existing "up" state when expanding for "down"
-      if (current === "up") {
-        setFeedbackGiven((prev) => ({ ...prev, [outputId]: null }));
+    // Clicking same button that's already active
+    if (current === type) {
+      if (type === "up") {
+        // Already thumbs up - no-op (can't un-vote)
+        return;
+      } else {
+        // Already thumbs down - expand form to add/edit comment
+        setFeedbackText((prev) => ({ ...prev, [outputId]: savedComment[outputId] || "" }));
+        setExpandedFeedback(outputId);
+        return;
       }
+    }
+
+    // Clicking thumbs down (when not already down)
+    if (type === "down") {
+      // Expand form for new negative feedback (clear draft text)
+      setFeedbackText((prev) => ({ ...prev, [outputId]: "" }));
       setExpandedFeedback(outputId);
       return;
     }
 
-    if (current === type) {
-      setFeedbackGiven((prev) => ({ ...prev, [outputId]: null }));
-      setExpandedFeedback(null);
-      return;
-    }
-
+    // Clicking thumbs up (submits immediately)
     setFeedbackLoading(outputId);
     try {
       await outputsApi.submitFeedback(outputId, { rating: true });
       setFeedbackGiven((prev) => ({ ...prev, [outputId]: "up" }));
+      // Clear any saved comment since positive feedback has no comment
+      setSavedComment((prev) => {
+        const next = { ...prev };
+        delete next[outputId];
+        return next;
+      });
+      setFeedbackText((prev) => {
+        const next = { ...prev };
+        delete next[outputId];
+        return next;
+      });
       setExpandedFeedback(null);
     } catch {
+      // Still update UI on error (optimistic)
       setFeedbackGiven((prev) => ({ ...prev, [outputId]: "up" }));
     } finally {
       setFeedbackLoading(null);
     }
   };
 
+  /**
+   * Submit negative feedback with optional comment.
+   */
   const handleSubmitNegativeFeedback = async (outputId: string) => {
     if (feedbackLoading === outputId) return;
 
@@ -334,22 +368,39 @@ export default function CaseView() {
       const comment = feedbackText[outputId]?.trim() || undefined;
       await outputsApi.submitFeedback(outputId, { rating: false, comment });
       setFeedbackGiven((prev) => ({ ...prev, [outputId]: "down" }));
+      // Save the comment as persisted
+      setSavedComment((prev) =>
+        comment ? { ...prev, [outputId]: comment } : (() => {
+          const next = { ...prev };
+          delete next[outputId];
+          return next;
+        })()
+      );
       setExpandedFeedback(null);
     } catch {
+      // Still update UI on error (optimistic)
       setFeedbackGiven((prev) => ({ ...prev, [outputId]: "down" }));
     } finally {
       setFeedbackLoading(null);
     }
   };
 
+  /**
+   * Edit existing negative feedback - just expand the form.
+   */
   const handleEditFeedback = (outputId: string) => {
-    // Just expand the form for editing, don't toggle feedback state
+    // Load saved comment into draft for editing
+    setFeedbackText((prev) => ({ ...prev, [outputId]: savedComment[outputId] || "" }));
     setExpandedFeedback(outputId);
   };
 
+  /**
+   * Cancel feedback editing - restore to last saved state.
+   */
   const handleCancelFeedback = (outputId: string) => {
+    // Restore draft to saved comment (or empty if none)
+    setFeedbackText((prev) => ({ ...prev, [outputId]: savedComment[outputId] || "" }));
     setExpandedFeedback(null);
-    setFeedbackText((prev) => ({ ...prev, [outputId]: "" }));
   };
 
   const handleFeedbackTextChange = (outputId: string, text: string) => {
@@ -1094,6 +1145,7 @@ ${messages
                               feedback={feedback}
                               feedbackLoading={feedbackLoading}
                               expandedFeedback={expandedFeedback}
+                              savedComment={savedComment}
                               feedbackText={feedbackText}
                               onFeedback={handleFeedback}
                               onEditFeedback={handleEditFeedback}

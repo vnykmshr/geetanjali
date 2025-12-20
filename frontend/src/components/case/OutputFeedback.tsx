@@ -6,7 +6,8 @@ interface OutputFeedbackProps {
   feedback: "up" | "down" | null;
   feedbackLoading: string | null;
   expandedFeedback: string | null;
-  feedbackText: Record<string, string>;
+  savedComment: Record<string, string>; // Persisted comment for display
+  feedbackText: Record<string, string>; // Draft text for editing
   onFeedback: (outputId: string, type: "up" | "down") => void;
   onEditFeedback: (outputId: string) => void;
   onSubmitNegativeFeedback: (outputId: string) => void;
@@ -25,6 +26,7 @@ export const OutputFeedback = memo(
     feedback,
     feedbackLoading,
     expandedFeedback,
+    savedComment,
     feedbackText,
     onFeedback,
     onEditFeedback,
@@ -33,8 +35,7 @@ export const OutputFeedback = memo(
     onFeedbackTextChange,
   }: OutputFeedbackProps) {
     const isExpanded = expandedFeedback === output.id;
-    const hasExistingComment = feedback === "down" && feedbackText[output.id];
-    const isEditing = isExpanded;
+    const hasExistingComment = feedback === "down" && savedComment[output.id];
 
     return (
       <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
@@ -110,11 +111,11 @@ export const OutputFeedback = memo(
         </div>
 
         {/* Show existing comment in read-only mode when not editing */}
-        {hasExistingComment && !isEditing && (
+        {hasExistingComment && !isExpanded && (
           <div className="mt-3 p-2.5 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800/50">
             <div className="flex items-start justify-between gap-2">
               <p className="text-xs text-gray-600 dark:text-gray-400 italic flex-1">
-                "{feedbackText[output.id]}"
+                "{savedComment[output.id]}"
               </p>
               <button
                 onClick={() => onEditFeedback(output.id)}
@@ -126,12 +127,12 @@ export const OutputFeedback = memo(
           </div>
         )}
 
-        {/* Expanded feedback form for editing */}
-        {isEditing && (
+        {/* Expanded feedback form for new/editing comment */}
+        {isExpanded && (
           <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-              {feedback === "down"
-                ? "Edit your feedback"
+              {savedComment[output.id]
+                ? "Edit your feedback:"
                 : "What could be improved? (optional)"}
             </p>
             <textarea
@@ -158,7 +159,7 @@ export const OutputFeedback = memo(
                 >
                   {feedbackLoading === output.id
                     ? "Saving..."
-                    : feedback === "down"
+                    : savedComment[output.id]
                       ? "Update"
                       : "Submit"}
                 </button>
@@ -177,6 +178,7 @@ export const OutputFeedback = memo(
       prev.feedback === next.feedback &&
       prev.feedbackLoading === next.feedbackLoading &&
       prev.expandedFeedback === next.expandedFeedback &&
+      prev.savedComment[prev.output.id] === next.savedComment[next.output.id] &&
       prev.feedbackText[prev.output.id] === next.feedbackText[next.output.id]
     );
   },
