@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Virtuoso } from "react-virtuoso";
 import { casesApi } from "../lib/api";
-import type { Case, CaseStatus } from "../types";
+import type { Case, CaseStatus, ShareMode } from "../types";
 import { Navbar, ConfirmModal, Footer } from "../components";
+import { ShareBar } from "../components/case";
 import { SpinnerIcon, ChevronDownIcon } from "../components/icons";
 import { errorMessages } from "../lib/errorMessages";
 import { useAuth } from "../contexts/AuthContext";
@@ -69,6 +70,7 @@ export default function Consultations() {
   } | null>(null);
   const [shareLoading, setShareLoading] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
+  const [shareBarOpen, setShareBarOpen] = useState<string | null>(null);
   const { isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -120,7 +122,7 @@ export default function Consultations() {
     }
   };
 
-  const handleToggleShare = async (e: React.MouseEvent, caseItem: Case) => {
+  const handleShare = async (e: React.MouseEvent, caseItem: Case) => {
     e.preventDefault();
     e.stopPropagation();
     if (shareLoading) return;
@@ -129,17 +131,48 @@ export default function Consultations() {
     setError(null);
 
     try {
-      const newIsPublic = !caseItem.is_public;
-      const updated = await casesApi.toggleShare(caseItem.id, newIsPublic);
+      const updated = await casesApi.toggleShare(caseItem.id, true, "full");
       setCases((prev) => prev.map((c) => (c.id === caseItem.id ? updated : c)));
 
       // Auto-copy link when sharing is enabled
-      if (newIsPublic && updated.public_slug) {
+      if (updated.public_slug) {
         const url = `${window.location.origin}/c/${updated.public_slug}`;
         await navigator.clipboard.writeText(url);
         setCopySuccess(caseItem.id);
         setTimeout(() => setCopySuccess(null), 2000);
       }
+    } catch (err) {
+      setError(errorMessages.general(err));
+    } finally {
+      setShareLoading(null);
+    }
+  };
+
+  const handleModeChange = async (caseItem: Case, mode: ShareMode) => {
+    if (shareLoading) return;
+
+    setShareLoading(caseItem.id);
+    setError(null);
+
+    try {
+      const updated = await casesApi.toggleShare(caseItem.id, true, mode);
+      setCases((prev) => prev.map((c) => (c.id === caseItem.id ? updated : c)));
+    } catch (err) {
+      setError(errorMessages.general(err));
+    } finally {
+      setShareLoading(null);
+    }
+  };
+
+  const handleStopSharing = async (caseItem: Case) => {
+    if (shareLoading) return;
+
+    setShareLoading(caseItem.id);
+    setError(null);
+
+    try {
+      const updated = await casesApi.toggleShare(caseItem.id, false);
+      setCases((prev) => prev.map((c) => (c.id === caseItem.id ? updated : c)));
     } catch (err) {
       setError(errorMessages.general(err));
     } finally {
@@ -205,14 +238,14 @@ export default function Consultations() {
       <Navbar />
       <div className="flex-1 py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header - stack on mobile, row on desktop */}
-          <div className="mb-6 sm:mb-8">
+          {/* Header - sticky below navbar, stack on mobile, row on desktop */}
+          <div className="sticky top-14 sm:top-16 z-10 bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold font-heading text-gray-900 dark:text-gray-100 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold font-heading text-gray-900 dark:text-gray-100 mb-1 sm:mb-2">
                   My Cases
                 </h1>
-                <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
+                <p className="text-sm sm:text-lg text-gray-600 dark:text-gray-400">
                   Your consultation history
                 </p>
               </div>
@@ -298,7 +331,7 @@ export default function Consultations() {
                   return (
                     <div className="pb-3 sm:pb-4">
                       <div
-                        className={`bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all border overflow-hidden ${
+                        className={`relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all border overflow-visible ${
                           case_.is_public
                             ? "border-green-200 dark:border-green-800 hover:border-green-300 dark:hover:border-green-700"
                             : "border-gray-100 dark:border-gray-700 hover:border-red-200 dark:hover:border-gray-600"
@@ -362,55 +395,14 @@ export default function Consultations() {
                           </div>
                         </Link>
 
-                        {case_.is_public && case_.public_slug && (
-                          <div className="px-4 sm:px-5 lg:px-6 py-2 border-t border-green-100 dark:border-green-900 flex justify-end">
-                            <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg px-2.5 py-1.5">
-                              <div className="flex items-center gap-2">
-                                <code className="text-xs text-green-700 dark:text-green-400 font-mono truncate max-w-[180px] sm:max-w-none">
-                                  {window.location.host}/c/{case_.public_slug}
-                                </code>
-                                <button
-                                  onClick={(e) => handleCopyLink(e, case_)}
-                                  className="px-2 py-0.5 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
-                                >
-                                  {copySuccess === case_.id ? "Copied!" : "Copy"}
-                                </button>
-                              </div>
-                              <p className="text-[10px] text-green-600 dark:text-green-500 mt-1 flex items-center gap-1">
-                                <svg
-                                  className="w-3 h-3"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                                  />
-                                </svg>
-                                Only people with this link can view
-                              </p>
-                            </div>
-                          </div>
-                        )}
-
                         <div className="px-4 sm:px-5 lg:px-6 py-2.5 sm:py-3 bg-amber-50/50 dark:bg-gray-700/50 border-t border-amber-100 dark:border-gray-600 flex items-center justify-end gap-2">
-                          {canShare && (
+                          {/* Share button - one-click share when not public */}
+                          {canShare && !case_.is_public && (
                             <button
-                              onClick={(e) => handleToggleShare(e, case_)}
+                              onClick={(e) => handleShare(e, case_)}
                               disabled={shareLoading === case_.id}
-                              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900 ${
-                                case_.is_public
-                                  ? "text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-800/50 focus-visible:ring-green-500"
-                                  : "text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800/50 focus-visible:ring-amber-500"
-                              }`}
-                              title={
-                                case_.is_public
-                                  ? "Make private"
-                                  : "Share consultation"
-                              }
+                              className="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900 text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800/50 focus-visible:ring-amber-500"
+                              title="Share consultation"
                             >
                               <svg
                                 className="w-3.5 h-3.5"
@@ -425,12 +417,64 @@ export default function Consultations() {
                                   d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
                                 />
                               </svg>
-                              {shareLoading === case_.id
-                                ? "..."
-                                : case_.is_public
-                                  ? "Unshare"
-                                  : "Share"}
+                              {shareLoading === case_.id ? "..." : "Share"}
                             </button>
+                          )}
+                          {/* Shared button with popover */}
+                          {canShare && case_.is_public && (
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setShareBarOpen(shareBarOpen === case_.id ? null : case_.id);
+                                }}
+                                className="px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-800/50 transition-colors"
+                              >
+                                <svg
+                                  className="w-3.5 h-3.5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                                Shared
+                              </button>
+
+                              {/* ShareBar popover - positioned relative to button */}
+                              {case_.public_slug && shareBarOpen === case_.id && (
+                                <>
+                                  <div
+                                    className="fixed inset-0 z-10"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setShareBarOpen(null);
+                                    }}
+                                  />
+                                  <div className="absolute right-0 bottom-full mb-2 z-20">
+                                    <ShareBar
+                                      publicSlug={case_.public_slug}
+                                      shareMode={case_.share_mode}
+                                      viewCount={case_.view_count}
+                                      copySuccess={copySuccess === case_.id}
+                                      isLoading={shareLoading === case_.id}
+                                      onCopyLink={() => handleCopyLink({ preventDefault: () => {}, stopPropagation: () => {} } as React.MouseEvent, case_)}
+                                      onModeChange={(mode) => handleModeChange(case_, mode)}
+                                      onStopSharing={() => handleStopSharing(case_)}
+                                      onClose={() => setShareBarOpen(null)}
+                                      compact
+                                    />
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           )}
 
                           <button
