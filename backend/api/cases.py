@@ -20,6 +20,7 @@ from api.schemas import (
     CaseShareToggle,
     ChatMessageResponse,
     OutputResponse,
+    VerseRefResponse,
 )
 from api.middleware.auth import get_optional_user, get_session_id
 from api.dependencies import get_case_with_access, limiter
@@ -27,6 +28,7 @@ from models.case import Case
 from models.user import User
 from services.cache import (
     cache,
+    featured_cases_key,
     public_case_key,
     public_case_messages_key,
     public_case_outputs_key,
@@ -224,6 +226,189 @@ async def create_case(
 
     logger.info(f"Case created: {case.id}")
     return case
+
+
+# ============================================================================
+# Featured Cases (Homepage) - MUST be before /{case_id} to match correctly
+# ============================================================================
+
+
+# Cache TTL for featured cases (1 hour)
+FEATURED_CASES_TTL = 3600
+# Cooldown to prevent DoS via repeated job enqueueing
+CURATION_COOLDOWN_SECONDS = 300  # 5 minutes
+
+# Required categories for homepage
+REQUIRED_CATEGORIES = {"career", "relationships", "ethics", "leadership"}
+
+
+def _truncate(text: str, max_chars: int) -> str:
+    """Truncate text with ellipsis at word boundary (Unicode-safe)."""
+    if not text or len(text) <= max_chars:
+        return text or ""
+    truncated = text[:max_chars]
+    # Find last space, handle case where no space exists
+    last_space = truncated.rfind(" ")
+    if last_space > 0:
+        return truncated[:last_space] + "..."
+    return truncated + "..."  # No space found, hard truncate
+
+
+def _extract_summary(output) -> str:
+    """Extract executive summary from output."""
+    if not output or not output.result_json:
+        return ""
+    return output.result_json.get("executive_summary", "") or ""
+
+
+def _extract_steps(output, max_steps: int = 3, max_chars: int = 100) -> List[str]:
+    """Extract recommended action steps from output."""
+    if not output or not output.result_json:
+        return []
+
+    rec = output.result_json.get("recommended_action", {})
+    steps = rec.get("steps", []) if isinstance(rec, dict) else []
+
+    return [_truncate(step, max_chars) for step in steps[:max_steps]]
+
+
+def _extract_verse_refs(output, max_refs: int = 3) -> List[VerseRefResponse]:
+    """Extract verse references from output sources."""
+
+    if not output or not output.result_json:
+        return []
+
+    sources = output.result_json.get("sources", [])
+    refs = []
+
+    for source in sources[:max_refs]:
+        canonical_id = source.get("canonical_id", "")
+        if canonical_id:
+            refs.append(
+                VerseRefResponse(
+                    canonical_id=canonical_id,
+                    display=canonical_id.replace("BG_", "BG ").replace("_", "."),
+                )
+            )
+
+    return refs
+
+
+@router.get("/featured")
+@limiter.limit("30/minute")
+async def get_featured_cases(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    """
+    Get featured cases for homepage display.
+
+    Returns curated cases that are:
+    - In featured_cases table with is_active=True
+    - Have is_public=True on the Case
+    - Have status=completed
+
+    Cached in Redis (1 hour). Triggers background curation if categories missing.
+    """
+    from models import FeaturedCase
+    from models.case import CaseStatus
+    from api.schemas import (
+        FeaturedCaseResponse,
+        FeaturedCasesResponse,
+        VerseRefResponse,
+    )
+
+    # Try cache first
+    cached = cache.get(featured_cases_key())
+    if cached is not None:
+        response.headers["X-Cache"] = "HIT"
+        response.headers["Cache-Control"] = "public, max-age=300"
+        return cached
+
+    # Cache miss - query database
+    response.headers["X-Cache"] = "MISS"
+
+    from sqlalchemy.orm import joinedload
+
+    featured = (
+        db.query(FeaturedCase)
+        .join(Case)
+        .options(
+            joinedload(FeaturedCase.case).joinedload(Case.outputs),
+            joinedload(FeaturedCase.case).joinedload(Case.messages),
+        )
+        .filter(
+            FeaturedCase.is_active == True,  # noqa: E712
+            Case.is_public == True,  # noqa: E712
+            Case.status == CaseStatus.COMPLETED.value,
+            Case.is_deleted == False,  # noqa: E712
+        )
+        .order_by(FeaturedCase.category, FeaturedCase.display_order)
+        .all()
+    )
+
+    # Check for missing categories and trigger curation
+    existing_categories = {fc.category for fc in featured}
+    missing = REQUIRED_CATEGORIES - existing_categories
+
+    if missing:
+        # Check cooldown to prevent DoS via repeated job enqueueing
+        curation_cooldown_key = "curation:cooldown"
+        if cache.get(curation_cooldown_key):
+            logger.info("Curation job already triggered recently, skipping")
+        else:
+            logger.info(f"Missing featured categories: {missing}, triggering curation")
+            try:
+                from services.tasks import enqueue_task
+                from jobs.curate_featured import curate_missing_categories
+
+                enqueue_task(curate_missing_categories, list(missing))
+                # Set cooldown to prevent repeated triggers
+                cache.set(curation_cooldown_key, True, CURATION_COOLDOWN_SECONDS)
+            except Exception as e:
+                logger.warning(f"Failed to enqueue curation job: {e}")
+
+    # Transform to response
+    cases = []
+    for fc in featured:
+        case = fc.case
+
+        # Defensive check: skip cases without public slug
+        if not case.public_slug:
+            logger.warning(f"Featured case {fc.id} has no public_slug, skipping")
+            continue
+
+        output = case.outputs[-1] if case.outputs else None
+
+        cases.append(
+            FeaturedCaseResponse(
+                slug=case.public_slug,
+                category=fc.category,
+                dilemma_preview=_truncate(case.description or "", 150),
+                guidance_summary=_truncate(_extract_summary(output), 300),
+                recommended_steps=_extract_steps(output, max_steps=3, max_chars=100),
+                verse_references=_extract_verse_refs(output, max_refs=3),
+                has_followups=len(case.messages) > 2 if case.messages else False,
+            )
+        )
+
+    result = FeaturedCasesResponse(
+        cases=cases,
+        categories=sorted(existing_categories),
+        cached_at=datetime.utcnow(),
+    )
+
+    # Cache for 1 hour
+    cache.set(featured_cases_key(), result.model_dump(mode="json"), FEATURED_CASES_TTL)
+    response.headers["Cache-Control"] = "public, max-age=300"
+
+    return result
+
+
+# ============================================================================
+# Case CRUD Operations
+# ============================================================================
 
 
 @router.get("/{case_id}", response_model=CaseResponse)

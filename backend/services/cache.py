@@ -285,5 +285,10 @@ def rag_output_key(description_hash: str) -> str:
     return f"rag_output:{description_hash}"
 
 
+def featured_cases_key() -> str:
+    """Build cache key for featured cases."""
+    return "featured_cases:all"
+
+
 # Convenience instance
 cache = CacheService()

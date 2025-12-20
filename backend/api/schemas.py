@@ -543,3 +543,49 @@ class ChapterMetadataResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ============================================================================
+# Featured Cases Schemas
+# ============================================================================
+
+
+class VerseRefResponse(BaseModel):
+    """Verse reference for featured case display."""
+
+    canonical_id: str = Field(..., description="Canonical verse ID (e.g., BG_2_47)")
+    display: str = Field(..., description="Display format (e.g., BG 2.47)")
+
+
+class FeaturedCaseResponse(BaseModel):
+    """Schema for a single featured case on homepage."""
+
+    slug: Optional[str] = Field(
+        None, description="Public slug for linking (null for fallback)"
+    )
+    category: str = Field(
+        ..., description="Category: career, relationships, ethics, leadership"
+    )
+    dilemma_preview: str = Field(..., description="Truncated dilemma text (~150 chars)")
+    guidance_summary: str = Field(
+        ..., description="Executive summary excerpt (~300 chars)"
+    )
+    recommended_steps: List[str] = Field(
+        default_factory=list, description="First 2-3 recommended action steps"
+    )
+    verse_references: List[VerseRefResponse] = Field(
+        default_factory=list, description="Up to 3 verse references"
+    )
+    has_followups: bool = Field(
+        False, description="Whether case has follow-up discussion"
+    )
+
+
+class FeaturedCasesResponse(BaseModel):
+    """Schema for featured cases API response."""
+
+    cases: List[FeaturedCaseResponse] = Field(
+        ..., description="Featured cases by category"
+    )
+    categories: List[str] = Field(..., description="Available categories")
+    cached_at: datetime = Field(..., description="When response was cached")
