@@ -70,14 +70,13 @@ class VerseRepository(BaseRepository[Verse]):  # type: ignore[type-var]
             .all()
         )
 
-    def get_seed_verses(self) -> List[Verse]:
+    def get_featured_verses(self) -> List[Verse]:
         """
-        Get all seed verses (high priority).
+        Get featured verses for display.
 
         Returns:
-            List of seed verses
+            List of all verses (can be filtered for featured in future)
         """
-        # For now, return all verses as we only have seed data
         return self.get_all()
 
     def get_with_translations(self, canonical_id: str) -> Optional[Verse]:

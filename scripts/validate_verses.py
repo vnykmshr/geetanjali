@@ -223,15 +223,22 @@ class VerseValidator:
 
 def main():
     """Main validation function."""
-    # Find seed verses file
-    seed_file = Path(__file__).parent.parent / "data" / "verses" / "seed-verses.json"
+    import argparse
 
-    if not seed_file.exists():
-        print(f"❌ Seed file not found: {seed_file}")
+    parser = argparse.ArgumentParser(description="Validate verse JSON files")
+    parser.add_argument(
+        "file",
+        type=Path,
+        help="Path to verse JSON file to validate",
+    )
+    args = parser.parse_args()
+
+    if not args.file.exists():
+        print(f"❌ File not found: {args.file}")
         return 1
 
     validator = VerseValidator()
-    valid = validator.validate_file(seed_file)
+    validator.validate_file(args.file)
     success = validator.print_report()
 
     return 0 if success else 1

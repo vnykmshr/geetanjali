@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""Initialize the database with schema and seed data."""
+"""Initialize the database with schema and test user."""
 
 import os
 import sys
-import json
 from pathlib import Path
-from datetime import datetime
 
 # Add backend to path
 backend_path = Path(__file__).parent.parent / "backend"
@@ -14,54 +12,12 @@ sys.path.insert(0, str(backend_path))
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.base import Base
-from models import User, Verse
+from models import User
 
 
 def get_database_url():
     """Get database URL from environment or default."""
     return os.getenv("DATABASE_URL", "sqlite:///./geetanjali.db")
-
-
-def load_seed_verses(session):
-    """Load seed verses from JSON file."""
-    seed_file = Path(__file__).parent.parent / "data" / "verses" / "seed-verses.json"
-
-    if not seed_file.exists():
-        print(f"⚠️  Seed file not found: {seed_file}")
-        return 0
-
-    with open(seed_file, "r") as f:
-        verses_data = json.load(f)
-
-    count = 0
-    for verse_data in verses_data:
-        # Check if verse already exists
-        existing = session.query(Verse).filter_by(
-            canonical_id=verse_data["canonical_id"]
-        ).first()
-
-        if existing:
-            print(f"  Skipping {verse_data['canonical_id']} (already exists)")
-            continue
-
-        # Create verse
-        verse = Verse(
-            canonical_id=verse_data["canonical_id"],
-            chapter=verse_data["chapter"],
-            verse=verse_data["verse"],
-            sanskrit_iast=verse_data["sanskrit"]["iast"],
-            paraphrase_en=verse_data["paraphrase"]["en"],
-            consulting_principles=verse_data["consulting_principles"],
-            source=verse_data["sanskrit"]["source"],
-            license=verse_data["sanskrit"]["license"],
-        )
-
-        session.add(verse)
-        count += 1
-        print(f"  ✅ Loaded {verse_data['canonical_id']}")
-
-    session.commit()
-    return count
 
 
 def create_test_user(session):
@@ -88,7 +44,7 @@ def create_test_user(session):
 
 
 def init_database():
-    """Initialize database with schema and seed data."""
+    """Initialize database with schema and test user."""
     print("🚀 Initializing Geetanjali database...")
     print()
 
@@ -111,12 +67,6 @@ def init_database():
     session = Session()
 
     try:
-        # Load seed verses
-        print("📖 Loading seed verses...")
-        verse_count = load_seed_verses(session)
-        print(f"  ✅ Loaded {verse_count} verses")
-        print()
-
         # Create test user
         print("👤 Creating test user...")
         create_test_user(session)
@@ -125,9 +75,10 @@ def init_database():
         print("✅ Database initialization complete!")
         print()
         print("Next steps:")
-        print("  1. Start backend: uvicorn main:app --reload")
-        print("  2. View API docs: http://localhost:8000/docs")
-        print("  3. Test user credentials:")
+        print("  1. Run verse ingestion: POST /api/v1/admin/ingest")
+        print("  2. Start backend: uvicorn main:app --reload")
+        print("  3. View API docs: http://localhost:8000/docs")
+        print("  4. Test user credentials:")
         print("     Email: dev@geetanjali.local")
         print("     API Key: dev-api-key-12345")
 
