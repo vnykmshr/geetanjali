@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Virtuoso } from "react-virtuoso";
 import { casesApi } from "../lib/api";
 import type { Case, CaseStatus } from "../types";
 import { Navbar, ConfirmModal, Footer } from "../components";
@@ -278,102 +279,141 @@ export default function Consultations() {
             </div>
           ) : (
             <>
-              <div className="space-y-3 sm:space-y-4">
-                {cases.map((case_) => {
+              {/* Virtualized Consultations List */}
+              {/* isolate creates a new stacking context for proper z-index layering */}
+              <div className="isolate pb-4">
+                <Virtuoso
+                  useWindowScroll
+                  totalCount={cases.length}
+                  overscan={200}
+                itemContent={(index) => {
+                  const case_ = cases[index];
                   const isCompleted =
                     !case_.status ||
                     case_.status === "completed" ||
                     case_.status === "policy_violation";
-                  // Don't allow sharing policy_violation cases - educational responses aren't meant to be shared
                   const canShare =
                     isCompleted && case_.status !== "policy_violation";
 
                   return (
-                    <div
-                      key={case_.id}
-                      className={`bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all border overflow-hidden ${
-                        case_.is_public
-                          ? "border-green-200 dark:border-green-800 hover:border-green-300 dark:hover:border-green-700"
-                          : "border-gray-100 dark:border-gray-700 hover:border-red-200 dark:hover:border-gray-600"
-                      }`}
-                    >
-                      <Link
-                        to={`/cases/${case_.id}`}
-                        className="block p-4 sm:p-5 lg:p-6"
+                    <div className="pb-3 sm:pb-4">
+                      <div
+                        className={`bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all border overflow-hidden ${
+                          case_.is_public
+                            ? "border-green-200 dark:border-green-800 hover:border-green-300 dark:hover:border-green-700"
+                            : "border-gray-100 dark:border-gray-700 hover:border-red-200 dark:hover:border-gray-600"
+                        }`}
                       >
-                        <div className="flex justify-between items-start mb-2 sm:mb-3 gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
-                              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                {case_.title}
-                              </h2>
-                              <StatusBadge status={case_.status} />
+                        <Link
+                          to={`/cases/${case_.id}`}
+                          className="block p-4 sm:p-5 lg:p-6"
+                        >
+                          <div className="flex justify-between items-start mb-2 sm:mb-3 gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
+                                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                  {case_.title}
+                                </h2>
+                                <StatusBadge status={case_.status} />
+                              </div>
+                              <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500">
+                                {new Date(
+                                  case_.created_at || "",
+                                ).toLocaleDateString("en-US", {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </p>
                             </div>
-                            <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500">
-                              {new Date(
-                                case_.created_at || "",
-                              ).toLocaleDateString("en-US", {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </p>
+                            {case_.status === "failed" && (
+                              <button
+                                onClick={(e) => handleRetry(e, case_.id)}
+                                disabled={actionLoading === case_.id}
+                                className="px-2 sm:px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800/50 rounded-full transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900"
+                                title="Retry analysis"
+                              >
+                                {actionLoading === case_.id ? "..." : "Retry"}
+                              </button>
+                            )}
                           </div>
-                          {/* Retry button for failed cases */}
-                          {case_.status === "failed" && (
-                            <button
-                              onClick={(e) => handleRetry(e, case_.id)}
-                              disabled={actionLoading === case_.id}
-                              className="px-2 sm:px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800/50 rounded-full transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900"
-                              title="Retry analysis"
-                            >
-                              {actionLoading === case_.id ? "..." : "Retry"}
-                            </button>
-                          )}
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm line-clamp-2 mb-2 sm:mb-3">
-                          {case_.description}
-                        </p>
-                        <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                          {case_.role && case_.role !== "Individual" && (
-                            <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
-                              👤 {case_.role}
-                            </span>
-                          )}
-                          {case_.stakeholders &&
-                            case_.stakeholders.length > 0 &&
-                            case_.stakeholders[0] !== "self" && (
+                          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm line-clamp-2 mb-2 sm:mb-3">
+                            {case_.description}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                            {case_.role && case_.role !== "Individual" && (
                               <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
-                                👥 {case_.stakeholders.join(", ")}
+                                👤 {case_.role}
                               </span>
                             )}
-                          {case_.horizon && (
-                            <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
-                              ⏱️ {case_.horizon} term
-                            </span>
-                          )}
-                        </div>
-                      </Link>
+                            {case_.stakeholders &&
+                              case_.stakeholders.length > 0 &&
+                              case_.stakeholders[0] !== "self" && (
+                                <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                                  👥 {case_.stakeholders.join(", ")}
+                                </span>
+                              )}
+                            {case_.horizon && (
+                              <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                                ⏱️ {case_.horizon} term
+                              </span>
+                            )}
+                          </div>
+                        </Link>
 
-                      {/* Compact share URL (when public) - right aligned */}
-                      {case_.is_public && case_.public_slug && (
-                        <div className="px-4 sm:px-5 lg:px-6 py-2 border-t border-green-100 dark:border-green-900 flex justify-end">
-                          <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg px-2.5 py-1.5">
-                            <div className="flex items-center gap-2">
-                              <code className="text-xs text-green-700 dark:text-green-400 font-mono truncate max-w-[180px] sm:max-w-none">
-                                {window.location.host}/c/{case_.public_slug}
-                              </code>
-                              <button
-                                onClick={(e) => handleCopyLink(e, case_)}
-                                className="px-2 py-0.5 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
-                              >
-                                {copySuccess === case_.id ? "Copied!" : "Copy"}
-                              </button>
+                        {case_.is_public && case_.public_slug && (
+                          <div className="px-4 sm:px-5 lg:px-6 py-2 border-t border-green-100 dark:border-green-900 flex justify-end">
+                            <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg px-2.5 py-1.5">
+                              <div className="flex items-center gap-2">
+                                <code className="text-xs text-green-700 dark:text-green-400 font-mono truncate max-w-[180px] sm:max-w-none">
+                                  {window.location.host}/c/{case_.public_slug}
+                                </code>
+                                <button
+                                  onClick={(e) => handleCopyLink(e, case_)}
+                                  className="px-2 py-0.5 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1"
+                                >
+                                  {copySuccess === case_.id ? "Copied!" : "Copy"}
+                                </button>
+                              </div>
+                              <p className="text-[10px] text-green-600 dark:text-green-500 mt-1 flex items-center gap-1">
+                                <svg
+                                  className="w-3 h-3"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                                  />
+                                </svg>
+                                Only people with this link can view
+                              </p>
                             </div>
-                            <p className="text-[10px] text-green-600 dark:text-green-500 mt-1 flex items-center gap-1">
+                          </div>
+                        )}
+
+                        <div className="px-4 sm:px-5 lg:px-6 py-2.5 sm:py-3 bg-amber-50/50 dark:bg-gray-700/50 border-t border-amber-100 dark:border-gray-600 flex items-center justify-end gap-2">
+                          {canShare && (
+                            <button
+                              onClick={(e) => handleToggleShare(e, case_)}
+                              disabled={shareLoading === case_.id}
+                              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900 ${
+                                case_.is_public
+                                  ? "text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-800/50 focus-visible:ring-green-500"
+                                  : "text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800/50 focus-visible:ring-amber-500"
+                              }`}
+                              title={
+                                case_.is_public
+                                  ? "Make private"
+                                  : "Share consultation"
+                              }
+                            >
                               <svg
-                                className="w-3 h-3"
+                                className="w-3.5 h-3.5"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -382,32 +422,24 @@ export default function Consultations() {
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
                                   strokeWidth={2}
-                                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
                                 />
                               </svg>
-                              Only people with this link can view
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                              {shareLoading === case_.id
+                                ? "..."
+                                : case_.is_public
+                                  ? "Unshare"
+                                  : "Share"}
+                            </button>
+                          )}
 
-                      {/* Action bar */}
-                      <div className="px-4 sm:px-5 lg:px-6 py-2.5 sm:py-3 bg-amber-50/50 dark:bg-gray-700/50 border-t border-amber-100 dark:border-gray-600 flex items-center justify-end gap-2">
-                        {/* Share/Unshare button (only for completed cases) */}
-                        {canShare && (
                           <button
-                            onClick={(e) => handleToggleShare(e, case_)}
-                            disabled={shareLoading === case_.id}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900 ${
-                              case_.is_public
-                                ? "text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-800/50 focus-visible:ring-green-500"
-                                : "text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800/50 focus-visible:ring-amber-500"
-                            }`}
-                            title={
-                              case_.is_public
-                                ? "Make private"
-                                : "Share consultation"
+                            onClick={(e) =>
+                              handleDeleteClick(e, case_.id, case_.title)
                             }
+                            disabled={actionLoading === case_.id}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-200 dark:hover:border-red-800 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900"
+                            title="Delete consultation"
                           >
                             <svg
                               className="w-3.5 h-3.5"
@@ -419,49 +451,21 @@ export default function Consultations() {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 strokeWidth={2}
-                                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                               />
                             </svg>
-                            {shareLoading === case_.id
-                              ? "..."
-                              : case_.is_public
-                                ? "Unshare"
-                                : "Share"}
+                            Delete
                           </button>
-                        )}
-
-                        {/* Delete button */}
-                        <button
-                          onClick={(e) =>
-                            handleDeleteClick(e, case_.id, case_.title)
-                          }
-                          disabled={actionLoading === case_.id}
-                          className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-200 dark:hover:border-red-800 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900"
-                          title="Delete consultation"
-                        >
-                          <svg
-                            className="w-3.5 h-3.5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                          Delete
-                        </button>
+                        </div>
                       </div>
                     </div>
                   );
-                })}
+                }}
+                />
               </div>
 
               {/* Load More / End of Results */}
-              <div className="mt-8 sm:mt-10">
+              <div className="relative z-10 mt-8 sm:mt-10">
                 {hasMore ? (
                   <button
                     onClick={loadMore}
@@ -494,22 +498,20 @@ export default function Consultations() {
                       <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-300/50 dark:via-gray-600 to-amber-300/70 dark:to-gray-500" />
                     </div>
                   </button>
-                ) : (
-                  cases.length > 0 && (
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/40 dark:via-gray-700 to-amber-200/60 dark:to-gray-600" />
-                      <div className="flex flex-col items-center">
-                        <span className="text-amber-300/60 dark:text-amber-500/50 text-xl">
-                          ॐ
-                        </span>
-                        <span className="text-xs text-amber-600/70 dark:text-gray-400 mt-1">
-                          {cases.length} consultations shown
-                        </span>
-                      </div>
-                      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-200/40 dark:via-gray-700 to-amber-200/60 dark:to-gray-600" />
+                ) : cases.length > 0 ? (
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/40 dark:via-gray-700 to-amber-200/60 dark:to-gray-600" />
+                    <div className="flex flex-col items-center">
+                      <span className="text-amber-300/60 dark:text-amber-500/50 text-xl">
+                        ॐ
+                      </span>
+                      <span className="text-xs text-amber-600/70 dark:text-gray-400 mt-1">
+                        {cases.length} consultations shown
+                      </span>
                     </div>
-                  )
-                )}
+                    <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-200/40 dark:via-gray-700 to-amber-200/60 dark:to-gray-600" />
+                  </div>
+                ) : null}
               </div>
             </>
           )}

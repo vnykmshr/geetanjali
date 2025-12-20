@@ -1,5 +1,6 @@
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { VirtuosoGrid } from "react-virtuoso";
 import { versesApi } from "../lib/api";
 import type { Verse, SearchResult } from "../types";
 import { Navbar, SearchInput, saveRecentSearch } from "../components";
@@ -28,10 +29,29 @@ const getVersesPerPage = () => {
 const VERSE_GRID_CLASSES =
   "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 items-start";
 
-// Animation timing constants
-const CARD_ANIMATION_DELAY_MS = 30;
-const CARD_ANIMATION_MAX_DELAY_MS = 300;
+// Animation timing constants - only for initial load (virtualized items don't animate)
 const SKELETON_COUNT = 8;
+
+// VirtuosoGrid custom components for proper styling
+const gridComponents = {
+  List: React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+    ({ style, children, ...props }, ref) => (
+      <div
+        ref={ref}
+        {...props}
+        style={{ ...style, position: "relative", zIndex: 0 }}
+        className={VERSE_GRID_CLASSES}
+      >
+        {children}
+      </div>
+    )
+  ),
+  Item: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+    <div {...props} className="h-auto">
+      {children}
+    </div>
+  ),
+};
 
 // Filter modes: 'featured' shows curated verses, 'all' shows all 701 verses, 'favorites' shows user's favorites
 type FilterMode = "featured" | "all" | "favorites" | number; // number = specific chapter
@@ -983,43 +1003,44 @@ export default function Verses() {
                     </div>
                   )}
 
-                  <div
-                    className={`${VERSE_GRID_CLASSES} transition-opacity duration-200 ${searchLoading ? "opacity-50" : "opacity-100"}`}
-                  >
-                    {searchData.results.map((result, index) => (
-                      <div
-                        key={result.canonical_id}
-                        className="animate-fade-in"
-                        style={{
-                          animationDelay: `${Math.min(index * CARD_ANIMATION_DELAY_MS, CARD_ANIMATION_MAX_DELAY_MS)}ms`,
-                        }}
-                      >
-                        <VerseCard
-                          verse={
-                            {
-                              ...result,
-                              id: result.canonical_id,
-                              consulting_principles: result.principles,
-                              created_at: "",
-                            } as Verse
-                          }
-                          displayMode="compact"
-                          showSpeaker={false}
-                          showCitation={true}
-                          showTranslation={false}
-                          showTranslationPreview={!result.match.highlight}
-                          onPrincipleClick={handlePrincipleSelect}
-                          linkTo={`/verses/${result.canonical_id}?from=search`}
-                          isFavorite={isFavorite(result.canonical_id)}
-                          onToggleFavorite={toggleFavorite}
-                          match={toVerseMatch(result.match)}
-                        />
-                      </div>
-                    ))}
+                  {/* Virtualized Search Results Grid */}
+                  {/* isolate creates a new stacking context so grid stays below sticky header */}
+                  <div className={`isolate pb-4 transition-opacity duration-200 ${searchLoading ? "opacity-50" : "opacity-100"}`}>
+                    <VirtuosoGrid
+                      useWindowScroll
+                      totalCount={searchData.results.length}
+                      overscan={200}
+                      components={gridComponents}
+                      itemContent={(index) => {
+                        const result = searchData.results[index];
+                        return (
+                          <VerseCard
+                            verse={
+                              {
+                                ...result,
+                                id: result.canonical_id,
+                                consulting_principles: result.principles,
+                                created_at: "",
+                              } as Verse
+                            }
+                            displayMode="compact"
+                            showSpeaker={false}
+                            showCitation={true}
+                            showTranslation={false}
+                            showTranslationPreview={!result.match.highlight}
+                            onPrincipleClick={handlePrincipleSelect}
+                            linkTo={`/verses/${result.canonical_id}?from=search`}
+                            isFavorite={isFavorite(result.canonical_id)}
+                            onToggleFavorite={toggleFavorite}
+                            match={toVerseMatch(result.match)}
+                          />
+                        );
+                      }}
+                    />
                   </div>
 
-                  {/* Load More for Search Results */}
-                  <div className="mt-8 sm:mt-12">
+                  {/* Load More / End of Search Results */}
+                  <div className="relative z-10 mt-8 sm:mt-12">
                     {searchHasMore ? (
                       <button
                         onClick={searchLoadMore}
@@ -1043,21 +1064,21 @@ export default function Verses() {
                                 "Loading"
                               ) : (
                                 <>
-                                  Load More{" "}
+                                  Load More
                                   <ChevronDownIcon className="w-4 h-4" />
                                 </>
                               )}
                             </span>
                             {!searchLoadingMore && searchData.total_count && (
                               <span className="text-xs text-amber-600/70 dark:text-amber-500/70 mt-1">
-                                {searchData.total_count - searchData.total} more
+                                {searchData.total_count - searchData.results.length} more
                               </span>
                             )}
                           </div>
                           <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-300/50 dark:via-amber-600/30 to-amber-300/70 dark:to-amber-600/50" />
                         </div>
                       </button>
-                    ) : (
+                    ) : searchData.results.length > 0 ? (
                       <div className="flex items-center gap-4">
                         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/40 dark:via-amber-600/20 to-amber-200/60 dark:to-amber-600/40" />
                         <div className="flex flex-col items-center">
@@ -1071,7 +1092,7 @@ export default function Verses() {
                         </div>
                         <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-200/40 dark:via-amber-600/20 to-amber-200/60 dark:to-amber-600/40" />
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </>
               )}
@@ -1218,36 +1239,36 @@ export default function Verses() {
                 </div>
               ) : (
                 <>
-                  {/* Verse Grid */}
-                  <div
-                    className={`${VERSE_GRID_CLASSES} transition-opacity duration-200 ${loading ? "opacity-50" : "opacity-100"}`}
-                  >
-                    {displayedVerses.map((verse, index) => (
-                      <div
-                        key={verse.id}
-                        className="animate-fade-in"
-                        style={{
-                          animationDelay: `${Math.min(index * CARD_ANIMATION_DELAY_MS, CARD_ANIMATION_MAX_DELAY_MS)}ms`,
-                        }}
-                      >
-                        <VerseCard
-                          verse={verse}
-                          displayMode="compact"
-                          showSpeaker={false}
-                          showCitation={true}
-                          showTranslation={false}
-                          showTranslationPreview={true}
-                          onPrincipleClick={handlePrincipleSelect}
-                          linkTo={`/verses/${verse.canonical_id}?from=browse`}
-                          isFavorite={isFavorite(verse.canonical_id)}
-                          onToggleFavorite={toggleFavorite}
-                        />
-                      </div>
-                    ))}
+                  {/* Virtualized Verse Grid - renders only visible items for performance */}
+                  {/* isolate creates a new stacking context so grid stays below sticky header */}
+                  <div className={`isolate pb-4 transition-opacity duration-200 ${loading ? "opacity-50" : "opacity-100"}`}>
+                    <VirtuosoGrid
+                      useWindowScroll
+                      totalCount={displayedVerses.length}
+                      overscan={200}
+                      components={gridComponents}
+                      itemContent={(index) => {
+                        const verse = displayedVerses[index];
+                        return (
+                          <VerseCard
+                            verse={verse}
+                            displayMode="compact"
+                            showSpeaker={false}
+                            showCitation={true}
+                            showTranslation={false}
+                            showTranslationPreview={true}
+                            onPrincipleClick={handlePrincipleSelect}
+                            linkTo={`/verses/${verse.canonical_id}?from=browse`}
+                            isFavorite={isFavorite(verse.canonical_id)}
+                            onToggleFavorite={toggleFavorite}
+                          />
+                        );
+                      }}
+                    />
                   </div>
 
                   {/* Load More / End of Results */}
-                  <div className="mt-8 sm:mt-12">
+                  <div className="relative z-10 mt-8 sm:mt-12">
                     {hasMore ? (
                       <button
                         onClick={loadMore}
@@ -1255,10 +1276,7 @@ export default function Verses() {
                         className="w-full group"
                       >
                         <div className="flex items-center gap-4">
-                          {/* Left decorative line */}
                           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-300/50 dark:via-amber-600/30 to-amber-300/70 dark:to-amber-600/50" />
-
-                          {/* Center content */}
                           <div
                             className={`flex flex-col items-center transition-all duration-300 ${loadingMore ? "scale-95 opacity-70" : "group-hover:scale-105"}`}
                           >
@@ -1285,30 +1303,26 @@ export default function Verses() {
                               </span>
                             )}
                           </div>
-
-                          {/* Right decorative line */}
                           <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-300/50 dark:via-amber-600/30 to-amber-300/70 dark:to-amber-600/50" />
                         </div>
                       </button>
-                    ) : (
-                      displayedVerses.length > 0 && (
-                        <div className="flex items-center gap-4">
-                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/40 dark:via-amber-600/20 to-amber-200/60 dark:to-amber-600/40" />
-                          <div className="flex flex-col items-center">
-                            <span className="text-amber-300/60 dark:text-amber-500/40 text-xl">
-                              {showFavorites ? "♡" : "ॐ"}
-                            </span>
-                            <span className="text-xs text-amber-600/70 dark:text-amber-500/60 mt-1">
-                              {displayedVerses.length}{" "}
-                              {showFavorites ? "favorite" : "verse"}
-                              {displayedVerses.length !== 1 ? "s" : ""}
-                              {showFavorites ? "" : " explored"}
-                            </span>
-                          </div>
-                          <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-200/40 dark:via-amber-600/20 to-amber-200/60 dark:to-amber-600/40" />
+                    ) : displayedVerses.length > 0 ? (
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-200/40 dark:via-amber-600/20 to-amber-200/60 dark:to-amber-600/40" />
+                        <div className="flex flex-col items-center">
+                          <span className="text-amber-300/60 dark:text-amber-500/40 text-xl">
+                            {showFavorites ? "♡" : "ॐ"}
+                          </span>
+                          <span className="text-xs text-amber-600/70 dark:text-amber-500/60 mt-1">
+                            {displayedVerses.length}{" "}
+                            {showFavorites ? "favorite" : "verse"}
+                            {displayedVerses.length !== 1 ? "s" : ""}
+                            {showFavorites ? "" : " explored"}
+                          </span>
                         </div>
-                      )
-                    )}
+                        <div className="flex-1 h-px bg-gradient-to-l from-transparent via-amber-200/40 dark:via-amber-600/20 to-amber-200/60 dark:to-amber-600/40" />
+                      </div>
+                    ) : null}
                   </div>
                 </>
               )}
