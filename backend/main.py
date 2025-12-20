@@ -1,7 +1,7 @@
 """Main FastAPI application."""
 
 import uuid
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -20,6 +20,7 @@ from services.metrics_collector import collect_metrics
 init_sentry(service_name="backend")
 from utils.exceptions import (
     GeetanjaliException,
+    http_exception_handler,
     geetanjali_exception_handler,
     validation_exception_handler,
     general_exception_handler,
@@ -113,6 +114,7 @@ async def add_correlation_id(request: Request, call_next):
     return response
 
 
+app.add_exception_handler(HTTPException, http_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(GeetanjaliException, geetanjali_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
@@ -201,7 +203,9 @@ async def startup_event():
                         .filter(Verse.is_featured.is_(True))
                         .scalar()
                     )
-                    cache.set(count_key, featured_count, settings.CACHE_TTL_FEATURED_COUNT)
+                    cache.set(
+                        count_key, featured_count, settings.CACHE_TTL_FEATURED_COUNT
+                    )
 
                 # Warm featured verse IDs (used by random verse)
                 ids_key = featured_verse_ids_key()
@@ -230,7 +234,9 @@ async def startup_event():
                         verse_data = VerseResponse.model_validate(verse).model_dump()
                         ttl = calculate_midnight_ttl()
                         cache.set(cache_key, verse_data, ttl)
-                        logger.info(f"Daily verse cached: {verse.canonical_id} (TTL: {ttl}s)")
+                        logger.info(
+                            f"Daily verse cached: {verse.canonical_id} (TTL: {ttl}s)"
+                        )
 
         except Exception as e:
             logger.warning(f"Failed to warm daily verse cache: {e}")

@@ -9,6 +9,20 @@ from sqlalchemy.exc import SQLAlchemyError, OperationalError
 
 from utils.sentry import capture_exception as sentry_capture
 
+# Export all exception handlers
+__all__ = [
+    "GeetanjaliException",
+    "RAGPipelineError",
+    "VectorStoreError",
+    "LLMError",
+    "RetryableLLMError",
+    "http_exception_handler",
+    "geetanjali_exception_handler",
+    "validation_exception_handler",
+    "general_exception_handler",
+    "handle_service_error",
+]
+
 logger = logging.getLogger(__name__)
 
 
@@ -54,6 +68,15 @@ class RetryableLLMError(LLMError):
     pass
 
 
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    """Handle HTTP exceptions with no-cache headers to prevent stale 404s."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 async def geetanjali_exception_handler(
     request: Request, exc: GeetanjaliException
 ) -> JSONResponse:
@@ -65,8 +88,9 @@ async def geetanjali_exception_handler(
         content={
             "error": exc.__class__.__name__,
             "message": exc.message,
-            "path": str(request.url),
+            "path": request.url.path,
         },
+        headers={"Cache-Control": "no-store"},
     )
 
 
@@ -83,6 +107,7 @@ async def validation_exception_handler(
             "message": "Request validation failed",
             "details": exc.errors(),
         },
+        headers={"Cache-Control": "no-store"},
     )
 
 
@@ -103,8 +128,9 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
         content={
             "error": "InternalServerError",
             "message": "An unexpected error occurred",
-            "path": str(request.url),
+            "path": request.url.path,
         },
+        headers={"Cache-Control": "no-store"},
     )
 
 
