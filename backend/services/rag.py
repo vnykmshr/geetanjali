@@ -141,6 +141,419 @@ def _validate_source_object_structure(source: Dict[str, Any]) -> tuple[bool, str
     return True, ""
 
 
+def _ensure_required_fields(output: Dict[str, Any]) -> None:
+    """
+    Ensure all required fields exist in output, setting safe defaults.
+
+    Modifies output in place.
+    """
+    required_fields = [
+        "executive_summary",
+        "options",
+        "recommended_action",
+        "reflection_prompts",
+        "sources",
+        "confidence",
+    ]
+
+    for field in required_fields:
+        if field not in output:
+            logger.warning(f"Missing required field: {field}")
+            if field == "confidence":
+                output["confidence"] = 0.5
+            elif field == "scholar_flag":
+                output["scholar_flag"] = True
+            elif field == "executive_summary":
+                output["executive_summary"] = (
+                    "Ethical analysis based on Bhagavad Geeta principles."
+                )
+            elif field == "recommended_action":
+                output["recommended_action"] = {
+                    "option": 1,
+                    "steps": [
+                        "Reflect on the situation",
+                        "Consider all perspectives",
+                        "Act with clarity and integrity",
+                    ],
+                    "sources": [],
+                }
+            elif field == "reflection_prompts":
+                output["reflection_prompts"] = [
+                    "What is my duty in this situation?",
+                    "How can I act with integrity?",
+                ]
+            else:
+                output[field] = []
+
+
+def _generate_default_options(base_verses: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Generate 3 default options when LLM fails to provide any."""
+    return [
+        {
+            "title": "Option 1: Path of Duty and Dharma",
+            "description": (
+                "Follow your rightful duty (svadharma) with focus on principles "
+                "rather than outcomes, aligning with core Geeta teachings"
+            ),
+            "pros": [
+                "Aligns with dharma and personal duty",
+                "Promotes spiritual growth",
+                "Creates positive karma",
+            ],
+            "cons": [
+                "May require immediate sacrifice",
+                "Outcomes uncertain",
+            ],
+            "sources": [v.get("canonical_id", "BG_2_47") for v in base_verses[:1]],
+        },
+        {
+            "title": "Option 2: Balanced Approach with Flexibility",
+            "description": (
+                "Integrate duty with pragmatic considerations, adapting to "
+                "circumstances while maintaining ethical principles"
+            ),
+            "pros": [
+                "Balances ideals with reality",
+                "Allows for adaptation",
+                "Considers stakeholders",
+            ],
+            "cons": [
+                "Requires ongoing reflection",
+                "May appear uncertain",
+            ],
+            "sources": [v.get("canonical_id", "BG_3_35") for v in base_verses[1:2]],
+        },
+        {
+            "title": "Option 3: Seek Deeper Understanding",
+            "description": (
+                "Pause for reflection and deeper inquiry into your values, "
+                "circumstances, and the wisdom traditions before committing"
+            ),
+            "pros": [
+                "Builds clarity and confidence",
+                "Reduces future regret",
+                "Honors complexity",
+            ],
+            "cons": [
+                "Delays decision-making",
+                "May require more effort",
+            ],
+            "sources": [v.get("canonical_id", "BG_18_63") for v in base_verses[2:3]],
+        },
+    ]
+
+
+def _validate_and_fix_options(output: Dict[str, Any]) -> None:
+    """
+    Validate options array has exactly 3 options, filling gaps if needed.
+
+    Modifies output in place.
+    """
+    options = output.get("options", [])
+    num_options = len(options)
+
+    if num_options == 3:
+        return  # All good
+
+    logger.warning(
+        f"LLM returned {num_options} options instead of required 3. "
+        f"Will attempt to fill gaps intelligently."
+    )
+
+    # Flag for scholar review since LLM didn't follow constraint
+    output["scholar_flag"] = True
+    output["confidence"] = max(output.get("confidence", 0.5) - 0.15, 0.3)
+
+    base_verses = output.get("sources", [])
+
+    if num_options > 0 and num_options < 3:
+        # Validate existing options have required fields
+        for option in options:
+            if "title" not in option:
+                option["title"] = f"Option {options.index(option) + 1}"
+            if "description" not in option:
+                option["description"] = "An alternative approach"
+            if "pros" not in option or not isinstance(option["pros"], list):
+                option["pros"] = []
+            if "cons" not in option or not isinstance(option["cons"], list):
+                option["cons"] = []
+            if "sources" not in option or not isinstance(option["sources"], list):
+                option["sources"] = []
+
+        # Generate missing options
+        verse_ids = [
+            v.get("canonical_id", f"BG_{i}_{i}")
+            for i, v in enumerate(base_verses[:3], 1)
+        ]
+
+        while len(options) < 3:
+            idx = len(options) + 1
+            verse_id = verse_ids[idx - 1] if idx - 1 < len(verse_ids) else f"BG_{idx}_{idx}"
+
+            missing_option = {
+                "title": f"Option {idx}: Alternative Perspective",
+                "description": (
+                    "A balanced approach considering different perspectives "
+                    "and values from Bhagavad Geeta wisdom"
+                ),
+                "pros": [
+                    "Considers multiple viewpoints",
+                    "Grounded in principles",
+                    "Sustainable long-term",
+                ],
+                "cons": [
+                    "Requires careful implementation",
+                    "May involve compromise",
+                ],
+                "sources": [verse_id],
+            }
+            options.append(missing_option)
+            logger.info(f"Generated missing Option {idx} to meet requirement of 3 options")
+
+        output["options"] = options
+
+    elif num_options == 0:
+        logger.warning("No options found in LLM response. Generating default options.")
+        output["options"] = _generate_default_options(base_verses)
+        output["scholar_flag"] = True
+        output["confidence"] = 0.4
+
+
+def _validate_field_types(output: Dict[str, Any]) -> None:
+    """
+    Validate field types for executive_summary, reflection_prompts, recommended_action.
+
+    Modifies output in place.
+    """
+    # Validate executive_summary
+    if (
+        not isinstance(output.get("executive_summary"), str)
+        or len(str(output.get("executive_summary", "")).strip()) == 0
+    ):
+        logger.warning("Invalid or missing executive_summary, using default")
+        output["executive_summary"] = "Ethical analysis based on Bhagavad Geeta principles."
+
+    # Validate reflection_prompts
+    if (
+        not isinstance(output.get("reflection_prompts"), list)
+        or len(output.get("reflection_prompts", [])) == 0
+    ):
+        logger.warning("Invalid or missing reflection_prompts, using defaults")
+        output["reflection_prompts"] = [
+            "What is my duty in this situation?",
+            "How can I act with integrity?",
+        ]
+
+    # Validate recommended_action structure
+    recommended_action = output.get("recommended_action", {})
+    if not isinstance(recommended_action, dict):
+        logger.warning("Invalid recommended_action structure, using default")
+        recommended_action = {
+            "option": 1,
+            "steps": [
+                "Reflect on the situation",
+                "Consider all perspectives",
+                "Act with clarity",
+            ],
+            "sources": [],
+        }
+    else:
+        # Validate option field
+        if not isinstance(recommended_action.get("option"), int) or recommended_action.get("option") not in [1, 2, 3]:
+            logger.warning(f"Invalid recommended_action.option: {recommended_action.get('option')}, defaulting to 1")
+            recommended_action["option"] = 1
+
+        # Validate steps
+        if not isinstance(recommended_action.get("steps"), list) or len(recommended_action.get("steps", [])) == 0:
+            logger.warning("Invalid or missing recommended_action.steps")
+            recommended_action["steps"] = [
+                "Reflect on the situation",
+                "Consider all perspectives",
+                "Act with clarity",
+            ]
+
+        # Validate sources
+        if not isinstance(recommended_action.get("sources"), list):
+            logger.warning("Invalid recommended_action.sources, setting to empty list")
+            recommended_action["sources"] = []
+
+    output["recommended_action"] = recommended_action
+
+
+def _validate_option_structures(output: Dict[str, Any]) -> None:
+    """
+    Validate each option has correct structure.
+
+    Modifies output in place.
+    """
+    for i, option in enumerate(output.get("options", [])):
+        is_valid, error_msg = _validate_option_structure(option)
+        if not is_valid:
+            logger.warning(f"Option {i} validation failed: {error_msg}")
+            if "title" not in option or not isinstance(option.get("title"), str):
+                option["title"] = f"Option {i + 1}"
+            if "description" not in option or not isinstance(option.get("description"), str):
+                option["description"] = "An alternative approach"
+            if "pros" not in option or not isinstance(option.get("pros"), list):
+                option["pros"] = []
+            if "cons" not in option or not isinstance(option.get("cons"), list):
+                option["cons"] = []
+            if "sources" not in option or not isinstance(option.get("sources"), list):
+                option["sources"] = []
+
+
+def _validate_sources_array(output: Dict[str, Any]) -> None:
+    """
+    Validate sources array structure and individual source objects.
+
+    Modifies output in place.
+    """
+    sources_array = output.get("sources", [])
+    if not isinstance(sources_array, list):
+        logger.warning("Sources field is not a list, setting to empty")
+        output["sources"] = []
+        return
+
+    valid_sources = []
+    for i, source in enumerate(sources_array):
+        is_valid, error_msg = _validate_source_object_structure(source)
+        if not is_valid:
+            logger.warning(f"Source {i} validation failed: {error_msg}, skipping")
+            continue
+        valid_sources.append(source)
+
+    if len(valid_sources) < len(sources_array):
+        logger.warning(
+            f"Removed {len(sources_array) - len(valid_sources)} invalid sources "
+            f"({len(valid_sources)} valid sources remain)"
+        )
+        output["sources"] = valid_sources
+
+
+def _filter_source_references(output: Dict[str, Any]) -> None:
+    """
+    Filter invalid source references in options and recommended_action.
+
+    Modifies output in place.
+    """
+    sources_array = output.get("sources", [])
+    valid_canonical_ids = {s.get("canonical_id") for s in sources_array if s}
+
+    # Filter option sources
+    for option_idx, option in enumerate(output.get("options", [])):
+        original_sources = option.get("sources", [])
+        valid_sources_for_option = []
+        invalid_sources = []
+
+        for src in original_sources:
+            if isinstance(src, str):
+                if sources_array and _validate_source_reference(src, sources_array):
+                    valid_sources_for_option.append(src)
+                elif not sources_array and validate_canonical_id(src):
+                    valid_sources_for_option.append(src)
+                    logger.debug(f"Option {option_idx}: accepting orphan source {src} (valid format)")
+                else:
+                    invalid_sources.append(src)
+            else:
+                invalid_sources.append(str(src))
+
+        if invalid_sources:
+            logger.warning(f"Option {option_idx}: removed invalid source refs: {invalid_sources}")
+            option["sources"] = valid_sources_for_option
+
+    # Filter recommended_action sources
+    rec_action = output.get("recommended_action", {})
+    if rec_action and "sources" in rec_action:
+        original_rec_sources = rec_action.get("sources", [])
+        valid_rec_sources = []
+        invalid_rec = []
+
+        for src in original_rec_sources:
+            if isinstance(src, str):
+                if sources_array and _validate_source_reference(src, sources_array):
+                    valid_rec_sources.append(src)
+                elif not sources_array and validate_canonical_id(src):
+                    valid_rec_sources.append(src)
+                else:
+                    invalid_rec.append(src)
+            else:
+                invalid_rec.append(str(src))
+
+        if invalid_rec:
+            logger.warning(f"recommended_action: removed invalid citations {invalid_rec}")
+            rec_action["sources"] = valid_rec_sources
+
+
+def _inject_rag_verses(
+    output: Dict[str, Any],
+    retrieved_verses: Optional[List[Dict[str, Any]]],
+) -> None:
+    """
+    Inject RAG-retrieved verses when sources drop below minimum threshold.
+
+    Applies confidence penalty for each injected verse.
+    Modifies output in place.
+    """
+    MIN_SOURCES = 3
+    INJECTION_CONFIDENCE_PENALTY = 0.03
+
+    sources_array = output.get("sources", [])
+    num_existing = len(sources_array)
+
+    if num_existing >= MIN_SOURCES:
+        return
+
+    if not retrieved_verses:
+        logger.warning(
+            f"Sources below minimum ({num_existing} < {MIN_SOURCES}) but no RAG verses available to inject"
+        )
+        return
+
+    num_to_inject = MIN_SOURCES - num_existing
+    existing_ids = {s.get("canonical_id") for s in sources_array}
+
+    injected_count = 0
+    for verse in retrieved_verses:
+        if injected_count >= num_to_inject:
+            break
+
+        verse_id = verse.get("canonical_id") or verse.get("metadata", {}).get("canonical_id")
+        if not verse_id or verse_id in existing_ids:
+            continue
+
+        metadata = verse.get("metadata", {})
+        paraphrase = (
+            metadata.get("translation_en")
+            or metadata.get("paraphrase")
+            or verse.get("document", "")[:200]
+        )
+
+        if not paraphrase:
+            continue
+
+        injected_source = {
+            "canonical_id": verse_id,
+            "paraphrase": paraphrase,
+            "relevance": verse.get("relevance", 0.7),
+        }
+
+        sources_array.append(injected_source)
+        existing_ids.add(verse_id)
+        injected_count += 1
+
+        logger.info(f"Injected RAG verse {verse_id} (relevance: {verse.get('relevance', 0.7):.2f})")
+
+    if injected_count > 0:
+        output["sources"] = sources_array
+        current_confidence = output.get("confidence", 0.5)
+        penalty = INJECTION_CONFIDENCE_PENALTY * injected_count
+        output["confidence"] = max(current_confidence - penalty, 0.3)
+        logger.warning(
+            f"Injected {injected_count} RAG verses (sources now: {len(sources_array)}). "
+            f"Confidence penalty: -{penalty:.2f} (now: {output['confidence']:.2f})"
+        )
+
+
 class RAGPipeline:
     """RAG pipeline for generating consulting briefs."""
 
@@ -410,430 +823,28 @@ class RAGPipeline:
         """
         logger.debug("Validating output")
 
-        # Ensure required fields exist
-        required_fields = [
-            "executive_summary",
-            "options",
-            "recommended_action",
-            "reflection_prompts",
-            "sources",
-            "confidence",
-        ]
+        # Step 1: Ensure all required fields exist with safe defaults
+        _ensure_required_fields(output)
 
-        for field in required_fields:
-            if field not in output:
-                logger.warning(f"Missing required field: {field}")
-                # Set safe defaults
-                if field == "confidence":
-                    output["confidence"] = 0.5
-                elif field == "scholar_flag":
-                    output["scholar_flag"] = True
-                elif field == "executive_summary":
-                    output["executive_summary"] = (
-                        "Ethical analysis based on Bhagavad Geeta principles."
-                    )
-                elif field == "recommended_action":
-                    output["recommended_action"] = {
-                        "option": 1,
-                        "steps": [
-                            "Reflect on the situation",
-                            "Consider all perspectives",
-                            "Act with clarity and integrity",
-                        ],
-                        "sources": [],
-                    }
-                elif field == "reflection_prompts":
-                    output["reflection_prompts"] = [
-                        "What is my duty in this situation?",
-                        "How can I act with integrity?",
-                    ]
-                else:
-                    output[field] = []
+        # Step 2: Validate and fix options (must have exactly 3)
+        _validate_and_fix_options(output)
 
-        # Validate and fix options (critical requirement: exactly 3)
-        options = output.get("options", [])
-        num_options = len(options)
+        # Step 3: Validate field types (executive_summary, reflection_prompts, recommended_action)
+        _validate_field_types(output)
 
-        if num_options != 3:
-            logger.warning(
-                f"LLM returned {num_options} options instead of required 3. "
-                f"Will attempt to fill gaps intelligently."
-            )
+        # Step 4: Validate each option structure
+        _validate_option_structures(output)
 
-            # Flag for scholar review since LLM didn't follow constraint
-            output["scholar_flag"] = True
-            output["confidence"] = max(
-                output.get("confidence", 0.5) - 0.15, 0.3
-            )  # Penalize confidence
+        # Step 5: Validate sources array
+        _validate_sources_array(output)
 
-            # Get source verses for use in option generation
-            base_verses = output.get("sources", [])
+        # Step 6: Filter invalid source references in options
+        _filter_source_references(output)
 
-            # If we have some valid options, try to intelligently fill missing ones
-            if num_options > 0 and num_options < 3:
-                # Validate existing options have required fields
-                for option in options:
-                    if "title" not in option:
-                        option["title"] = f"Option {options.index(option) + 1}"
-                    if "description" not in option:
-                        option["description"] = "An alternative approach"
-                    if "pros" not in option or not isinstance(option["pros"], list):
-                        option["pros"] = []
-                    if "cons" not in option or not isinstance(option["cons"], list):
-                        option["cons"] = []
-                    if "sources" not in option or not isinstance(
-                        option["sources"], list
-                    ):
-                        option["sources"] = []
+        # Step 7: Inject RAG verses when sources below minimum
+        _inject_rag_verses(output, retrieved_verses)
 
-                # Generate missing options using available context
-                verse_ids = [
-                    v.get("canonical_id", f"BG_{i}_{i}")
-                    for i, v in enumerate(base_verses[:3], 1)
-                ]
-
-                while len(options) < 3:
-                    idx = len(options) + 1
-                    verse_id = (
-                        verse_ids[idx - 1]
-                        if idx - 1 < len(verse_ids)
-                        else f"BG_{idx}_{idx}"
-                    )
-
-                    missing_option = {
-                        "title": f"Option {idx}: Alternative Perspective",
-                        "description": (
-                            "A balanced approach considering different perspectives "
-                            "and values from Bhagavad Geeta wisdom"
-                        ),
-                        "pros": [
-                            "Considers multiple viewpoints",
-                            "Grounded in principles",
-                            "Sustainable long-term",
-                        ],
-                        "cons": [
-                            "Requires careful implementation",
-                            "May involve compromise",
-                        ],
-                        "sources": [verse_id],
-                    }
-                    options.append(missing_option)
-                    logger.info(
-                        f"Generated missing Option {idx} to meet requirement of 3 options"
-                    )
-
-                output["options"] = options
-            elif num_options == 0:
-                # Complete failure - generate all 3 default options
-                logger.warning(
-                    "No options found in LLM response. Generating default options."
-                )
-                output["options"] = [
-                    {
-                        "title": "Option 1: Path of Duty and Dharma",
-                        "description": (
-                            "Follow your rightful duty (svadharma) with focus on principles "
-                            "rather than outcomes, aligning with core Geeta teachings"
-                        ),
-                        "pros": [
-                            "Aligns with dharma and personal duty",
-                            "Promotes spiritual growth",
-                            "Creates positive karma",
-                        ],
-                        "cons": [
-                            "May require immediate sacrifice",
-                            "Outcomes uncertain",
-                        ],
-                        "sources": [
-                            v.get("canonical_id", "BG_2_47") for v in base_verses[:1]
-                        ],
-                    },
-                    {
-                        "title": "Option 2: Balanced Approach with Flexibility",
-                        "description": (
-                            "Integrate duty with pragmatic considerations, adapting to "
-                            "circumstances while maintaining ethical principles"
-                        ),
-                        "pros": [
-                            "Balances ideals with reality",
-                            "Allows for adaptation",
-                            "Considers stakeholders",
-                        ],
-                        "cons": [
-                            "Requires ongoing reflection",
-                            "May appear uncertain",
-                        ],
-                        "sources": [
-                            v.get("canonical_id", "BG_3_35") for v in base_verses[1:2]
-                        ],
-                    },
-                    {
-                        "title": "Option 3: Seek Deeper Understanding",
-                        "description": (
-                            "Pause for reflection and deeper inquiry into your values, "
-                            "circumstances, and the wisdom traditions before committing"
-                        ),
-                        "pros": [
-                            "Builds clarity and confidence",
-                            "Reduces future regret",
-                            "Honors complexity",
-                        ],
-                        "cons": [
-                            "Delays decision-making",
-                            "May require more effort",
-                        ],
-                        "sources": [
-                            v.get("canonical_id", "BG_18_63") for v in base_verses[2:3]
-                        ],
-                    },
-                ]
-                output["scholar_flag"] = True
-                output["confidence"] = (
-                    0.4  # Very low confidence for completely generated options
-                )
-
-        # Comprehensive field type validation
-        # Validate executive_summary is a non-empty string
-        if (
-            not isinstance(output.get("executive_summary"), str)
-            or len(str(output.get("executive_summary", "")).strip()) == 0
-        ):
-            logger.warning("Invalid or missing executive_summary, using default")
-            output["executive_summary"] = (
-                "Ethical analysis based on Bhagavad Geeta principles."
-            )
-
-        # Validate reflection_prompts is a non-empty list
-        if (
-            not isinstance(output.get("reflection_prompts"), list)
-            or len(output.get("reflection_prompts", [])) == 0
-        ):
-            logger.warning("Invalid or missing reflection_prompts, using defaults")
-            output["reflection_prompts"] = [
-                "What is my duty in this situation?",
-                "How can I act with integrity?",
-            ]
-
-        # Validate recommended_action structure
-        recommended_action = output.get("recommended_action", {})
-        if not isinstance(recommended_action, dict):
-            logger.warning("Invalid recommended_action structure, using default")
-            recommended_action = {
-                "option": 1,
-                "steps": [
-                    "Reflect on the situation",
-                    "Consider all perspectives",
-                    "Act with clarity",
-                ],
-                "sources": [],
-            }
-        else:
-            # Validate option field is valid integer
-            if not isinstance(
-                recommended_action.get("option"), int
-            ) or recommended_action.get("option") not in [1, 2, 3]:
-                logger.warning(
-                    f"Invalid recommended_action.option: {recommended_action.get('option')}, defaulting to 1"
-                )
-                recommended_action["option"] = 1
-
-            # Validate steps is a non-empty list
-            if (
-                not isinstance(recommended_action.get("steps"), list)
-                or len(recommended_action.get("steps", [])) == 0
-            ):
-                logger.warning("Invalid or missing recommended_action.steps")
-                recommended_action["steps"] = [
-                    "Reflect on the situation",
-                    "Consider all perspectives",
-                    "Act with clarity",
-                ]
-
-            # Validate sources is a list (can be empty)
-            if not isinstance(recommended_action.get("sources"), list):
-                logger.warning(
-                    "Invalid recommended_action.sources, setting to empty list"
-                )
-                recommended_action["sources"] = []
-
-        output["recommended_action"] = recommended_action
-
-        # Validate each option structure
-        for i, option in enumerate(output.get("options", [])):
-            is_valid, error_msg = _validate_option_structure(option)
-            if not is_valid:
-                logger.warning(f"Option {i} validation failed: {error_msg}")
-                # Minimum fix to keep option viable
-                if "title" not in option or not isinstance(option.get("title"), str):
-                    option["title"] = f"Option {i + 1}"
-                if "description" not in option or not isinstance(
-                    option.get("description"), str
-                ):
-                    option["description"] = "An alternative approach"
-                if "pros" not in option or not isinstance(option.get("pros"), list):
-                    option["pros"] = []
-                if "cons" not in option or not isinstance(option.get("cons"), list):
-                    option["cons"] = []
-                if "sources" not in option or not isinstance(
-                    option.get("sources"), list
-                ):
-                    option["sources"] = []
-
-        # Validate sources array
-        sources_array = output.get("sources", [])
-        if not isinstance(sources_array, list):
-            logger.warning("Sources field is not a list, setting to empty")
-            output["sources"] = []
-            sources_array = []
-        else:
-            # Validate each source object structure
-            valid_sources = []
-            for i, source in enumerate(sources_array):
-                is_valid, error_msg = _validate_source_object_structure(source)
-                if not is_valid:
-                    logger.warning(
-                        f"Source {i} validation failed: {error_msg}, skipping"
-                    )
-                    continue
-                valid_sources.append(source)
-
-            if len(valid_sources) < len(sources_array):
-                logger.warning(
-                    f"Removed {len(sources_array) - len(valid_sources)} invalid sources "
-                    f"({len(valid_sources)} valid sources remain)"
-                )
-                output["sources"] = valid_sources
-
-        # Validate and filter source references in options
-        # FIX: Always filter invalid sources (even when root sources empty)
-        # This catches cases where LLM uses wrong format like "Verse 1" instead of "BG_2_47"
-        sources_array = output.get("sources", [])
-        valid_canonical_ids = {s.get("canonical_id") for s in sources_array if s}
-
-        for option_idx, option in enumerate(output.get("options", [])):
-            original_sources = option.get("sources", [])
-            valid_sources_for_option = []
-            invalid_sources = []
-
-            for src in original_sources:
-                # Must be string AND either in root sources OR valid canonical format
-                if isinstance(src, str):
-                    if sources_array and _validate_source_reference(src, sources_array):
-                        valid_sources_for_option.append(src)
-                    elif not sources_array and validate_canonical_id(src):
-                        # When root sources empty, accept valid format but log warning
-                        valid_sources_for_option.append(src)
-                        logger.debug(
-                            f"Option {option_idx}: accepting orphan source {src} (valid format)"
-                        )
-                    else:
-                        invalid_sources.append(src)
-                else:
-                    invalid_sources.append(str(src))
-
-            if invalid_sources:
-                logger.warning(
-                    f"Option {option_idx}: removed invalid source refs: {invalid_sources}"
-                )
-                option["sources"] = valid_sources_for_option
-
-        # Also validate recommended_action sources
-        rec_action = output.get("recommended_action", {})
-        if rec_action and "sources" in rec_action:
-            original_rec_sources = rec_action.get("sources", [])
-            valid_rec_sources = []
-            invalid_rec = []
-
-            for src in original_rec_sources:
-                if isinstance(src, str):
-                    if sources_array and _validate_source_reference(src, sources_array):
-                        valid_rec_sources.append(src)
-                    elif not sources_array and validate_canonical_id(src):
-                        valid_rec_sources.append(src)
-                    else:
-                        invalid_rec.append(src)
-                else:
-                    invalid_rec.append(str(src))
-
-            if invalid_rec:
-                logger.warning(
-                    f"recommended_action: removed invalid citations {invalid_rec}"
-                )
-                rec_action["sources"] = valid_rec_sources
-
-        # =================================================================
-        # INJECT RAG VERSES when sources drop below minimum threshold
-        # =================================================================
-        # Target: minimum 3 sources for good user experience
-        # Penalty: -0.03 confidence per injected verse
-        MIN_SOURCES = 3
-        INJECTION_CONFIDENCE_PENALTY = 0.03
-
-        sources_array = output.get("sources", [])
-        num_existing = len(sources_array)
-
-        if num_existing < MIN_SOURCES and retrieved_verses:
-            # Calculate how many to inject
-            num_to_inject = MIN_SOURCES - num_existing
-
-            # Get existing canonical IDs to avoid duplicates
-            existing_ids = {s.get("canonical_id") for s in sources_array}
-
-            # Build injection candidates from retrieved verses
-            injected_count = 0
-            for verse in retrieved_verses:
-                if injected_count >= num_to_inject:
-                    break
-
-                # Get canonical_id from verse (can be top-level or in metadata)
-                verse_id = verse.get("canonical_id") or verse.get(
-                    "metadata", {}
-                ).get("canonical_id")
-
-                if not verse_id or verse_id in existing_ids:
-                    continue
-
-                # Get paraphrase/translation for the injected source
-                metadata = verse.get("metadata", {})
-                paraphrase = (
-                    metadata.get("translation_en")
-                    or metadata.get("paraphrase")
-                    or verse.get("document", "")[:200]  # Fallback to document excerpt
-                )
-
-                if not paraphrase:
-                    continue
-
-                # Create source object
-                injected_source = {
-                    "canonical_id": verse_id,
-                    "paraphrase": paraphrase,
-                    "relevance": verse.get("relevance", 0.7),  # Use RAG relevance
-                }
-
-                sources_array.append(injected_source)
-                existing_ids.add(verse_id)
-                injected_count += 1
-
-                logger.info(f"Injected RAG verse {verse_id} (relevance: {verse.get('relevance', 0.7):.2f})")
-
-            if injected_count > 0:
-                output["sources"] = sources_array
-                # Apply confidence penalty
-                current_confidence = output.get("confidence", 0.5)
-                penalty = INJECTION_CONFIDENCE_PENALTY * injected_count
-                output["confidence"] = max(current_confidence - penalty, 0.3)
-                logger.warning(
-                    f"Injected {injected_count} RAG verses (sources now: {len(sources_array)}). "
-                    f"Confidence penalty: -{penalty:.2f} (now: {output['confidence']:.2f})"
-                )
-        elif num_existing < MIN_SOURCES:
-            # No retrieved_verses available to inject
-            logger.warning(
-                f"Sources below minimum ({num_existing} < {MIN_SOURCES}) but no RAG verses available to inject"
-            )
-
-        # Validate confidence is numeric and in range
+        # Step 8: Final validation (confidence, scholar_flag, formatting)
         confidence = output.get("confidence", 0.5)
         if not isinstance(confidence, (int, float)) or confidence < 0 or confidence > 1:
             logger.warning(f"Invalid confidence value: {confidence}. Setting to 0.5")
@@ -851,7 +862,6 @@ class RAGPipeline:
             output["scholar_flag"] = output.get("scholar_flag", False)
 
         # Post-process executive_summary for better markdown formatting
-        # This is idempotent - safe to run on already-formatted text
         if output.get("executive_summary"):
             output["executive_summary"] = format_executive_summary(
                 output["executive_summary"]
