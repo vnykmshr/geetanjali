@@ -1,9 +1,170 @@
-import { useState, useCallback } from "react";
+import { useReducer, useCallback } from "react";
 import { outputsApi } from "../lib/api";
 import type { Output } from "../types";
 
 /**
+ * Feedback state structure.
+ */
+interface FeedbackState {
+  feedbackGiven: Record<string, "up" | "down" | null>;
+  feedbackLoading: string | null;
+  expandedFeedback: string | null;
+  feedbackText: Record<string, string>; // Draft text being edited
+  savedComment: Record<string, string>; // Last persisted comment
+}
+
+/**
+ * Actions for feedback state management.
+ */
+type FeedbackAction =
+  | { type: "INITIALIZE"; feedback: Record<string, "up" | "down" | null>; comments: Record<string, string> }
+  | { type: "SET_LOADING"; outputId: string | null }
+  | { type: "SET_FEEDBACK"; outputId: string; value: "up" | "down" | null }
+  | { type: "SET_EXPANDED"; outputId: string | null }
+  | { type: "SET_TEXT"; outputId: string; text: string }
+  | { type: "SAVE_COMMENT"; outputId: string; comment: string | null }
+  | { type: "REMOVE"; outputId: string }
+  | { type: "OPTIMISTIC_UP"; outputId: string }
+  | { type: "OPTIMISTIC_DOWN"; outputId: string; comment: string | null }
+  | { type: "ROLLBACK"; outputId: string; prevFeedback: "up" | "down" | null; prevComment: string | null; reopenForm?: boolean };
+
+const initialState: FeedbackState = {
+  feedbackGiven: {},
+  feedbackLoading: null,
+  expandedFeedback: null,
+  feedbackText: {},
+  savedComment: {},
+};
+
+/**
+ * Pure reducer for feedback state - eliminates stale closures.
+ */
+function feedbackReducer(state: FeedbackState, action: FeedbackAction): FeedbackState {
+  switch (action.type) {
+    case "INITIALIZE": {
+      return {
+        ...state,
+        feedbackGiven: { ...state.feedbackGiven, ...action.feedback },
+        savedComment: { ...state.savedComment, ...action.comments },
+        feedbackText: { ...state.feedbackText, ...action.comments },
+      };
+    }
+
+    case "SET_LOADING": {
+      return { ...state, feedbackLoading: action.outputId };
+    }
+
+    case "SET_FEEDBACK": {
+      const newFeedbackGiven = { ...state.feedbackGiven };
+      if (action.value === null) {
+        delete newFeedbackGiven[action.outputId];
+      } else {
+        newFeedbackGiven[action.outputId] = action.value;
+      }
+      return { ...state, feedbackGiven: newFeedbackGiven };
+    }
+
+    case "SET_EXPANDED": {
+      return { ...state, expandedFeedback: action.outputId };
+    }
+
+    case "SET_TEXT": {
+      return {
+        ...state,
+        feedbackText: { ...state.feedbackText, [action.outputId]: action.text },
+      };
+    }
+
+    case "SAVE_COMMENT": {
+      const newSavedComment = { ...state.savedComment };
+      if (action.comment === null) {
+        delete newSavedComment[action.outputId];
+      } else {
+        newSavedComment[action.outputId] = action.comment;
+      }
+      return { ...state, savedComment: newSavedComment };
+    }
+
+    case "REMOVE": {
+      const newFeedbackGiven = { ...state.feedbackGiven };
+      const newSavedComment = { ...state.savedComment };
+      const newFeedbackText = { ...state.feedbackText };
+      delete newFeedbackGiven[action.outputId];
+      delete newSavedComment[action.outputId];
+      delete newFeedbackText[action.outputId];
+      return {
+        ...state,
+        feedbackGiven: newFeedbackGiven,
+        savedComment: newSavedComment,
+        feedbackText: newFeedbackText,
+        expandedFeedback: null,
+      };
+    }
+
+    case "OPTIMISTIC_UP": {
+      const newFeedbackGiven = { ...state.feedbackGiven, [action.outputId]: "up" as const };
+      const newSavedComment = { ...state.savedComment };
+      const newFeedbackText = { ...state.feedbackText };
+      delete newSavedComment[action.outputId];
+      delete newFeedbackText[action.outputId];
+      return {
+        ...state,
+        feedbackGiven: newFeedbackGiven,
+        savedComment: newSavedComment,
+        feedbackText: newFeedbackText,
+        expandedFeedback: null,
+      };
+    }
+
+    case "OPTIMISTIC_DOWN": {
+      const newFeedbackGiven = { ...state.feedbackGiven, [action.outputId]: "down" as const };
+      const newSavedComment = { ...state.savedComment };
+      if (action.comment) {
+        newSavedComment[action.outputId] = action.comment;
+      } else {
+        delete newSavedComment[action.outputId];
+      }
+      return {
+        ...state,
+        feedbackGiven: newFeedbackGiven,
+        savedComment: newSavedComment,
+        expandedFeedback: null,
+      };
+    }
+
+    case "ROLLBACK": {
+      const newFeedbackGiven = { ...state.feedbackGiven };
+      const newSavedComment = { ...state.savedComment };
+
+      if (action.prevFeedback === null) {
+        delete newFeedbackGiven[action.outputId];
+      } else {
+        newFeedbackGiven[action.outputId] = action.prevFeedback;
+      }
+
+      if (action.prevComment === null) {
+        delete newSavedComment[action.outputId];
+      } else {
+        newSavedComment[action.outputId] = action.prevComment;
+      }
+
+      return {
+        ...state,
+        feedbackGiven: newFeedbackGiven,
+        savedComment: newSavedComment,
+        expandedFeedback: action.reopenForm ? action.outputId : state.expandedFeedback,
+      };
+    }
+
+    default:
+      return state;
+  }
+}
+
+/**
  * Feedback state and handlers for output feedback.
+ *
+ * Uses useReducer pattern to eliminate stale closures in async handlers.
  *
  * Manages:
  * - Thumbs up/down state
@@ -12,37 +173,26 @@ import type { Output } from "../types";
  * - Expanded feedback form state
  */
 export function useFeedback() {
-  // Feedback state
-  const [feedbackGiven, setFeedbackGiven] = useState<
-    Record<string, "up" | "down" | null>
-  >({});
-  const [feedbackLoading, setFeedbackLoading] = useState<string | null>(null);
-  const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
-  const [feedbackText, setFeedbackText] = useState<Record<string, string>>({}); // Draft text being edited
-  const [savedComment, setSavedComment] = useState<Record<string, string>>({}); // Last persisted comment
+  const [state, dispatch] = useReducer(feedbackReducer, initialState);
 
   /**
    * Initialize feedback state from loaded outputs.
    */
   const initializeFeedback = useCallback((outputs: Output[]) => {
-    const initialFeedback: Record<string, "up" | "down" | null> = {};
-    const initialComments: Record<string, string> = {};
+    const feedback: Record<string, "up" | "down" | null> = {};
+    const comments: Record<string, string> = {};
 
     for (const output of outputs) {
       if (output.user_feedback) {
-        initialFeedback[output.id] = output.user_feedback.rating ? "up" : "down";
+        feedback[output.id] = output.user_feedback.rating ? "up" : "down";
         if (output.user_feedback.comment) {
-          initialComments[output.id] = output.user_feedback.comment;
+          comments[output.id] = output.user_feedback.comment;
         }
       }
     }
 
-    if (Object.keys(initialFeedback).length > 0) {
-      setFeedbackGiven((prev) => ({ ...prev, ...initialFeedback }));
-    }
-    if (Object.keys(initialComments).length > 0) {
-      setSavedComment((prev) => ({ ...prev, ...initialComments }));
-      setFeedbackText((prev) => ({ ...prev, ...initialComments }));
+    if (Object.keys(feedback).length > 0 || Object.keys(comments).length > 0) {
+      dispatch({ type: "INITIALIZE", feedback, comments });
     }
   }, []);
 
@@ -50,29 +200,14 @@ export function useFeedback() {
    * Remove feedback entirely (un-vote).
    */
   const removeFeedback = useCallback(async (outputId: string) => {
-    setFeedbackLoading(outputId);
+    dispatch({ type: "SET_LOADING", outputId });
     try {
       await outputsApi.deleteFeedback(outputId);
-      setFeedbackGiven((prev) => {
-        const next = { ...prev };
-        delete next[outputId];
-        return next;
-      });
-      setSavedComment((prev) => {
-        const next = { ...prev };
-        delete next[outputId];
-        return next;
-      });
-      setFeedbackText((prev) => {
-        const next = { ...prev };
-        delete next[outputId];
-        return next;
-      });
-      setExpandedFeedback(null);
+      dispatch({ type: "REMOVE", outputId });
     } catch {
-      // Silent rollback - state unchanged, user can retry
+      // Silent failure - state unchanged, user can retry
     } finally {
-      setFeedbackLoading(null);
+      dispatch({ type: "SET_LOADING", outputId: null });
     }
   }, []);
 
@@ -88,10 +223,12 @@ export function useFeedback() {
    */
   const handleFeedback = useCallback(
     async (outputId: string, type: "up" | "down") => {
-      if (feedbackLoading === outputId) return;
+      // Read current state synchronously to avoid stale closures
+      const current = state.feedbackGiven[outputId];
+      const isFormOpen = state.expandedFeedback === outputId;
+      const isLoading = state.feedbackLoading === outputId;
 
-      const current = feedbackGiven[outputId];
-      const isFormOpen = expandedFeedback === outputId;
+      if (isLoading) return;
 
       // Clicking thumbs down
       if (type === "down") {
@@ -102,16 +239,13 @@ export function useFeedback() {
         }
         if (current === "down") {
           // Already down, form closed - open form to edit
-          setFeedbackText((prev) => ({
-            ...prev,
-            [outputId]: savedComment[outputId] || "",
-          }));
-          setExpandedFeedback(outputId);
+          dispatch({ type: "SET_TEXT", outputId, text: state.savedComment[outputId] || "" });
+          dispatch({ type: "SET_EXPANDED", outputId });
           return;
         }
         // Not down yet - expand form for new negative feedback
-        setFeedbackText((prev) => ({ ...prev, [outputId]: "" }));
-        setExpandedFeedback(outputId);
+        dispatch({ type: "SET_TEXT", outputId, text: "" });
+        dispatch({ type: "SET_EXPANDED", outputId });
         return;
       }
 
@@ -123,41 +257,24 @@ export function useFeedback() {
       }
 
       // Submit positive feedback with rollback on error
-      const previousState = feedbackGiven[outputId];
-      const previousComment = savedComment[outputId];
+      // Capture previous state synchronously before any async operations
+      const prevFeedback = state.feedbackGiven[outputId] ?? null;
+      const prevComment = state.savedComment[outputId] ?? null;
 
-      setFeedbackLoading(outputId);
-      // Optimistic update
-      setFeedbackGiven((prev) => ({ ...prev, [outputId]: "up" }));
-      setSavedComment((prev) => {
-        const next = { ...prev };
-        delete next[outputId];
-        return next;
-      });
-      setFeedbackText((prev) => {
-        const next = { ...prev };
-        delete next[outputId];
-        return next;
-      });
-      setExpandedFeedback(null);
+      dispatch({ type: "SET_LOADING", outputId });
+      dispatch({ type: "OPTIMISTIC_UP", outputId });
 
       try {
         await outputsApi.submitFeedback(outputId, { rating: true });
         // Success - optimistic state is correct
       } catch {
         // Silent rollback - restore previous state
-        setFeedbackGiven((prev) => ({
-          ...prev,
-          [outputId]: previousState ?? null,
-        }));
-        if (previousComment) {
-          setSavedComment((prev) => ({ ...prev, [outputId]: previousComment }));
-        }
+        dispatch({ type: "ROLLBACK", outputId, prevFeedback, prevComment });
       } finally {
-        setFeedbackLoading(null);
+        dispatch({ type: "SET_LOADING", outputId: null });
       }
     },
-    [feedbackLoading, feedbackGiven, expandedFeedback, savedComment, removeFeedback]
+    [state.feedbackGiven, state.expandedFeedback, state.feedbackLoading, state.savedComment, removeFeedback]
   );
 
   /**
@@ -165,52 +282,28 @@ export function useFeedback() {
    */
   const handleSubmitNegativeFeedback = useCallback(
     async (outputId: string) => {
-      if (feedbackLoading === outputId) return;
+      const isLoading = state.feedbackLoading === outputId;
+      if (isLoading) return;
 
-      // Capture previous state for rollback
-      const previousState = feedbackGiven[outputId];
-      const previousComment = savedComment[outputId];
-      const comment = feedbackText[outputId]?.trim() || undefined;
+      // Capture previous state synchronously for rollback
+      const prevFeedback = state.feedbackGiven[outputId] ?? null;
+      const prevComment = state.savedComment[outputId] ?? null;
+      const comment = state.feedbackText[outputId]?.trim() || null;
 
-      setFeedbackLoading(outputId);
-      // Optimistic update
-      setFeedbackGiven((prev) => ({ ...prev, [outputId]: "down" }));
-      setSavedComment((prev) =>
-        comment
-          ? { ...prev, [outputId]: comment }
-          : (() => {
-              const next = { ...prev };
-              delete next[outputId];
-              return next;
-            })()
-      );
-      setExpandedFeedback(null);
+      dispatch({ type: "SET_LOADING", outputId });
+      dispatch({ type: "OPTIMISTIC_DOWN", outputId, comment });
 
       try {
-        await outputsApi.submitFeedback(outputId, { rating: false, comment });
+        await outputsApi.submitFeedback(outputId, { rating: false, comment: comment || undefined });
         // Success - optimistic state is correct
       } catch {
-        // Silent rollback - restore previous state
-        setFeedbackGiven((prev) => ({
-          ...prev,
-          [outputId]: previousState ?? null,
-        }));
-        if (previousComment) {
-          setSavedComment((prev) => ({ ...prev, [outputId]: previousComment }));
-        } else {
-          setSavedComment((prev) => {
-            const next = { ...prev };
-            delete next[outputId];
-            return next;
-          });
-        }
-        // Re-expand form so user can retry
-        setExpandedFeedback(outputId);
+        // Silent rollback - restore previous state and reopen form
+        dispatch({ type: "ROLLBACK", outputId, prevFeedback, prevComment, reopenForm: true });
       } finally {
-        setFeedbackLoading(null);
+        dispatch({ type: "SET_LOADING", outputId: null });
       }
     },
-    [feedbackLoading, feedbackText, feedbackGiven, savedComment]
+    [state.feedbackLoading, state.feedbackGiven, state.savedComment, state.feedbackText]
   );
 
   /**
@@ -218,14 +311,10 @@ export function useFeedback() {
    */
   const handleEditFeedback = useCallback(
     (outputId: string) => {
-      // Load saved comment into draft for editing
-      setFeedbackText((prev) => ({
-        ...prev,
-        [outputId]: savedComment[outputId] || "",
-      }));
-      setExpandedFeedback(outputId);
+      dispatch({ type: "SET_TEXT", outputId, text: state.savedComment[outputId] || "" });
+      dispatch({ type: "SET_EXPANDED", outputId });
     },
-    [savedComment]
+    [state.savedComment]
   );
 
   /**
@@ -233,33 +322,26 @@ export function useFeedback() {
    */
   const handleCancelFeedback = useCallback(
     (outputId: string) => {
-      // Restore draft to saved comment (or empty if none)
-      setFeedbackText((prev) => ({
-        ...prev,
-        [outputId]: savedComment[outputId] || "",
-      }));
-      setExpandedFeedback(null);
+      dispatch({ type: "SET_TEXT", outputId, text: state.savedComment[outputId] || "" });
+      dispatch({ type: "SET_EXPANDED", outputId: null });
     },
-    [savedComment]
+    [state.savedComment]
   );
 
   /**
    * Update feedback text draft.
    */
-  const handleFeedbackTextChange = useCallback(
-    (outputId: string, text: string) => {
-      setFeedbackText((prev) => ({ ...prev, [outputId]: text }));
-    },
-    []
-  );
+  const handleFeedbackTextChange = useCallback((outputId: string, text: string) => {
+    dispatch({ type: "SET_TEXT", outputId, text });
+  }, []);
 
   return {
     // State
-    feedbackGiven,
-    feedbackLoading,
-    expandedFeedback,
-    feedbackText,
-    savedComment,
+    feedbackGiven: state.feedbackGiven,
+    feedbackLoading: state.feedbackLoading,
+    expandedFeedback: state.expandedFeedback,
+    feedbackText: state.feedbackText,
+    savedComment: state.savedComment,
     // Actions
     initializeFeedback,
     handleFeedback,

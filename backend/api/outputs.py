@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks, Response
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
@@ -439,11 +439,11 @@ async def submit_scholar_review(
 @router.post(
     "/outputs/{output_id}/feedback",
     response_model=FeedbackResponse,
-    status_code=status.HTTP_201_CREATED,
 )
 @limiter.limit("30/minute")
 async def submit_feedback(
     request: Request,
+    response: Response,
     output_id: str,
     feedback_data: FeedbackCreate,
     db: Session = Depends(get_db),
@@ -501,6 +501,7 @@ async def submit_feedback(
         db.refresh(existing)
         rating_str = "thumbs_up" if existing.rating else "thumbs_down"
         logger.info(f"Feedback updated for output {output_id}: {rating_str}")
+        response.status_code = status.HTTP_200_OK
         return existing
 
     # Create feedback
@@ -519,6 +520,7 @@ async def submit_feedback(
 
     rating_str = "thumbs_up" if feedback.rating else "thumbs_down"
     logger.info(f"Feedback submitted for output {output_id}: {rating_str}")
+    response.status_code = status.HTTP_201_CREATED
 
     return feedback
 

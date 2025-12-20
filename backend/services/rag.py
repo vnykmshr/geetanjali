@@ -29,6 +29,27 @@ from utils.validation import validate_canonical_id
 logger = logging.getLogger(__name__)
 
 
+def _truncate_at_word_boundary(text: str, max_len: int = 200) -> str:
+    """
+    Truncate text at word boundary, adding ellipsis if needed.
+
+    Args:
+        text: The text to truncate
+        max_len: Maximum length (default 200)
+
+    Returns:
+        Truncated text with ellipsis if shortened
+    """
+    if len(text) <= max_len:
+        return text
+    # Find last space before max_len
+    truncated = text[:max_len].rsplit(" ", 1)[0]
+    # If no space found (single long word), fall back to hard truncation
+    if not truncated or len(truncated) < max_len // 2:
+        return text[:max_len] + "…"
+    return truncated + "…"
+
+
 def _validate_relevance(relevance: Any) -> bool:
     """
     Validate that relevance is a number between 0.0 and 1.0.
@@ -525,7 +546,7 @@ def _inject_rag_verses(
         paraphrase = (
             metadata.get("translation_en")
             or metadata.get("paraphrase")
-            or verse.get("document", "")[:200]
+            or _truncate_at_word_boundary(verse.get("document", ""))
         )
 
         if not paraphrase:
@@ -843,6 +864,15 @@ class RAGPipeline:
 
         # Step 7: Inject RAG verses when sources below minimum
         _inject_rag_verses(output, retrieved_verses)
+
+        # Step 7.1: Verify minimum sources met
+        final_sources_count = len(output.get("sources", []))
+        if final_sources_count == 0:
+            logger.error(
+                "No valid sources after validation and injection - flagging for review"
+            )
+            output["scholar_flag"] = True
+            output["confidence"] = min(output.get("confidence", 0.5), 0.35)
 
         # Step 8: Final validation (confidence, scholar_flag, formatting)
         confidence = output.get("confidence", 0.5)
