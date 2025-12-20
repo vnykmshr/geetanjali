@@ -45,11 +45,11 @@ CURATED_DILEMMAS: dict[str, dict[str, str | list[str]]] = {
         ],
     },
     "ethics": {
-        "title": "Reporting Financial Irregularities at Work",
-        "dilemma": """I work in procurement and discovered that a vendor has been overcharging our company for years. My manager is aware and may be receiving kickbacks. HR seems ineffective. Should I escalate to senior leadership, risking my job, or document and wait?""",
+        "title": "Covering for a Friend's Deception",
+        "dilemma": """A close friend asked me to cover for them about where they were last weekend. I suspect they're hiding something serious from their partner. Being honest could destroy their marriage, but lying makes me part of the deception. What should I do?""",
         "followups": [
-            "What if I'm wrong about the kickbacks and damage someone's reputation unfairly?",
-            "I've documented everything. Should I go directly to the CEO or try the board first?",
+            "What if their partner directly asks me? Do I owe more loyalty to the truth or to my friend?",
+            "I've known both of them for years. Doesn't their partner deserve to know?",
         ],
     },
     "leadership": {
