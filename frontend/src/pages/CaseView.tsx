@@ -13,9 +13,10 @@ import {
 import { errorMessages } from "../lib/errorMessages";
 import { validateContent } from "../lib/contentFilter";
 import { groupMessagesIntoExchanges } from "../lib/messageGrouping";
-import { useSEO } from "../hooks";
+import { useSEO, useFeedback } from "../hooks";
 import {
   CaseHeader,
+  CompletionBanner,
   OutputFeedback,
   PathsSection,
   StepsSection,
@@ -60,14 +61,20 @@ export default function CaseView() {
   const [showSteps, setShowSteps] = useState(true);
   const [showReflections, setShowReflections] = useState(true);
 
-  // Feedback state
-  const [feedbackGiven, setFeedbackGiven] = useState<
-    Record<string, "up" | "down" | null>
-  >({});
-  const [feedbackLoading, setFeedbackLoading] = useState<string | null>(null);
-  const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null);
-  const [feedbackText, setFeedbackText] = useState<Record<string, string>>({}); // Draft text being edited
-  const [savedComment, setSavedComment] = useState<Record<string, string>>({}); // Last persisted comment
+  // Feedback state (extracted to hook)
+  const {
+    feedbackGiven,
+    feedbackLoading,
+    expandedFeedback,
+    feedbackText,
+    savedComment,
+    initializeFeedback,
+    handleFeedback,
+    handleSubmitNegativeFeedback,
+    handleEditFeedback,
+    handleCancelFeedback,
+    handleFeedbackTextChange,
+  } = useFeedback();
 
   // Share state
   const [shareLoading, setShareLoading] = useState(false);
@@ -119,23 +126,7 @@ export default function CaseView() {
       setOutputs(outputsData);
 
       // Initialize feedback state from loaded outputs
-      const initialFeedback: Record<string, "up" | "down" | null> = {};
-      const initialComments: Record<string, string> = {};
-      for (const output of outputsData) {
-        if (output.user_feedback) {
-          initialFeedback[output.id] = output.user_feedback.rating ? "up" : "down";
-          if (output.user_feedback.comment) {
-            initialComments[output.id] = output.user_feedback.comment;
-          }
-        }
-      }
-      if (Object.keys(initialFeedback).length > 0) {
-        setFeedbackGiven(initialFeedback);
-      }
-      if (Object.keys(initialComments).length > 0) {
-        setSavedComment(initialComments);
-        setFeedbackText(initialComments); // Also set as current draft
-      }
+      initializeFeedback(outputsData);
 
       // When completed/failed/policy_violation, clear pending state and set up UI
       const isFinished =
@@ -224,25 +215,7 @@ export default function CaseView() {
           setOutputs(outputsData);
 
           // Initialize feedback state from loaded outputs
-          const initialFeedback: Record<string, "up" | "down" | null> = {};
-          const initialComments: Record<string, string> = {};
-          for (const output of outputsData) {
-            if (output.user_feedback) {
-              initialFeedback[output.id] = output.user_feedback.rating
-                ? "up"
-                : "down";
-              if (output.user_feedback.comment) {
-                initialComments[output.id] = output.user_feedback.comment;
-              }
-            }
-          }
-          if (Object.keys(initialFeedback).length > 0) {
-            setFeedbackGiven((prev) => ({ ...prev, ...initialFeedback }));
-          }
-          if (Object.keys(initialComments).length > 0) {
-            setSavedComment((prev) => ({ ...prev, ...initialComments }));
-            setFeedbackText((prev) => ({ ...prev, ...initialComments }));
-          }
+          initializeFeedback(outputsData);
 
           setPendingFollowUp(null);
         }
@@ -295,155 +268,6 @@ export default function CaseView() {
       else newSet.add(outputId);
       return newSet;
     });
-  };
-
-  /**
-   * Handle thumbs up/down click.
-   *
-   * Behavior:
-   * - Click up when none/down: Submit positive feedback immediately
-   * - Click up when already up: Remove feedback (un-vote)
-   * - Click down when none/up: Expand form for comment
-   * - Click down when already down (form closed): Expand form to edit
-   * - Click down when already down (form open): Remove feedback (un-vote)
-   */
-  const handleFeedback = async (outputId: string, type: "up" | "down") => {
-    if (feedbackLoading === outputId) return;
-
-    const current = feedbackGiven[outputId];
-    const isFormOpen = expandedFeedback === outputId;
-
-    // Clicking thumbs down
-    if (type === "down") {
-      if (current === "down" && isFormOpen) {
-        // Already down with form open - un-vote (remove feedback)
-        await removeFeedback(outputId);
-        return;
-      }
-      if (current === "down") {
-        // Already down, form closed - open form to edit
-        setFeedbackText((prev) => ({ ...prev, [outputId]: savedComment[outputId] || "" }));
-        setExpandedFeedback(outputId);
-        return;
-      }
-      // Not down yet - expand form for new negative feedback
-      setFeedbackText((prev) => ({ ...prev, [outputId]: "" }));
-      setExpandedFeedback(outputId);
-      return;
-    }
-
-    // Clicking thumbs up
-    if (current === "up") {
-      // Already up - un-vote (remove feedback)
-      await removeFeedback(outputId);
-      return;
-    }
-
-    // Submit positive feedback
-    setFeedbackLoading(outputId);
-    try {
-      await outputsApi.submitFeedback(outputId, { rating: true });
-      setFeedbackGiven((prev) => ({ ...prev, [outputId]: "up" }));
-      // Clear any saved comment since positive feedback has no comment
-      setSavedComment((prev) => {
-        const next = { ...prev };
-        delete next[outputId];
-        return next;
-      });
-      setFeedbackText((prev) => {
-        const next = { ...prev };
-        delete next[outputId];
-        return next;
-      });
-      setExpandedFeedback(null);
-    } catch {
-      // Still update UI on error (optimistic)
-      setFeedbackGiven((prev) => ({ ...prev, [outputId]: "up" }));
-    } finally {
-      setFeedbackLoading(null);
-    }
-  };
-
-  /**
-   * Remove feedback entirely (un-vote).
-   */
-  const removeFeedback = async (outputId: string) => {
-    setFeedbackLoading(outputId);
-    try {
-      // Submit null/neutral feedback to remove
-      // Backend handles this as deleting the feedback record
-      await outputsApi.deleteFeedback(outputId);
-      setFeedbackGiven((prev) => {
-        const next = { ...prev };
-        delete next[outputId];
-        return next;
-      });
-      setSavedComment((prev) => {
-        const next = { ...prev };
-        delete next[outputId];
-        return next;
-      });
-      setFeedbackText((prev) => {
-        const next = { ...prev };
-        delete next[outputId];
-        return next;
-      });
-      setExpandedFeedback(null);
-    } catch {
-      // Silent fail - keep current state
-    } finally {
-      setFeedbackLoading(null);
-    }
-  };
-
-  /**
-   * Submit negative feedback with optional comment.
-   */
-  const handleSubmitNegativeFeedback = async (outputId: string) => {
-    if (feedbackLoading === outputId) return;
-
-    setFeedbackLoading(outputId);
-    try {
-      const comment = feedbackText[outputId]?.trim() || undefined;
-      await outputsApi.submitFeedback(outputId, { rating: false, comment });
-      setFeedbackGiven((prev) => ({ ...prev, [outputId]: "down" }));
-      // Save the comment as persisted
-      setSavedComment((prev) =>
-        comment ? { ...prev, [outputId]: comment } : (() => {
-          const next = { ...prev };
-          delete next[outputId];
-          return next;
-        })()
-      );
-      setExpandedFeedback(null);
-    } catch {
-      // Still update UI on error (optimistic)
-      setFeedbackGiven((prev) => ({ ...prev, [outputId]: "down" }));
-    } finally {
-      setFeedbackLoading(null);
-    }
-  };
-
-  /**
-   * Edit existing negative feedback - just expand the form.
-   */
-  const handleEditFeedback = (outputId: string) => {
-    // Load saved comment into draft for editing
-    setFeedbackText((prev) => ({ ...prev, [outputId]: savedComment[outputId] || "" }));
-    setExpandedFeedback(outputId);
-  };
-
-  /**
-   * Cancel feedback editing - restore to last saved state.
-   */
-  const handleCancelFeedback = (outputId: string) => {
-    // Restore draft to saved comment (or empty if none)
-    setFeedbackText((prev) => ({ ...prev, [outputId]: savedComment[outputId] || "" }));
-    setExpandedFeedback(null);
-  };
-
-  const handleFeedbackTextChange = (outputId: string, text: string) => {
-    setFeedbackText((prev) => ({ ...prev, [outputId]: text }));
   };
 
   const handleFollowUpSubmit = async (e: React.FormEvent) => {
@@ -736,97 +560,10 @@ ${messages
         <div className="max-w-2xl mx-auto px-3 sm:px-4">
           {/* Analysis Complete Banner */}
           {showCompletionBanner && (
-            <div
-              className={`mb-6 rounded-xl px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 duration-300 ${
-                isPolicyViolation
-                  ? "bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800"
-                  : "bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    isPolicyViolation ? "bg-amber-500" : "bg-green-500"
-                  }`}
-                >
-                  {isPolicyViolation ? (
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-                <div>
-                  <p
-                    className={
-                      isPolicyViolation
-                        ? "text-amber-800 dark:text-amber-300 font-medium"
-                        : "text-green-800 dark:text-green-300 font-medium"
-                    }
-                  >
-                    {isPolicyViolation
-                      ? "Unable to Provide Guidance"
-                      : "Analysis Complete"}
-                  </p>
-                  <p
-                    className={
-                      isPolicyViolation
-                        ? "text-amber-600 dark:text-amber-400 text-sm"
-                        : "text-green-600 dark:text-green-400 text-sm"
-                    }
-                  >
-                    {isPolicyViolation
-                      ? "See suggestions below for rephrasing your question"
-                      : "Your guidance is ready below"}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowCompletionBanner(false)}
-                className={`rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 ${
-                  isPolicyViolation
-                    ? "text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 focus-visible:ring-amber-500"
-                    : "text-green-500 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 focus-visible:ring-green-500"
-                }`}
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
+            <CompletionBanner
+              isPolicyViolation={isPolicyViolation}
+              onDismiss={() => setShowCompletionBanner(false)}
+            />
           )}
 
           {/* Error Alert */}

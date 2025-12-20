@@ -1,4 +1,5 @@
 export { CaseHeader } from "./CaseHeader";
+export { CompletionBanner } from "./CompletionBanner";
 export { OutputFeedback } from "./OutputFeedback";
 export { PathsSection } from "./PathsSection";
 export { StepsSection } from "./StepsSection";

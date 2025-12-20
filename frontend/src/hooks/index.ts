@@ -21,3 +21,4 @@ export { useTaxonomy, preloadTaxonomy } from "./useTaxonomy";
 export { useLearningGoal } from "./useLearningGoal";
 export { useFocusTrap } from "./useFocusTrap";
 export { useOnlineStatus } from "./useOnlineStatus";
+export { useFeedback } from "./useFeedback";
