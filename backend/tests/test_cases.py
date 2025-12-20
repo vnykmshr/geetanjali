@@ -101,3 +101,27 @@ def test_create_case_validation(client):
     response = client.post("/api/v1/cases", json=invalid_case)
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_get_featured_cases(client):
+    """Test getting featured cases for homepage."""
+    response = client.get("/api/v1/cases/featured")
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+
+    # Verify response structure
+    assert "cases" in data
+    assert "categories" in data
+    assert "cached_at" in data
+    assert isinstance(data["cases"], list)
+    assert isinstance(data["categories"], list)
+
+    # If there are cases, verify structure
+    if data["cases"]:
+        case = data["cases"][0]
+        assert "category" in case
+        assert "dilemma_preview" in case
+        assert "recommended_steps" in case
+        assert "verse_references" in case
+        assert "has_followups" in case
