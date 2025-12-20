@@ -12,6 +12,7 @@ from models.contact import ContactMessage, ContactType
 from models.experiment import ExperimentEvent
 from models.metadata import BookMetadata, ChapterMetadata
 from models.subscriber import Subscriber, SendTime
+from models.featured_case import FeaturedCase
 
 __all__ = [
     "Base",
@@ -32,4 +33,5 @@ __all__ = [
     "ChapterMetadata",
     "Subscriber",
     "SendTime",
+    "FeaturedCase",
 ]
