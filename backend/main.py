@@ -161,9 +161,84 @@ async def startup_event():
                 f"Failed to pre-load vector store: {e} (will load on first request)"
             )
 
+    def warm_daily_verse_cache():
+        """Pre-warm daily verse cache to avoid cold-start latency."""
+        try:
+            from datetime import date
+            from sqlalchemy import func
+
+            from db import SessionLocal
+            from models.verse import Verse
+            from api.schemas import VerseResponse
+            from services.cache import (
+                cache,
+                daily_verse_key,
+                featured_count_key,
+                featured_verse_ids_key,
+                calculate_midnight_ttl,
+            )
+
+            # Skip if cache is not available
+            if not cache.is_available():
+                logger.debug("Cache not available, skipping daily verse warm-up")
+                return
+
+            # Check if already cached
+            cache_key = daily_verse_key()
+            if cache.get(cache_key):
+                logger.debug("Daily verse already cached, skipping warm-up")
+                return
+
+            logger.info("Warming daily verse cache...")
+
+            with SessionLocal() as db:
+                # Warm featured verse count
+                count_key = featured_count_key()
+                featured_count = cache.get(count_key)
+                if featured_count is None:
+                    featured_count = (
+                        db.query(func.count(Verse.id))
+                        .filter(Verse.is_featured.is_(True))
+                        .scalar()
+                    )
+                    cache.set(count_key, featured_count, settings.CACHE_TTL_FEATURED_COUNT)
+
+                # Warm featured verse IDs (used by random verse)
+                ids_key = featured_verse_ids_key()
+                if not cache.get(ids_key):
+                    verse_ids = [
+                        row[0]
+                        for row in db.query(Verse.canonical_id)
+                        .filter(Verse.is_featured.is_(True))
+                        .all()
+                    ]
+                    if verse_ids:
+                        cache.set(ids_key, verse_ids, 3600)  # 1 hour TTL
+
+                # Calculate and cache daily verse
+                if featured_count and featured_count > 0:
+                    today = date.today()
+                    day_of_year = today.timetuple().tm_yday
+                    verse_index = day_of_year % featured_count
+                    verse = (
+                        db.query(Verse)
+                        .filter(Verse.is_featured.is_(True))
+                        .offset(verse_index)
+                        .first()
+                    )
+                    if verse:
+                        verse_data = VerseResponse.model_validate(verse).model_dump()
+                        ttl = calculate_midnight_ttl()
+                        cache.set(cache_key, verse_data, ttl)
+                        logger.info(f"Daily verse cached: {verse.canonical_id} (TTL: {ttl}s)")
+
+        except Exception as e:
+            logger.warning(f"Failed to warm daily verse cache: {e}")
+
     # Run blocking I/O in a thread pool to avoid blocking event loop
     loop = asyncio.get_event_loop()
     loop.run_in_executor(None, load_vector_store_sync)
+    loop.run_in_executor(None, warm_daily_verse_cache)
 
     # Start metrics scheduler (collects business metrics every 60s)
     start_metrics_scheduler(collect_metrics, interval_seconds=60)
