@@ -359,6 +359,7 @@ async def verify_subscription(
 
 
 @router.post("/unsubscribe/{token}", response_model=UnsubscribeResponse)
+@limiter.limit("60/minute")
 async def unsubscribe(
     request: Request,
     token: str,
@@ -369,7 +370,7 @@ async def unsubscribe(
 
     Called when user confirms unsubscribe on the unsubscribe page.
     Using POST prevents CSRF via img tags or browser prefetch.
-    No rate limit - always allow unsubscribe.
+    Generous rate limit (60/min) prevents abuse while allowing legitimate use.
     """
     subscriber = get_subscriber_by_token(db, token)
 
