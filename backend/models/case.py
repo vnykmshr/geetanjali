@@ -1,7 +1,7 @@
 """Case model for ethical dilemma consultations."""
 
 from datetime import datetime
-from sqlalchemy import String, Text, ForeignKey, JSON, Boolean, DateTime
+from sqlalchemy import String, Text, ForeignKey, JSON, Boolean, DateTime, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import uuid
 import enum
@@ -64,6 +64,10 @@ class Case(Base, TimestampMixin):
     shared_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True
     )  # When case was first made public (for expiration)
+    share_mode: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True, default=None
+    )  # Values: 'full', 'essential', or null (not shared)
+    view_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
     # Relationships

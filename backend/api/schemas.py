@@ -175,6 +175,10 @@ class CaseResponse(CaseBase):
     public_slug: Optional[str] = Field(
         None, description="Short slug for public URL when is_public=True"
     )
+    share_mode: Optional[str] = Field(
+        None, description="Share visibility mode: 'full' or 'essential'"
+    )
+    view_count: int = Field(0, description="Number of times public case was viewed")
     is_deleted: bool = Field(False, description="Whether case is soft deleted")
     created_at: datetime
     updated_at: datetime
@@ -187,6 +191,9 @@ class CaseShareToggle(BaseModel):
     """Schema for toggling case public visibility."""
 
     is_public: bool = Field(..., description="Whether to make the case public")
+    share_mode: Optional[str] = Field(
+        "full", description="Share visibility mode: 'full' or 'essential'"
+    )
 
 
 # ============================================================================
