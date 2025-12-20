@@ -203,7 +203,7 @@ async def subscribe(
             )
             try:
                 db.commit()
-            except Exception as e:
+            except Exception:
                 db.rollback()
                 logger.exception(f"Error reactivating subscription for {_mask_email(email)}")
                 raise HTTPException(status_code=500, detail="An error occurred. Please try again.")
@@ -227,7 +227,7 @@ async def subscribe(
                 subscriber.name = data.name
             try:
                 db.commit()
-            except Exception as e:
+            except Exception:
                 db.rollback()
                 logger.exception(f"Error resending verification for {_mask_email(email)}")
                 raise HTTPException(status_code=500, detail="An error occurred. Please try again.")
@@ -333,7 +333,7 @@ async def verify_subscription(
     subscriber.verification_expires_at = None
     try:
         db.commit()
-    except Exception as e:
+    except Exception:
         db.rollback()
         logger.exception(f"Error verifying subscription for {_mask_email(subscriber.email)}")
         raise HTTPException(status_code=500, detail="An error occurred. Please try again.")
@@ -387,7 +387,7 @@ async def unsubscribe(
     subscriber.unsubscribed_at = datetime.utcnow()
     try:
         db.commit()
-    except Exception as e:
+    except Exception:
         db.rollback()
         logger.exception(f"Error unsubscribing {_mask_email(subscriber.email)}")
         raise HTTPException(status_code=500, detail="An error occurred. Please try again.")
@@ -463,7 +463,7 @@ async def update_preferences(
     try:
         db.commit()
         db.refresh(subscriber)
-    except Exception as e:
+    except Exception:
         db.rollback()
         logger.exception(f"Error updating preferences for {_mask_email(subscriber.email)}")
         raise HTTPException(status_code=500, detail="An error occurred. Please try again.")

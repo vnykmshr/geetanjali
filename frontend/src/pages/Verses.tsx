@@ -1013,6 +1013,7 @@ export default function Verses() {
                       components={gridComponents}
                       itemContent={(index) => {
                         const result = searchData.results[index];
+                        if (!result) return null;
                         return (
                           <VerseCard
                             verse={
@@ -1249,6 +1250,7 @@ export default function Verses() {
                       components={gridComponents}
                       itemContent={(index) => {
                         const verse = displayedVerses[index];
+                        if (!verse) return null;
                         return (
                           <VerseCard
                             verse={verse}

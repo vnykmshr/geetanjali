@@ -11,7 +11,7 @@ This provides:
 import logging
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional, Set
 
 from sqlalchemy import or_, cast
@@ -387,7 +387,7 @@ def send_subscriber_digest(subscriber_id: str, send_time: str) -> dict:
 
         try:
             db.commit()
-        except Exception as e:
+        except Exception:
             db.rollback()
             logger.exception(f"Failed to update tracking for subscriber {subscriber_id}")
             # Email was sent, so don't retry - just log the tracking failure

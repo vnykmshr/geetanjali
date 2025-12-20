@@ -268,9 +268,9 @@ def _validate_and_fix_options(output: Dict[str, Any]) -> None:
 
     if num_options > 0 and num_options < 3:
         # Validate existing options have required fields
-        for option in options:
+        for i, option in enumerate(options):
             if "title" not in option:
-                option["title"] = f"Option {options.index(option) + 1}"
+                option["title"] = f"Option {i + 1}"
             if "description" not in option:
                 option["description"] = "An alternative approach"
             if "pros" not in option or not isinstance(option["pros"], list):

@@ -23,7 +23,6 @@ import sys
 from datetime import datetime, date
 from typing import Optional, Any
 
-from config import settings
 from db.connection import SessionLocal
 from models import Subscriber, SendTime
 from services.tasks import enqueue_task, is_rq_available, get_queue
