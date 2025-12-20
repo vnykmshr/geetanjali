@@ -12,6 +12,7 @@ import type {
   BookMetadata,
   ChapterMetadata,
   SearchResponse,
+  FeaturedCasesResponse,
 } from "../types";
 import { tokenStorage, authApi } from "../api/auth";
 import { getSessionId } from "./session";
@@ -197,6 +198,12 @@ export const casesApi = {
   // Retry analysis for a failed case
   retry: async (id: string): Promise<Case> => {
     const response = await api.post(`/cases/${id}/retry`);
+    return response.data;
+  },
+
+  // Get featured cases for homepage
+  getFeatured: async (): Promise<FeaturedCasesResponse> => {
+    const response = await api.get("/cases/featured");
     return response.data;
   },
 };

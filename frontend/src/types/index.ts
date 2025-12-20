@@ -276,3 +276,29 @@ export interface SearchResponse {
   moderation: SearchModeration | null;
   suggestion: SearchSuggestion | null;
 }
+
+// Featured Cases Types (Homepage)
+
+/** Verse reference for featured case display */
+export interface VerseRef {
+  canonical_id: string;
+  display: string;
+}
+
+/** A single featured case for homepage display */
+export interface FeaturedCase {
+  slug: string | null;
+  category: string;
+  dilemma_preview: string;
+  guidance_summary: string;
+  recommended_steps: string[];
+  verse_references: VerseRef[];
+  has_followups: boolean;
+}
+
+/** Response from GET /cases/featured */
+export interface FeaturedCasesResponse {
+  cases: FeaturedCase[];
+  categories: string[];
+  cached_at: string;
+}
