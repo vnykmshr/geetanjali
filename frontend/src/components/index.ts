@@ -33,6 +33,7 @@ export { ChapterSelector } from "./ChapterSelector";
 export { IntroCard } from "./IntroCard";
 export { VersePopover } from "./VersePopover";
 export { GuidanceMarkdown } from "./GuidanceMarkdown";
+export { FeaturedConsultations } from "./FeaturedConsultations";
 
 // Case-related components
 export {
