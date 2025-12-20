@@ -49,6 +49,7 @@ For operators and contributors:
 - **[Docker](docker.md)** — Compose files, deployment modes, container orchestration
 - **[Security](security.md)** — Container hardening, secrets management, incident response
 - **[Observability](observability.md)** — Prometheus metrics, Grafana dashboards, alerting
+- **[Troubleshooting](troubleshooting.md)** — Common issues and quick fixes
 
 ---
 
