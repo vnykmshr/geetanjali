@@ -133,6 +133,8 @@ def schedule_daily_digests(send_time: str, dry_run: bool = False) -> dict[str, A
         "dry_run": dry_run,
         "started_at": datetime.utcnow().isoformat(),
         "subscribers_found": 0,
+        "jobs_queued": 0,
+        "jobs_failed": 0,
     }
 
     logger.info(f"Starting newsletter scheduler for send_time={send_time} (dry_run={dry_run})")
