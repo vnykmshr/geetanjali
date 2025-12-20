@@ -4,7 +4,7 @@ import { checkHealth, casesApi, versesApi } from "../lib/api";
 import type { Case, Verse } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { FeaturedVerse } from "../components/FeaturedVerse";
-import { ExampleConsultation } from "../components/ExampleConsultation";
+import { FeaturedConsultations } from "../components/FeaturedConsultations";
 import { Footer } from "../components/Footer";
 import { Navbar, NewsletterCard } from "../components";
 import { useSEO } from "../hooks";
@@ -189,9 +189,9 @@ export default function Home() {
             Get personalized guidance in minutes
           </p>
 
-          {/* Example Consultation */}
+          {/* Featured Consultations */}
           <div className="mb-8 sm:mb-10 lg:mb-12">
-            <ExampleConsultation />
+            <FeaturedConsultations />
           </div>
 
           {/* Daily Wisdom Discovery Card - dismissable */}
