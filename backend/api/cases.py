@@ -261,15 +261,25 @@ def _extract_summary(output) -> str:
     return output.result_json.get("executive_summary", "") or ""
 
 
-def _extract_steps(output, max_steps: int = 3, max_chars: int = 100) -> List[str]:
-    """Extract recommended action steps from output."""
+def _extract_steps(
+    output, max_steps: int = 2, max_chars: int | None = None
+) -> List[str]:
+    """Extract recommended action steps from output.
+
+    Args:
+        output: Case output object
+        max_steps: Maximum number of steps to return (default 2 for complete display)
+        max_chars: Max chars per step, or None for no truncation
+    """
     if not output or not output.result_json:
         return []
 
     rec = output.result_json.get("recommended_action", {})
     steps = rec.get("steps", []) if isinstance(rec, dict) else []
 
-    return [_truncate(step, max_chars) for step in steps[:max_steps]]
+    if max_chars:
+        return [_truncate(step, max_chars) for step in steps[:max_steps]]
+    return steps[:max_steps]
 
 
 def _extract_verse_refs(output, max_refs: int = 3) -> List[VerseRefResponse]:
@@ -319,11 +329,14 @@ async def get_featured_cases(
         VerseRefResponse,
     )
 
-    # Try cache first
+    # No browser caching - Redis + localStorage handle caching
+    # Browser cache causes stale 404s during curation
+    response.headers["Cache-Control"] = "no-store"
+
+    # Try Redis cache first
     cached = cache.get(featured_cases_key())
     if cached is not None:
         response.headers["X-Cache"] = "HIT"
-        response.headers["Cache-Control"] = "public, max-age=300"
         return cached
 
     # Cache miss - query database
@@ -385,9 +398,15 @@ async def get_featured_cases(
             FeaturedCaseResponse(
                 slug=case.public_slug,
                 category=fc.category,
-                dilemma_preview=_truncate(case.description or "", 150),
-                guidance_summary=_truncate(_extract_summary(output), 300),
-                recommended_steps=_extract_steps(output, max_steps=3, max_chars=100),
+                dilemma_preview=_truncate(
+                    case.description or "", 500
+                ),  # Frontend clamps to 3 lines
+                guidance_summary=_truncate(
+                    _extract_summary(output), 500
+                ),  # Frontend clamps to 4 lines
+                recommended_steps=_extract_steps(
+                    output, max_steps=3
+                ),  # 3 complete steps
                 verse_references=_extract_verse_refs(output, max_refs=3),
                 has_followups=len(case.messages) > 2 if case.messages else False,
             )
@@ -399,9 +418,8 @@ async def get_featured_cases(
         cached_at=datetime.utcnow(),
     )
 
-    # Cache for 1 hour
+    # Cache for 1 hour in Redis
     cache.set(featured_cases_key(), result.model_dump(mode="json"), FEATURED_CASES_TTL)
-    response.headers["Cache-Control"] = "public, max-age=300"
 
     return result
 
