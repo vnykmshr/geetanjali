@@ -185,7 +185,7 @@ export const VerseCard = memo(function VerseCard({
                 e.stopPropagation();
                 onToggleFavorite(verse.canonical_id);
               }}
-              className={`p-1 rounded-full transition-all duration-150 pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800 ${
+              className={`p-2.5 sm:p-1 -m-1.5 sm:m-0 rounded-full transition-all duration-150 pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800 ${
                 isFavorite
                   ? "text-red-500 dark:text-red-400"
                   : "text-gray-400 dark:text-gray-500 hover:text-red-400 dark:hover:text-red-400 hover:scale-110"
@@ -195,7 +195,7 @@ export const VerseCard = memo(function VerseCard({
               }
             >
               <HeartIcon
-                className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                className="w-4 h-4"
                 filled={isFavorite}
               />
             </button>

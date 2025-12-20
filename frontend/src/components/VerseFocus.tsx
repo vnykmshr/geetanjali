@@ -371,7 +371,7 @@ export function VerseFocus({
                 e.stopPropagation();
                 toggleFavorite(verse.canonical_id);
               }}
-              className={`p-1.5 rounded-full transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 ${
+              className={`p-3 sm:p-1.5 rounded-full transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 ${
                 isFavorite(verse.canonical_id)
                   ? "text-red-500 dark:text-red-400"
                   : "text-gray-400/50 dark:text-gray-500/50 hover:text-red-400 dark:hover:text-red-400 hover:scale-110"
@@ -383,7 +383,7 @@ export function VerseFocus({
               }
             >
               <HeartIcon
-                className="w-4 h-4"
+                className="w-5 h-5 sm:w-4 sm:h-4"
                 filled={isFavorite(verse.canonical_id)}
               />
             </button>

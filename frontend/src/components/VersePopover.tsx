@@ -151,7 +151,7 @@ export function VersePopover({
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded
+              className="p-3 sm:p-1 -m-2 sm:m-0 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded
                          focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
               aria-label="Close"
             >

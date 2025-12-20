@@ -284,7 +284,7 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-3 sm:p-1 -m-2 sm:m-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   aria-label="Clear search"
                 >
                   <CloseIcon className="w-4 h-4" />
