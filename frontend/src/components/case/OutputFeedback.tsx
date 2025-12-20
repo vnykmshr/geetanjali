@@ -108,18 +108,13 @@ export const OutputFeedback = memo(
             </p>
             <textarea
               value={feedbackText[output.id] || ""}
-              onChange={(e) =>
-                onFeedbackTextChange(output.id, e.target.value.slice(0, 280))
-              }
+              onChange={(e) => onFeedbackTextChange(output.id, e.target.value)}
               placeholder="Tell us what wasn't helpful..."
               className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
               rows={2}
-              maxLength={280}
+              maxLength={1000}
             />
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-gray-400">
-                {(feedbackText[output.id] || "").length}/280
-              </span>
+            <div className="flex justify-end mt-2">
               <div className="flex gap-2">
                 <button
                   onClick={() => onCancelFeedback(output.id)}

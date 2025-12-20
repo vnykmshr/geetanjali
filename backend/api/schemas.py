@@ -408,7 +408,7 @@ class FeedbackCreate(BaseModel):
 
     rating: bool = Field(..., description="True for thumbs up, False for thumbs down")
     comment: Optional[str] = Field(
-        None, max_length=280, description="Optional comment (max 280 characters)"
+        None, max_length=1000, description="Optional feedback comment"
     )
 
 

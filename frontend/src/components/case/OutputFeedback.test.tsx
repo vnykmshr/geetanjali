@@ -196,18 +196,6 @@ describe("OutputFeedback", () => {
       expect(onCancelFeedback).toHaveBeenCalledWith(mockOutput.id);
     });
 
-    it("should show character count", () => {
-      render(
-        <OutputFeedback
-          {...defaultProps}
-          expandedFeedback={mockOutput.id}
-          feedbackText={{ [mockOutput.id]: "Test feedback" }}
-        />,
-      );
-
-      expect(screen.getByText("13/280")).toBeInTheDocument();
-    });
-
     it('should show "Sending..." when loading', () => {
       render(
         <OutputFeedback
