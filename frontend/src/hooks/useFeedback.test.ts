@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { useFeedback } from "./useFeedback";
 import { outputsApi } from "../lib/api";
 import type { Output } from "../types";
@@ -50,9 +50,9 @@ describe("useFeedback", () => {
       const { result } = renderHook(() => useFeedback());
 
       const outputs: Partial<Output>[] = [
-        { id: "out-1", user_feedback: { rating: true, comment: null } },
+        { id: "out-1", user_feedback: { rating: true, comment: undefined } },
         { id: "out-2", user_feedback: { rating: false, comment: "needs work" } },
-        { id: "out-3", user_feedback: null },
+        { id: "out-3", user_feedback: undefined },
       ];
 
       act(() => {
@@ -144,7 +144,7 @@ describe("useFeedback", () => {
       // Initialize as if feedback was previously given
       act(() => {
         result.current.initializeFeedback([
-          { id: "out-1", user_feedback: { rating: false, comment: null } } as Output,
+          { id: "out-1", user_feedback: { rating: false, comment: undefined } } as Output,
         ]);
       });
 
@@ -234,7 +234,7 @@ describe("useFeedback", () => {
   describe("loading state", () => {
     it("should prevent concurrent operations on same output", async () => {
       // Make API call hang
-      let resolveSubmit: () => void;
+      let resolveSubmit: (value?: unknown) => void;
       mockSubmitFeedback.mockImplementationOnce(
         () => new Promise((resolve) => { resolveSubmit = resolve; })
       );
