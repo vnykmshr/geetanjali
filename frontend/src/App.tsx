@@ -7,6 +7,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
+import { useNewsletterSync } from "./hooks";
 import {
   FloatingActionButton,
   SkipLink,
@@ -76,6 +77,9 @@ function PageLoader() {
 
 function App() {
   const { loading } = useAuth();
+
+  // Sync newsletter subscription status on login
+  useNewsletterSync();
 
   // Show minimal loading state while checking auth
   if (loading) {

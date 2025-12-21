@@ -107,6 +107,12 @@ class PreferencesResponse(BaseModel):
     verified: bool
 
 
+class StatusResponse(BaseModel):
+    """Response for subscription status check."""
+
+    subscribed: bool
+
+
 # =============================================================================
 # Helper Functions
 # =============================================================================
@@ -398,6 +404,26 @@ async def unsubscribe(
         message="You've been unsubscribed from Daily Wisdom. We're sorry to see you go!",
         email=subscriber.email,
     )
+
+
+@router.get("/status", response_model=StatusResponse)
+async def get_subscription_status(
+    current_user: User = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Check newsletter subscription status for authenticated user.
+
+    Returns whether the user's email is actively subscribed.
+    Used to sync localStorage across devices on login.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    subscriber = get_subscriber_by_email(db, current_user.email)
+    is_subscribed = subscriber is not None and subscriber.is_active
+
+    return StatusResponse(subscribed=is_subscribed)
 
 
 @router.get("/preferences/{token}", response_model=PreferencesResponse)

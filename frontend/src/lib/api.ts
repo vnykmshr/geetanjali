@@ -447,3 +447,12 @@ export const preferencesApi = {
     return response.data;
   },
 };
+
+// Newsletter API (subscription status sync)
+export const newsletterApi = {
+  /** Check subscription status for authenticated user */
+  getStatus: async (): Promise<{ subscribed: boolean }> => {
+    const response = await api.get("/newsletter/status");
+    return response.data;
+  },
+};
