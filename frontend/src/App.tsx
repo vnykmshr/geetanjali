@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
   useSearchParams,
+  useParams,
 } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import { useNewsletterSync } from "./hooks";
@@ -51,6 +52,34 @@ function SearchRedirect() {
   return (
     <Navigate to={`/verses${queryString ? `?${queryString}` : ""}`} replace />
   );
+}
+
+/**
+ * Redirect from path params to query params for reading mode
+ * /read/2/4 -> /read?c=2&v=4
+ */
+function ReadingModeRedirect({
+  chapter,
+  verse,
+}: {
+  chapter: string;
+  verse?: string;
+}) {
+  const params = new URLSearchParams();
+  params.set("c", chapter);
+  if (verse) {
+    params.set("v", verse);
+  }
+  return <Navigate to={`/read?${params.toString()}`} replace />;
+}
+
+/**
+ * Wrapper to extract route params and pass to ReadingModeRedirect
+ */
+function ReadingModePathRedirect() {
+  const { chapter, verse } = useParams<{ chapter: string; verse?: string }>();
+  if (!chapter) return <Navigate to="/read" replace />;
+  return <ReadingModeRedirect chapter={chapter} verse={verse} />;
 }
 
 // Loading fallback component
@@ -117,6 +146,15 @@ function App() {
             <Route path="/search" element={<SearchRedirect />} />
             <Route path="/verses/:canonicalId" element={<VerseDetail />} />
             <Route path="/read" element={<ReadingMode />} />
+            {/* Redirects for legacy path-based reading URLs */}
+            <Route
+              path="/read/:chapter/:verse"
+              element={<ReadingModePathRedirect />}
+            />
+            <Route
+              path="/read/:chapter"
+              element={<ReadingModePathRedirect />}
+            />
             <Route path="/about" element={<About />} />
             <Route path="/settings" element={<Settings />} />
 
