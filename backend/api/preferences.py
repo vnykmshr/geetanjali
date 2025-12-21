@@ -50,10 +50,10 @@ class ReadingProgressResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class LearningGoalResponse(BaseModel):
-    """Learning goal data in preferences response."""
+class LearningGoalsResponse(BaseModel):
+    """Learning goals data in preferences response."""
 
-    goal_id: Optional[str] = None
+    goal_ids: list[str] = Field(default_factory=list)
     updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
@@ -64,7 +64,7 @@ class PreferencesResponse(BaseModel):
 
     favorites: FavoritesResponse
     reading: ReadingProgressResponse
-    learning_goal: LearningGoalResponse
+    learning_goals: LearningGoalsResponse
 
     model_config = {"from_attributes": True}
 
@@ -102,12 +102,12 @@ class ReadingProgressUpdate(BaseModel):
     section_prefs: Optional[dict] = None
 
 
-class LearningGoalUpdate(BaseModel):
-    """Learning goal update request."""
+class LearningGoalsUpdate(BaseModel):
+    """Learning goals update request."""
 
     model_config = ConfigDict(extra="forbid")
 
-    goal_id: Optional[str] = None
+    goal_ids: list[str] = Field(default_factory=list)
 
 
 class PreferencesUpdate(BaseModel):
@@ -117,7 +117,7 @@ class PreferencesUpdate(BaseModel):
 
     favorites: Optional[FavoritesUpdate] = None
     reading: Optional[ReadingProgressUpdate] = None
-    learning_goal: Optional[LearningGoalUpdate] = None
+    learning_goals: Optional[LearningGoalsUpdate] = None
 
 
 class LocalFavorites(BaseModel):
@@ -150,12 +150,12 @@ class LocalReadingProgress(BaseModel):
     updated_at: Optional[datetime] = None
 
 
-class LocalLearningGoal(BaseModel):
-    """Local learning goal for merge request."""
+class LocalLearningGoals(BaseModel):
+    """Local learning goals for merge request."""
 
     model_config = ConfigDict(extra="forbid")
 
-    goal_id: Optional[str] = None
+    goal_ids: list[str] = Field(default_factory=list)
     updated_at: Optional[datetime] = None
 
 
@@ -166,7 +166,7 @@ class LocalPreferences(BaseModel):
 
     favorites: Optional[LocalFavorites] = None
     reading: Optional[LocalReadingProgress] = None
-    learning_goal: Optional[LocalLearningGoal] = None
+    learning_goals: Optional[LocalLearningGoals] = None
 
 
 # --- Helper Functions ---
@@ -200,8 +200,8 @@ def build_preferences_response(prefs: UserPreferences) -> PreferencesResponse:
             section_prefs=prefs.reading_section_prefs or {},
             updated_at=prefs.reading_updated_at,
         ),
-        learning_goal=LearningGoalResponse(
-            goal_id=prefs.learning_goal_id,
+        learning_goals=LearningGoalsResponse(
+            goal_ids=prefs.learning_goal_ids or [],
             updated_at=prefs.learning_goal_updated_at,
         ),
     )
@@ -258,8 +258,8 @@ async def update_preferences(
             prefs.reading_section_prefs = data.reading.section_prefs
         prefs.reading_updated_at = now
 
-    if data.learning_goal is not None:
-        prefs.learning_goal_id = data.learning_goal.goal_id
+    if data.learning_goals is not None:
+        prefs.learning_goal_ids = data.learning_goals.goal_ids
         prefs.learning_goal_updated_at = now
 
     db.commit()
@@ -321,15 +321,15 @@ async def merge_preferences(
             prefs.reading_updated_at = now
             logger.debug(f"Reading progress: local wins for user {current_user.id}")
 
-    # Learning goal: Most recent wins
-    if local.learning_goal:
-        local_ts = local.learning_goal.updated_at or datetime.min
+    # Learning goals: Most recent wins
+    if local.learning_goals:
+        local_ts = local.learning_goals.updated_at or datetime.min
         server_ts = prefs.learning_goal_updated_at or datetime.min
 
         if local_ts > server_ts:
-            prefs.learning_goal_id = local.learning_goal.goal_id
+            prefs.learning_goal_ids = local.learning_goals.goal_ids
             prefs.learning_goal_updated_at = now
-            logger.debug(f"Learning goal: local wins for user {current_user.id}")
+            logger.debug(f"Learning goals: local wins for user {current_user.id}")
 
     db.commit()
     db.refresh(prefs)

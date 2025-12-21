@@ -59,8 +59,12 @@ class UserPreferences(Base, TimestampMixin):
         DateTime, nullable=True
     )
 
-    # Learning goal (Phase 4b)
-    learning_goal_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    # Learning goals (Phase 4b) - list of goal IDs from taxonomy
+    learning_goal_ids: Mapped[list[str]] = mapped_column(
+        JSON,
+        default=list,
+        nullable=False,
+    )
     learning_goal_updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True
     )
