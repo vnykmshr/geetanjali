@@ -66,12 +66,18 @@ export default function ReadingMode() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Cross-device sync for reading position and settings
-  const syncedReading = useSyncedReading();
+  // Destructure stable callbacks to avoid infinite loops in useEffect dependencies
+  const {
+    position: savedPosition,
+    settings,
+    savePosition,
+    setFontSize,
+    resetProgress: resetSyncedProgress,
+  } = useSyncedReading();
 
   // Check URL params and saved position on mount
   const urlChapter = searchParams.get("c");
   const urlVerse = searchParams.get("v");
-  const savedPosition = syncedReading.position;
 
   // Determine initial state based on URL and saved position
   const getInitialState = (): {
@@ -120,8 +126,7 @@ export default function ReadingMode() {
   );
 
   const [showChapterSelector, setShowChapterSelector] = useState(false);
-  // Font size from synced reading settings
-  const settings = syncedReading.settings;
+  // settings is now destructured from useSyncedReading above
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try {
       return !localStorage.getItem(ONBOARDING_SEEN_KEY);
@@ -202,8 +207,8 @@ export default function ReadingMode() {
     const sizes: FontSize[] = ["small", "medium", "large"];
     const currentIndex = sizes.indexOf(settings.fontSize);
     const nextIndex = (currentIndex + 1) % sizes.length;
-    syncedReading.setFontSize(sizes[nextIndex]);
-  }, [settings.fontSize, syncedReading]);
+    setFontSize(sizes[nextIndex]);
+  }, [settings.fontSize, setFontSize]);
 
   // Chapter prefetch cache (prevents duplicate fetches)
   const prefetchCache = useRef<Map<number, Verse[]>>(new Map());
@@ -295,7 +300,7 @@ export default function ReadingMode() {
   // Reset reading progress - clear saved position, settings, and start over
   const resetProgress = useCallback(() => {
     // Reset via synced hook (clears localStorage and syncs to server if logged in)
-    syncedReading.resetProgress();
+    resetSyncedProgress();
     // Clear URL params
     setSearchParams({}, { replace: true });
     // Reset to book cover, chapter 1
@@ -307,7 +312,7 @@ export default function ReadingMode() {
     }));
     setTargetVerse(null);
     loadChapter(1);
-  }, [setSearchParams, loadChapter, syncedReading]);
+  }, [setSearchParams, loadChapter, resetSyncedProgress]);
 
   // Prefetch a chapter silently (no state updates, just cache)
   const prefetchChapter = useCallback(async (chapter: number) => {
@@ -434,9 +439,9 @@ export default function ReadingMode() {
       setSearchParams(newParams, { replace: true });
 
       // Save position via synced hook (localStorage + server sync if logged in)
-      syncedReading.savePosition(state.chapter, currentVerse.verse);
+      savePosition(state.chapter, currentVerse.verse);
     }
-  }, [state.chapter, currentVerse, setSearchParams, syncedReading]);
+  }, [state.chapter, currentVerse, setSearchParams, savePosition]);
 
   // Navigate to a different chapter
   // startAtEnd: if true, start at the last verse (for prev navigation)
@@ -873,7 +878,7 @@ export default function ReadingMode() {
         <Toast
           message="Enjoying your reading?"
           linkText="Get daily verses"
-          linkTo="/settings"
+          linkTo="/settings#newsletter"
           duration={6000}
           onDismiss={dismissNewsletterToast}
         />
