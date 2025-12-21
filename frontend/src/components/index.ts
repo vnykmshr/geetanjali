@@ -58,4 +58,5 @@ export {
 
 // Notifications
 export { Toast } from "./Toast";
+export { SyncToast } from "./SyncToast";
 export { OfflineIndicator } from "./OfflineIndicator";
