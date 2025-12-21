@@ -161,7 +161,7 @@ def cached_public_response(
     )
     response.headers["X-Cache"] = "MISS"
 
-    return data
+    return serialized
 
 
 router = APIRouter(prefix="/api/v1/cases")
