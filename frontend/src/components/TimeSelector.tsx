@@ -68,7 +68,7 @@ export function TimeSelector({ value, onChange, disabled }: TimeSelectorProps) {
 
   return (
     <div
-      className="flex flex-col sm:flex-row gap-2"
+      className="grid grid-cols-3 gap-1.5"
       role="radiogroup"
       aria-label="When would you like to receive verses?"
     >
@@ -82,7 +82,7 @@ export function TimeSelector({ value, onChange, disabled }: TimeSelectorProps) {
           disabled={disabled}
           tabIndex={index === currentIndex ? 0 : -1}
           className={`
-            flex-1 flex items-center gap-3 p-3 rounded-lg border-2 transition-all duration-150
+            flex flex-col items-center p-2 rounded-lg border transition-all duration-150
             focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2
             dark:focus-visible:ring-offset-gray-900
             ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
@@ -95,10 +95,10 @@ export function TimeSelector({ value, onChange, disabled }: TimeSelectorProps) {
           role="radio"
           aria-checked={value === option.id}
         >
-          {/* Time icon/indicator */}
+          {/* Time icon */}
           <div
             className={`
-              w-8 h-8 rounded-full flex items-center justify-center shrink-0
+              w-8 h-8 rounded-full flex items-center justify-center mb-1
               ${
                 value === option.id
                   ? "bg-amber-100 dark:bg-amber-800/40 text-amber-700 dark:text-amber-400"
@@ -109,35 +109,35 @@ export function TimeSelector({ value, onChange, disabled }: TimeSelectorProps) {
             <option.Icon className="w-4 h-4" />
           </div>
 
-          {/* Label and hint */}
-          <div className="text-left min-w-0">
-            <div
-              className={`
-                font-medium text-sm
-                ${
-                  value === option.id
-                    ? "text-amber-900 dark:text-amber-300"
-                    : "text-gray-900 dark:text-gray-100"
-                }
-              `}
-            >
-              {option.label}{" "}
-              <span className="text-gray-500 dark:text-gray-400 font-normal">
-                ({option.time})
-              </span>
-            </div>
-            <div
-              className={`
-                text-xs truncate
-                ${
-                  value === option.id
-                    ? "text-amber-700 dark:text-amber-400"
-                    : "text-gray-500 dark:text-gray-400"
-                }
-              `}
-            >
-              {option.hint}
-            </div>
+          {/* Label with time */}
+          <div
+            className={`
+              text-xs font-medium text-center
+              ${
+                value === option.id
+                  ? "text-amber-900 dark:text-amber-300"
+                  : "text-gray-900 dark:text-gray-100"
+              }
+            `}
+          >
+            {option.label}
+            <span className="text-gray-500 dark:text-gray-400 font-normal block text-[10px]">
+              {option.time}
+            </span>
+          </div>
+
+          {/* Hint - hidden on very small, shown on hover or when selected */}
+          <div
+            className={`
+              text-[10px] text-center mt-0.5 leading-tight hidden sm:block
+              ${
+                value === option.id
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-gray-400 dark:text-gray-500"
+              }
+            `}
+          >
+            {option.hint}
           </div>
         </button>
       ))}
