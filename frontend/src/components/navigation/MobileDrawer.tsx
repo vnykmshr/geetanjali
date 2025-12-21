@@ -11,6 +11,9 @@ import { ThemeToggle } from "./ThemeToggle";
 import type { NavUser } from "./types";
 import { getInitials } from "./utils";
 import { useFocusTrap } from "../../hooks";
+import { useSyncedFavorites } from "../../hooks/useSyncedFavorites";
+import { useSyncedReading } from "../../hooks/useSyncedReading";
+import { HeartIcon } from "../icons";
 
 interface MobileDrawerProps {
   /** Whether drawer is open */
@@ -54,8 +57,8 @@ function NavIcon({ path, className }: { path: string; className?: string }) {
  *
  * Slides in from left. Contains:
  * 1. Primary CTA (Seek Guidance) at top
- * 2. Navigation links with icons
- * 3. Auth section at bottom
+ * 2. Global navigation links (Home, Verses, Read)
+ * 3. Account section at bottom with personal items + auth actions
  */
 export function MobileDrawer({
   isOpen,
@@ -68,6 +71,10 @@ export function MobileDrawer({
   const drawerRef = useRef<HTMLDivElement>(null);
   const visibleItems = getVisibleNavItems(NAV_ITEMS, isAuthenticated);
 
+  // Get favorites count and reading position for account section
+  const { favoritesCount } = useSyncedFavorites();
+  const { position } = useSyncedReading();
+
   // Trap focus within drawer when open (WCAG 2.1)
   useFocusTrap(drawerRef, isOpen);
 
@@ -75,6 +82,18 @@ export function MobileDrawer({
     onClose();
     onLogout();
   };
+
+  // Guest vs authenticated
+  const isGuest = !isAuthenticated;
+
+  // Reading link - dynamic based on position
+  const hasReadingPosition = position?.chapter && position?.verse;
+  const readingLabel = hasReadingPosition
+    ? `Continue Ch.${position.chapter}`
+    : "Start Reading";
+  const readingPath = hasReadingPosition
+    ? `/read/${position.chapter}/${position.verse}`
+    : "/read";
 
   return (
     <>
@@ -118,7 +137,7 @@ export function MobileDrawer({
           {/* Divider */}
           <div className="border-t border-gray-200 dark:border-gray-700 mx-3" />
 
-          {/* Navigation links */}
+          {/* Global navigation links */}
           <div className="flex-1 py-3 overflow-y-auto">
             <div className="space-y-1 px-3">
               {visibleItems.map((item) => {
@@ -145,23 +164,142 @@ export function MobileDrawer({
             </div>
           </div>
 
-          {/* Auth section at bottom */}
-          <div className="border-t border-amber-200 dark:border-gray-700 p-4 bg-amber-50/50 dark:bg-gray-800/50">
-            {isAuthenticated ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 px-2">
-                  <div className="w-10 h-10 rounded-full bg-orange-600 text-white flex items-center justify-center text-sm font-medium shadow-sm">
-                    {getInitials(user?.name)}
-                  </div>
-                  <div className="flex-1 min-w-0">
+          {/* Account section at bottom */}
+          <div className="border-t border-amber-200 dark:border-gray-700 bg-amber-50/50 dark:bg-gray-800/50">
+            {/* Account header */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-amber-100 dark:border-gray-700">
+              <div
+                className={`w-10 h-10 rounded-full ${
+                  isGuest ? "bg-gray-400 dark:bg-gray-600" : "bg-orange-600"
+                } text-white flex items-center justify-center text-sm font-medium shadow-sm`}
+              >
+                {isGuest ? (
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : (
+                  getInitials(user?.name)
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                {isGuest ? (
+                  <>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      Guest
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Saved on this device
+                    </p>
+                  </>
+                ) : (
+                  <>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {user?.name}
+                      {user?.name || user?.email?.split("@")[0]}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                       {user?.email}
                     </p>
-                  </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Personal navigation items */}
+            <div className="py-2 px-3 space-y-0.5">
+              {/* My Favorites */}
+              <Link
+                to="/verses?favorites=true"
+                onClick={onClose}
+                className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-amber-100/50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <HeartIcon className="w-4 h-4 text-red-400" filled />
+                  <span>My Favorites</span>
                 </div>
+                {favoritesCount > 0 && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    {favoritesCount}
+                  </span>
+                )}
+              </Link>
+
+              {/* Reading position */}
+              <Link
+                to={readingPath}
+                onClick={onClose}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-amber-100/50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <NavIcon path={NAV_ICONS.read} className="w-4 h-4" />
+                <span>{readingLabel}</span>
+              </Link>
+
+              {/* My Guidance */}
+              <Link
+                to="/consultations"
+                onClick={onClose}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-amber-100/50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <NavIcon path={NAV_ICONS.cases} className="w-4 h-4" />
+                <span>My Guidance</span>
+              </Link>
+
+              {/* Settings */}
+              <Link
+                to="/settings"
+                onClick={onClose}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-amber-100/50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <NavIcon path={NAV_ICONS.settings} className="w-4 h-4" />
+                <span>Settings</span>
+              </Link>
+
+              {/* About */}
+              <Link
+                to="/about"
+                onClick={onClose}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-amber-100/50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <NavIcon path={NAV_ICONS.about} className="w-4 h-4" />
+                <span>About</span>
+              </Link>
+            </div>
+
+            {/* Auth action */}
+            <div className="p-3 pt-1">
+              {isGuest ? (
+                <div className="space-y-2">
+                  {/* Create account CTA */}
+                  <Link
+                    to="/signup"
+                    onClick={onClose}
+                    className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-medium rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                  >
+                    <span>✨</span>
+                    <span>Create account — Sync across devices</span>
+                  </Link>
+
+                  {/* Sign in link */}
+                  <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                    Already have one?{" "}
+                    <Link
+                      to="/login"
+                      onClick={onClose}
+                      className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium"
+                    >
+                      Sign in →
+                    </Link>
+                  </p>
+                </div>
+              ) : (
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
@@ -169,16 +307,8 @@ export function MobileDrawer({
                   <NavIcon path={NAV_ICONS.logout} className="w-4 h-4" />
                   Sign out
                 </button>
-              </div>
-            ) : (
-              <Link
-                to="/login"
-                onClick={onClose}
-                className="block w-full px-4 py-2.5 text-center text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
-              >
-                Login
-              </Link>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>

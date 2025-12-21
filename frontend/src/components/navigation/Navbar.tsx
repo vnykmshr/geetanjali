@@ -145,11 +145,12 @@ export function Navbar({
               onLogout={handleLogout}
             />
 
-            {/* Mobile: User avatar (when authenticated) */}
-            {!showBack && isAuthenticated && (
+            {/* Mobile: User avatar (always shown - handles guest + authenticated) */}
+            {!showBack && (
               <div className="md:hidden">
                 <UserMenu
                   user={user}
+                  isAuthenticated={isAuthenticated}
                   onLogout={handleLogout}
                   variant="mobile-header"
                 />

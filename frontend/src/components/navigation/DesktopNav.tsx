@@ -106,25 +106,15 @@ export function DesktopNav({
       {/* Theme toggle */}
       <ThemeToggle />
 
-      {/* Auth section */}
-      {isAuthenticated ? (
-        <div className="relative ml-2 pl-3 border-l border-gray-200 dark:border-gray-700">
-          <UserMenu user={user} onLogout={onLogout} variant="desktop" />
-        </div>
-      ) : (
-        <div className="ml-2 pl-3 border-l border-gray-200 dark:border-gray-700">
-          <Link
-            to="/login"
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 ${
-              pathname === "/login" || pathname === "/signup"
-                ? "text-orange-700 bg-orange-100 shadow-sm dark:text-orange-400 dark:bg-orange-900/30"
-                : "text-gray-600 hover:text-orange-600 hover:bg-orange-50 dark:text-gray-300 dark:hover:text-orange-400 dark:hover:bg-gray-800"
-            }`}
-          >
-            Login
-          </Link>
-        </div>
-      )}
+      {/* Account dropdown - always shown (handles guest + authenticated states) */}
+      <div className="relative ml-2 pl-3 border-l border-gray-200 dark:border-gray-700">
+        <UserMenu
+          user={user}
+          isAuthenticated={isAuthenticated}
+          onLogout={onLogout}
+          variant="desktop"
+        />
+      </div>
     </div>
   );
 }
