@@ -21,7 +21,7 @@ import {
 import { HeartIcon, ShareIcon } from "../components/icons";
 import { ShareModal } from "../components/verse";
 import { errorMessages } from "../lib/errorMessages";
-import { useSEO, useAdjacentVerses, useFavorites } from "../hooks";
+import { useSEO, useAdjacentVerses, useSyncedFavorites } from "../hooks";
 
 // localStorage key for newsletter subscription
 const NEWSLETTER_SUBSCRIBED_KEY = "geetanjali:newsletterSubscribed";
@@ -58,8 +58,8 @@ export default function VerseDetail() {
   const [showNewsletterNudge, setShowNewsletterNudge] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
-  // Favorites
-  const { isFavorite, toggleFavorite } = useFavorites();
+  // Favorites (synced across devices for logged-in users)
+  const { isFavorite, toggleFavorite } = useSyncedFavorites();
 
   // Redirect to canonical uppercase URL if case doesn't match
   const canonicalUppercase = canonicalId?.toUpperCase();

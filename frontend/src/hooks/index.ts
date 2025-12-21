@@ -14,6 +14,8 @@ export { useCaseData } from "./useCaseData";
 export { useSEO } from "./useSEO";
 export { useShare, shareUrls } from "./useShare";
 export { useFavorites } from "./useFavorites";
+export { useSyncedFavorites } from "./useSyncedFavorites";
+export type { SyncStatus } from "./useSyncedFavorites";
 export { useAdjacentVerses } from "./useAdjacentVerses";
 export { useSwipeNavigation } from "./useSwipeNavigation";
 export { useSearch } from "./useSearch";

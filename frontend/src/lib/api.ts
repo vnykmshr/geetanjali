@@ -13,6 +13,9 @@ import type {
   ChapterMetadata,
   SearchResponse,
   FeaturedCasesResponse,
+  UserPreferences,
+  PreferencesUpdate,
+  LocalPreferences,
 } from "../types";
 import { tokenStorage, authApi } from "../api/auth";
 import { getSessionId } from "./session";
@@ -423,3 +426,24 @@ export interface Goal {
   icon: string;
   principles: string[];
 }
+
+// User Preferences API (Cross-device sync)
+export const preferencesApi = {
+  /** Get current user's preferences */
+  get: async (): Promise<UserPreferences> => {
+    const response = await api.get("/users/me/preferences");
+    return response.data;
+  },
+
+  /** Update preferences (partial update) */
+  update: async (data: PreferencesUpdate): Promise<UserPreferences> => {
+    const response = await api.put("/users/me/preferences", data);
+    return response.data;
+  },
+
+  /** Merge local preferences with server (used on login) */
+  merge: async (local: LocalPreferences): Promise<UserPreferences> => {
+    const response = await api.post("/users/me/preferences/merge", local);
+    return response.data;
+  },
+};

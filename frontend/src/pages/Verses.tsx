@@ -16,7 +16,7 @@ import {
   StarIcon,
 } from "../components/icons";
 import { errorMessages } from "../lib/errorMessages";
-import { useSEO, useFavorites, useSearch, useTaxonomy } from "../hooks";
+import { useSEO, useSyncedFavorites, useSearch, useTaxonomy } from "../hooks";
 import { validateSearchQuery } from "../lib/contentFilter";
 
 // Responsive page size: 16 for desktop (4x4 grid), 12 for mobile
@@ -89,9 +89,9 @@ export default function Verses() {
     canonical: "/verses",
   });
 
-  // Favorites hook for heart icon and filtering
+  // Favorites hook for heart icon and filtering (synced across devices)
   const { favorites, isFavorite, toggleFavorite, favoritesCount } =
-    useFavorites();
+    useSyncedFavorites();
 
   // Taxonomy hook for principles (single source of truth from backend)
   const { principles, getPrincipleShortLabel } = useTaxonomy();

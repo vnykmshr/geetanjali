@@ -18,7 +18,7 @@ import { versesApi } from "../lib/api";
 import { formatSanskritLines, isSpeakerIntro } from "../lib/sanskritFormatter";
 import { getTranslatorPriority } from "../constants/translators";
 import { HeartIcon } from "./icons";
-import { useFavorites } from "../hooks";
+import { useSyncedFavorites } from "../hooks";
 import type { Verse, Translation } from "../types";
 
 /** Font size options for Sanskrit text */
@@ -191,8 +191,8 @@ export function VerseFocus({
   const isControlled = controlledShowTranslation !== undefined;
   const [internalShowTranslation, setInternalShowTranslation] = useState(false);
 
-  // Favorites
-  const { isFavorite, toggleFavorite } = useFavorites();
+  // Favorites (synced across devices for logged-in users)
+  const { isFavorite, toggleFavorite } = useSyncedFavorites();
 
   const showTranslation = isControlled
     ? controlledShowTranslation

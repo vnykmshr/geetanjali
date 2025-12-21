@@ -302,3 +302,58 @@ export interface FeaturedCasesResponse {
   categories: string[];
   cached_at: string;
 }
+
+// User Preferences Types (Cross-device sync)
+
+/** Bookmarks data in preferences */
+export interface BookmarksPrefs {
+  items: string[];
+  updated_at: string;
+}
+
+/** Reading progress data in preferences */
+export interface ReadingPrefs {
+  chapter: number | null;
+  verse: number | null;
+  font_size: string;
+  section_prefs: Record<string, boolean>;
+  updated_at: string | null;
+}
+
+/** Learning goal data in preferences */
+export interface LearningGoalPrefs {
+  goal_id: string | null;
+  updated_at: string | null;
+}
+
+/** Full user preferences response */
+export interface UserPreferences {
+  bookmarks: BookmarksPrefs;
+  reading: ReadingPrefs;
+  learning_goal: LearningGoalPrefs;
+}
+
+/** Partial preferences update request */
+export interface PreferencesUpdate {
+  bookmarks?: { items: string[] };
+  reading?: {
+    chapter?: number;
+    verse?: number;
+    font_size?: string;
+    section_prefs?: Record<string, boolean>;
+  };
+  learning_goal?: { goal_id: string | null };
+}
+
+/** Local preferences for merge request */
+export interface LocalPreferences {
+  bookmarks?: { items: string[]; updated_at?: string };
+  reading?: {
+    chapter?: number;
+    verse?: number;
+    font_size?: string;
+    section_prefs?: Record<string, boolean>;
+    updated_at?: string;
+  };
+  learning_goal?: { goal_id?: string | null; updated_at?: string };
+}
