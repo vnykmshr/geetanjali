@@ -17,41 +17,40 @@ function GoalCard({ goal, isSelected, onToggle }: GoalCardProps) {
       type="button"
       onClick={onToggle}
       className={`
-        relative flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-150
-        text-left w-full
+        relative flex flex-col items-center p-3 rounded-xl border transition-all duration-150
+        w-full min-h-[140px]
         focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2
         dark:focus-visible:ring-offset-gray-900
         ${
           isSelected
-            ? "border-amber-500 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-600"
-            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50/50 dark:hover:bg-amber-900/10"
+            ? "border-amber-500 dark:border-amber-600 bg-gradient-to-b from-amber-50 to-amber-100/50 dark:from-amber-900/30 dark:to-amber-900/10"
+            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-amber-300 dark:hover:border-amber-700"
         }
       `}
       aria-pressed={isSelected}
       aria-label={`${isSelected ? "Deselect" : "Select"} ${goal.label} learning goal`}
     >
-      {/* Selection indicator */}
+      {/* Selection badge */}
       {isSelected && (
-        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500 dark:bg-amber-600 flex items-center justify-center">
+        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-500 dark:bg-amber-600 flex items-center justify-center shadow-sm">
           <CheckIcon className="w-3 h-3 text-white" />
         </div>
       )}
 
-      {/* Icon */}
+      {/* Circular icon badge */}
       <div
         className={`
-          mb-3 p-2 rounded-lg transition-colors
+          w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-colors
           ${
             isSelected
-              ? "bg-amber-100 dark:bg-amber-800/40 text-amber-700 dark:text-amber-400"
-              : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+              ? "bg-amber-200 dark:bg-amber-700/50 text-amber-700 dark:text-amber-300"
+              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
           }
         `}
       >
         {IconComponent ? (
           <IconComponent className="w-6 h-6" />
         ) : (
-          // Fallback: question mark icon
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="10" strokeWidth={2} />
             <path strokeLinecap="round" strokeWidth={2} d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.01 4h.01" />
@@ -62,10 +61,10 @@ function GoalCard({ goal, isSelected, onToggle }: GoalCardProps) {
       {/* Label */}
       <h3
         className={`
-          font-semibold text-sm mb-1 transition-colors
+          font-semibold text-sm text-center leading-tight mb-1 transition-colors
           ${
             isSelected
-              ? "text-amber-900 dark:text-amber-300"
+              ? "text-amber-700 dark:text-amber-400"
               : "text-gray-900 dark:text-gray-100"
           }
         `}
@@ -74,16 +73,7 @@ function GoalCard({ goal, isSelected, onToggle }: GoalCardProps) {
       </h3>
 
       {/* Description */}
-      <p
-        className={`
-          text-xs text-center leading-relaxed transition-colors
-          ${
-            isSelected
-              ? "text-amber-700 dark:text-amber-400"
-              : "text-gray-500 dark:text-gray-400"
-          }
-        `}
-      >
+      <p className="text-xs text-center leading-snug text-gray-500 dark:text-gray-400 line-clamp-3">
         {goal.description}
       </p>
     </button>
@@ -146,14 +136,14 @@ export function GoalSelector({
   // Loading skeleton
   if (!initialized && showSkeleton) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="flex flex-col items-center p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 animate-pulse"
+            className="flex flex-col items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 animate-pulse min-h-[140px]"
           >
-            <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg mb-3" />
-            <div className="w-16 h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+            <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full mb-2" />
+            <div className="w-16 h-4 bg-gray-200 dark:bg-gray-700 rounded mb-1" />
             <div className="w-20 h-3 bg-gray-200 dark:bg-gray-700 rounded" />
           </div>
         ))}
@@ -194,7 +184,7 @@ export function GoalSelector({
 
       {/* Goal grid */}
       <div
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fadeIn"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-2 animate-fadeIn"
         role="group"
         aria-label="Select your learning goals (multiple allowed)"
       >
