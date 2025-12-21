@@ -33,8 +33,8 @@ function loadStoredGoals(): StoredGoals | null {
     if (stored) {
       return JSON.parse(stored) as StoredGoals;
     }
-  } catch (e) {
-    console.warn("Failed to parse stored learning goals:", e);
+  } catch {
+    // Silently ignore parse errors - will use default
   }
   return null;
 }
@@ -99,8 +99,11 @@ export function useLearningGoal() {
     [storedGoals],
   );
 
-  // Get selected goal IDs
-  const selectedGoalIds: string[] = storedGoals?.goalIds ?? [];
+  // Get selected goal IDs (memoized to prevent new array reference each render)
+  const selectedGoalIds = useMemo(
+    () => storedGoals?.goalIds ?? [],
+    [storedGoals?.goalIds]
+  );
 
   // Get full goal data for all selected goals (memoized)
   const selectedGoals: Goal[] = useMemo(
