@@ -17,30 +17,30 @@ function GoalCard({ goal, isSelected, onToggle }: GoalCardProps) {
       type="button"
       onClick={onToggle}
       className={`
-        relative flex flex-col items-center p-3 rounded-xl border transition-all duration-150
-        w-full min-h-[140px]
+        relative flex items-center gap-2 p-2 sm:flex-col sm:p-2.5 sm:gap-1
+        rounded-lg sm:rounded-xl border transition-all duration-150 w-full
         focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2
         dark:focus-visible:ring-offset-gray-900
         ${
           isSelected
-            ? "border-amber-500 dark:border-amber-600 bg-gradient-to-b from-amber-50 to-amber-100/50 dark:from-amber-900/30 dark:to-amber-900/10"
+            ? "border-amber-500 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20"
             : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-amber-300 dark:hover:border-amber-700"
         }
       `}
       aria-pressed={isSelected}
       aria-label={`${isSelected ? "Deselect" : "Select"} ${goal.label} learning goal`}
     >
-      {/* Selection badge */}
+      {/* Selection badge - only on sm+ */}
       {isSelected && (
-        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-500 dark:bg-amber-600 flex items-center justify-center shadow-sm">
-          <CheckIcon className="w-3 h-3 text-white" />
+        <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-500 dark:bg-amber-600 flex items-center justify-center shadow-sm">
+          <CheckIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
         </div>
       )}
 
-      {/* Circular icon badge */}
+      {/* Icon badge */}
       <div
         className={`
-          w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-colors
+          w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 transition-colors
           ${
             isSelected
               ? "bg-amber-200 dark:bg-amber-700/50 text-amber-700 dark:text-amber-300"
@@ -49,33 +49,34 @@ function GoalCard({ goal, isSelected, onToggle }: GoalCardProps) {
         `}
       >
         {IconComponent ? (
-          <IconComponent className="w-6 h-6" />
+          <IconComponent className="w-4 h-4 sm:w-5 sm:h-5" />
         ) : (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="10" strokeWidth={2} />
             <path strokeLinecap="round" strokeWidth={2} d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.01 4h.01" />
           </svg>
         )}
       </div>
 
-      {/* Label */}
-      <h3
-        className={`
-          font-semibold text-sm text-center leading-tight mb-1 transition-colors
-          ${
-            isSelected
-              ? "text-amber-700 dark:text-amber-400"
-              : "text-gray-900 dark:text-gray-100"
-          }
-        `}
-      >
-        {goal.label}
-      </h3>
-
-      {/* Description */}
-      <p className="text-xs text-center leading-snug text-gray-500 dark:text-gray-400 line-clamp-3">
-        {goal.description}
-      </p>
+      {/* Text content */}
+      <div className="flex-1 min-w-0 text-left sm:text-center">
+        <h3
+          className={`
+            font-medium text-xs sm:text-sm leading-tight transition-colors truncate sm:whitespace-normal
+            ${
+              isSelected
+                ? "text-amber-700 dark:text-amber-400"
+                : "text-gray-900 dark:text-gray-100"
+            }
+          `}
+        >
+          {goal.label}
+        </h3>
+        {/* Description - hidden on mobile */}
+        <p className="hidden sm:block text-[11px] text-center leading-snug text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">
+          {goal.description}
+        </p>
+      </div>
     </button>
   );
 }
@@ -136,15 +137,17 @@ export function GoalSelector({
   // Loading skeleton
   if (!initialized && showSkeleton) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="flex flex-col items-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 animate-pulse min-h-[140px]"
+            className="flex items-center gap-2 p-2 sm:flex-col sm:p-2.5 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 animate-pulse"
           >
-            <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full mb-2" />
-            <div className="w-16 h-4 bg-gray-200 dark:bg-gray-700 rounded mb-1" />
-            <div className="w-20 h-3 bg-gray-200 dark:bg-gray-700 rounded" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 dark:bg-gray-700 rounded-full shrink-0" />
+            <div className="flex-1 sm:w-full">
+              <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 sm:w-full sm:mx-auto" />
+              <div className="hidden sm:block h-3 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto mt-1" />
+            </div>
           </div>
         ))}
       </div>
@@ -184,7 +187,7 @@ export function GoalSelector({
 
       {/* Goal grid */}
       <div
-        className="grid grid-cols-2 sm:grid-cols-4 gap-2 animate-fadeIn"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 animate-fadeIn"
         role="group"
         aria-label="Select your learning goals (multiple allowed)"
       >
