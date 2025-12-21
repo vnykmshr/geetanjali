@@ -15,6 +15,8 @@ export { useSEO } from "./useSEO";
 export { useShare, shareUrls } from "./useShare";
 export { useFavorites } from "./useFavorites";
 export { useSyncedFavorites } from "./useSyncedFavorites";
+export { useSyncedReading } from "./useSyncedReading";
+export { useSyncedGoal } from "./useSyncedGoal";
 export type { SyncStatus } from "./useSyncedFavorites";
 export { useAdjacentVerses } from "./useAdjacentVerses";
 export { useSwipeNavigation } from "./useSwipeNavigation";

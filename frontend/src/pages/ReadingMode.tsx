@@ -22,7 +22,7 @@ import {
   IntroCard,
   Toast,
 } from "../components";
-import { useSEO, useSwipeNavigation } from "../hooks";
+import { useSEO, useSwipeNavigation, useSyncedReading } from "../hooks";
 import {
   getChapterName,
   getChapterVerseCount,
@@ -31,9 +31,7 @@ import {
 } from "../constants/chapters";
 import { errorMessages } from "../lib/errorMessages";
 
-// localStorage keys
-const READING_POSITION_KEY = "geetanjali:readingPosition";
-const READING_SETTINGS_KEY = "geetanjali:readingSettings";
+// localStorage keys (position and settings now managed by useSyncedReading)
 const ONBOARDING_SEEN_KEY = "geetanjali:readingOnboardingSeen";
 const NEWSLETTER_SUBSCRIBED_KEY = "geetanjali:newsletterSubscribed";
 const NEWSLETTER_TOAST_KEY = "geetanjali:readingToastShown";
@@ -50,79 +48,8 @@ const TOAST_RATE_LIMIT = 7 * 24 * 60 * 60 * 1000;
 const PAGE_BOOK_COVER = -2;
 const PAGE_CHAPTER_INTRO = -1;
 
-interface ReadingPosition {
-  chapter: number;
-  verse: number;
-  timestamp: number;
-}
-
 /** Font size options */
 type FontSize = "small" | "medium" | "large";
-
-interface ReadingSettings {
-  fontSize: FontSize;
-}
-
-const DEFAULT_SETTINGS: ReadingSettings = {
-  fontSize: "medium",
-};
-
-/**
- * Get saved settings from localStorage
- */
-function getSavedSettings(): ReadingSettings {
-  try {
-    const saved = localStorage.getItem(READING_SETTINGS_KEY);
-    if (saved) {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
-    }
-  } catch {
-    // Ignore localStorage errors
-  }
-  return DEFAULT_SETTINGS;
-}
-
-/**
- * Save settings to localStorage
- */
-function saveSettings(settings: ReadingSettings): void {
-  try {
-    localStorage.setItem(READING_SETTINGS_KEY, JSON.stringify(settings));
-  } catch {
-    // Ignore localStorage errors
-  }
-}
-
-/**
- * Get saved reading position from localStorage
- */
-function getSavedPosition(): ReadingPosition | null {
-  try {
-    const saved = localStorage.getItem(READING_POSITION_KEY);
-    if (saved) {
-      return JSON.parse(saved) as ReadingPosition;
-    }
-  } catch {
-    // Ignore localStorage errors
-  }
-  return null;
-}
-
-/**
- * Save reading position to localStorage
- */
-function savePosition(chapter: number, verse: number): void {
-  try {
-    const position: ReadingPosition = {
-      chapter,
-      verse,
-      timestamp: Date.now(),
-    };
-    localStorage.setItem(READING_POSITION_KEY, JSON.stringify(position));
-  } catch {
-    // Ignore localStorage errors (quota exceeded, private browsing, etc.)
-  }
-}
 
 /**
  * Reading mode state
@@ -138,10 +65,13 @@ interface ReadingState {
 export default function ReadingMode() {
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Cross-device sync for reading position and settings
+  const syncedReading = useSyncedReading();
+
   // Check URL params and saved position on mount
   const urlChapter = searchParams.get("c");
   const urlVerse = searchParams.get("v");
-  const savedPosition = getSavedPosition();
+  const savedPosition = syncedReading.position;
 
   // Determine initial state based on URL and saved position
   const getInitialState = (): {
@@ -190,7 +120,8 @@ export default function ReadingMode() {
   );
 
   const [showChapterSelector, setShowChapterSelector] = useState(false);
-  const [settings, setSettings] = useState<ReadingSettings>(getSavedSettings);
+  // Font size from synced reading settings
+  const settings = syncedReading.settings;
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try {
       return !localStorage.getItem(ONBOARDING_SEEN_KEY);
@@ -271,10 +202,8 @@ export default function ReadingMode() {
     const sizes: FontSize[] = ["small", "medium", "large"];
     const currentIndex = sizes.indexOf(settings.fontSize);
     const nextIndex = (currentIndex + 1) % sizes.length;
-    const newSettings = { ...settings, fontSize: sizes[nextIndex] };
-    setSettings(newSettings);
-    saveSettings(newSettings);
-  }, [settings]);
+    syncedReading.setFontSize(sizes[nextIndex]);
+  }, [settings.fontSize, syncedReading]);
 
   // Chapter prefetch cache (prevents duplicate fetches)
   const prefetchCache = useRef<Map<number, Verse[]>>(new Map());
@@ -365,12 +294,8 @@ export default function ReadingMode() {
 
   // Reset reading progress - clear saved position, settings, and start over
   const resetProgress = useCallback(() => {
-    try {
-      localStorage.removeItem(READING_POSITION_KEY);
-      localStorage.removeItem(READING_SETTINGS_KEY);
-    } catch {
-      // Ignore
-    }
+    // Reset via synced hook (clears localStorage and syncs to server if logged in)
+    syncedReading.resetProgress();
     // Clear URL params
     setSearchParams({}, { replace: true });
     // Reset to book cover, chapter 1
@@ -381,10 +306,8 @@ export default function ReadingMode() {
       chapterVerses: [],
     }));
     setTargetVerse(null);
-    // Reset font size to default
-    setSettings(DEFAULT_SETTINGS);
     loadChapter(1);
-  }, [setSearchParams, loadChapter]);
+  }, [setSearchParams, loadChapter, syncedReading]);
 
   // Prefetch a chapter silently (no state updates, just cache)
   const prefetchChapter = useCallback(async (chapter: number) => {
@@ -510,10 +433,10 @@ export default function ReadingMode() {
       newParams.set("v", currentVerse.verse.toString());
       setSearchParams(newParams, { replace: true });
 
-      // Save position to localStorage for "continue reading"
-      savePosition(state.chapter, currentVerse.verse);
+      // Save position via synced hook (localStorage + server sync if logged in)
+      syncedReading.savePosition(state.chapter, currentVerse.verse);
     }
-  }, [state.chapter, currentVerse, setSearchParams]);
+  }, [state.chapter, currentVerse, setSearchParams, syncedReading]);
 
   // Navigate to a different chapter
   // startAtEnd: if true, start at the last verse (for prev navigation)
@@ -670,7 +593,7 @@ export default function ReadingMode() {
               {/* Font size toggle - Aa + filled circles */}
               <button
                 onClick={cycleFontSize}
-                className="flex items-center gap-1.5 px-2 py-1 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-stone-800 active:bg-amber-200 dark:active:bg-stone-700 rounded transition-colors"
+                className="flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] px-3 py-2 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-stone-800 active:bg-amber-200 dark:active:bg-stone-700 rounded-lg transition-colors"
                 aria-label={`Font size: ${settings.fontSize}. Tap to change.`}
                 title={`Font size: ${settings.fontSize}`}
               >
@@ -688,12 +611,12 @@ export default function ReadingMode() {
               {/* Reset progress button */}
               <button
                 onClick={resetProgress}
-                className="p-1.5 text-amber-400 dark:text-stone-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-100 dark:hover:bg-stone-800 active:bg-amber-200 dark:active:bg-stone-700 rounded transition-colors"
+                className="flex items-center justify-center min-w-[44px] min-h-[44px] p-2 text-amber-400 dark:text-stone-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-100 dark:hover:bg-stone-800 active:bg-amber-200 dark:active:bg-stone-700 rounded-lg transition-colors"
                 aria-label="Start over from beginning"
                 title="Start over"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-5 h-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -796,18 +719,18 @@ export default function ReadingMode() {
         )}
       </main>
 
-      {/* Bottom Navigation Bar (placeholder - will be a separate component) */}
+      {/* Bottom Navigation Bar */}
       <nav
         className="sticky bottom-0 bg-white/95 dark:bg-stone-900/95 backdrop-blur-sm border-t border-amber-200 dark:border-stone-700 shadow-lg"
         aria-label="Verse navigation"
       >
-        <div className="max-w-4xl mx-auto px-4 py-3">
+        <div className="max-w-4xl mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
             {/* Previous button */}
             <button
               onClick={prevPage}
               disabled={!canGoPrev}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              className={`flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-lg transition-colors ${
                 canGoPrev
                   ? "text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-stone-800 active:bg-amber-100 dark:active:bg-stone-700"
                   : "text-gray-300 dark:text-stone-600 cursor-not-allowed"
@@ -821,7 +744,7 @@ export default function ReadingMode() {
             {/* Chapter selector button */}
             <button
               onClick={() => setShowChapterSelector(true)}
-              className="flex items-center gap-2 px-4 py-2 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-stone-800 active:bg-amber-100 dark:active:bg-stone-700 rounded-lg transition-colors"
+              className="flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-stone-800 active:bg-amber-100 dark:active:bg-stone-700 rounded-lg transition-colors"
               aria-label="Select chapter"
             >
               <span className="text-sm font-medium">
@@ -850,7 +773,7 @@ export default function ReadingMode() {
             <button
               onClick={nextPage}
               disabled={!canGoNext}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              className={`flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-lg transition-colors ${
                 canGoNext
                   ? "text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-stone-800 active:bg-amber-100 dark:active:bg-stone-700"
                   : "text-gray-300 dark:text-stone-600 cursor-not-allowed"

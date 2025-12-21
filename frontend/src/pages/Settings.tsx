@@ -4,7 +4,7 @@ import { Footer } from "../components/Footer";
 import { GoalSelector } from "../components/GoalSelector";
 import { TimeSelector, type SendTime } from "../components/TimeSelector";
 import { SunIcon, CheckIcon, MailIcon } from "../components/icons";
-import { useLearningGoal, useSEO } from "../hooks";
+import { useSyncedGoal, useSEO } from "../hooks";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../lib/api";
 
@@ -31,7 +31,7 @@ export default function Settings() {
   });
 
   const { user } = useAuth();
-  const { selectedGoals } = useLearningGoal();
+  const { selectedGoals } = useSyncedGoal();
 
   // Refs for form validation focus
   const emailInputRef = useRef<HTMLInputElement>(null);
@@ -171,17 +171,17 @@ export default function Settings() {
                     Subscribed as: {email}
                   </p>
 
-                  <div className="flex flex-wrap gap-3 mt-4">
+                  <div className="flex flex-wrap gap-2 mt-4">
                     <button
                       type="button"
-                      className="text-sm text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-medium"
+                      className="min-h-[44px] px-4 py-2 text-sm text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 active:bg-green-100 dark:active:bg-green-900/40 font-medium rounded-lg transition-colors"
                       onClick={() => setStatus("idle")}
                     >
                       Change preferences
                     </button>
                     <button
                       type="button"
-                      className="text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                      className="min-h-[44px] px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 rounded-lg transition-colors"
                     >
                       Unsubscribe
                     </button>
@@ -207,7 +207,7 @@ export default function Settings() {
               </p>
               <button
                 type="button"
-                className="text-sm text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium"
+                className="min-h-[44px] px-4 py-2 text-sm text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 active:bg-amber-200 dark:active:bg-amber-900/50 font-medium rounded-lg transition-colors"
                 onClick={() => setStatus("idle")}
               >
                 Use a different email

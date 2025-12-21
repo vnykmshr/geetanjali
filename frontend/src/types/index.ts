@@ -320,9 +320,9 @@ export interface ReadingPrefs {
   updated_at: string | null;
 }
 
-/** Learning goal data in preferences */
-export interface LearningGoalPrefs {
-  goal_id: string | null;
+/** Learning goals data in preferences (multi-select) */
+export interface LearningGoalsPrefs {
+  goal_ids: string[];
   updated_at: string | null;
 }
 
@@ -330,7 +330,7 @@ export interface LearningGoalPrefs {
 export interface UserPreferences {
   favorites: FavoritesPrefs;
   reading: ReadingPrefs;
-  learning_goal: LearningGoalPrefs;
+  learning_goals: LearningGoalsPrefs;
 }
 
 /** Partial preferences update request */
@@ -342,7 +342,7 @@ export interface PreferencesUpdate {
     font_size?: string;
     section_prefs?: Record<string, boolean>;
   };
-  learning_goal?: { goal_id: string | null };
+  learning_goals?: { goal_ids: string[] };
 }
 
 /** Local preferences for merge request */
@@ -355,5 +355,5 @@ export interface LocalPreferences {
     section_prefs?: Record<string, boolean>;
     updated_at?: string;
   };
-  learning_goal?: { goal_id?: string | null; updated_at?: string };
+  learning_goals?: { goal_ids?: string[]; updated_at?: string };
 }

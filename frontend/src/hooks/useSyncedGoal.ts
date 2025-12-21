@@ -1,0 +1,303 @@
+/**
+ * Hook for synced learning goals across devices.
+ *
+ * For anonymous users: Uses localStorage only (via useLearningGoal).
+ * For authenticated users: Syncs with server on login and on changes.
+ *
+ * Features:
+ * - Merge on login (most recent timestamp wins)
+ * - Debounced sync on changes (2 seconds)
+ * - Optimistic updates (UI updates immediately, sync in background)
+ * - Supports multi-goal selection
+ * - Graceful error handling (continues working if sync fails)
+ */
+
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { useLearningGoal } from "./useLearningGoal";
+import { useAuth } from "../contexts/AuthContext";
+import { preferencesApi } from "../lib/api";
+import type { Goal, Principle } from "../lib/api";
+
+export type SyncStatus = "idle" | "syncing" | "synced" | "error";
+
+// localStorage key (matches useLearningGoal)
+const STORAGE_KEY = "geetanjali:learningGoals";
+
+// Debounce delay for syncing changes to server
+const SYNC_DEBOUNCE_MS = 2000;
+
+interface StoredGoals {
+  goalIds: string[];
+  selectedAt: string; // ISO timestamp
+}
+
+interface UseSyncedGoalReturn {
+  // Current selection
+  selectedGoalIds: string[];
+  selectedGoals: Goal[];
+  goalPrinciples: Principle[];
+
+  // Available goals from taxonomy
+  goals: Goal[];
+
+  // Actions
+  toggleGoal: (goalId: string) => void;
+  setGoals: (goalIds: string[]) => void;
+  clearGoals: () => void;
+  isSelected: (goalId: string) => boolean;
+
+  // Loading state
+  initialized: boolean;
+
+  // Sync status
+  syncStatus: SyncStatus;
+  lastSynced: Date | null;
+  resync: () => Promise<void>;
+}
+
+/**
+ * Load stored goals from localStorage
+ */
+function loadStoredGoals(): StoredGoals | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored) as StoredGoals;
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+  return null;
+}
+
+/**
+ * Hook for managing learning goals with cross-device sync.
+ */
+export function useSyncedGoal(): UseSyncedGoalReturn {
+  const { isAuthenticated, user } = useAuth();
+  const localGoal = useLearningGoal();
+
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
+
+  // Track user ID to detect login/logout
+  const previousUserIdRef = useRef<string | null>(null);
+  // Debounce timer ref
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track if we're currently syncing
+  const isSyncingRef = useRef(false);
+
+  /**
+   * Merge local goals with server (used on login)
+   */
+  const mergeWithServer = useCallback(async () => {
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
+    setSyncStatus("syncing");
+
+    try {
+      const stored = loadStoredGoals();
+      const localGoalIds = stored?.goalIds ?? [];
+      const localUpdatedAt = stored?.selectedAt;
+
+      // Merge with server
+      const merged = await preferencesApi.merge({
+        learning_goals: {
+          goal_ids: localGoalIds,
+          updated_at: localUpdatedAt,
+        },
+      });
+
+      // Update local storage with merged result
+      const newGoals: StoredGoals = {
+        goalIds: merged.learning_goals.goal_ids,
+        selectedAt: merged.learning_goals.updated_at || new Date().toISOString(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newGoals));
+
+      // Sync with the local hook state
+      localGoal.setGoals(newGoals.goalIds);
+
+      setSyncStatus("synced");
+      setLastSynced(new Date());
+
+      console.debug(
+        `[SyncedGoal] Merged: ${localGoalIds.length} local → ${merged.learning_goals.goal_ids.length} merged`,
+      );
+    } catch (error) {
+      console.error("[SyncedGoal] Merge failed:", error);
+      setSyncStatus("error");
+    } finally {
+      isSyncingRef.current = false;
+    }
+  }, [localGoal]);
+
+  /**
+   * Sync current goals to server (debounced)
+   */
+  const syncToServer = useCallback(() => {
+    if (!isAuthenticated) return;
+
+    // Clear existing timeout (debounce)
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    // Debounce the sync
+    syncTimeoutRef.current = setTimeout(async () => {
+      if (isSyncingRef.current) return;
+      isSyncingRef.current = true;
+      setSyncStatus("syncing");
+
+      try {
+        const stored = loadStoredGoals();
+        const goalIds = stored?.goalIds ?? [];
+
+        await preferencesApi.update({
+          learning_goals: { goal_ids: goalIds },
+        });
+        setSyncStatus("synced");
+        setLastSynced(new Date());
+      } catch (error) {
+        console.error("[SyncedGoal] Sync failed:", error);
+        setSyncStatus("error");
+      } finally {
+        isSyncingRef.current = false;
+      }
+    }, SYNC_DEBOUNCE_MS);
+  }, [isAuthenticated]);
+
+  /**
+   * Handle login: merge local goals with server
+   */
+  useEffect(() => {
+    const currentUserId = user?.id ?? null;
+    const wasLoggedOut = previousUserIdRef.current === null;
+    const isNowLoggedIn = currentUserId !== null;
+
+    // Detect login
+    if (wasLoggedOut && isNowLoggedIn) {
+      console.debug("[SyncedGoal] Login detected, merging with server");
+      mergeWithServer();
+    }
+
+    // Detect logout
+    if (previousUserIdRef.current !== null && currentUserId === null) {
+      console.debug("[SyncedGoal] Logout detected, resetting sync status");
+      setSyncStatus("idle");
+      setLastSynced(null);
+      isSyncingRef.current = false;
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+        syncTimeoutRef.current = null;
+      }
+    }
+
+    previousUserIdRef.current = currentUserId;
+  }, [user?.id, mergeWithServer]);
+
+  /**
+   * Toggle goal with sync
+   */
+  const toggleGoal = useCallback(
+    (goalId: string) => {
+      localGoal.toggleGoal(goalId);
+
+      if (isAuthenticated) {
+        syncToServer();
+      }
+    },
+    [localGoal, isAuthenticated, syncToServer],
+  );
+
+  /**
+   * Set goals with sync
+   */
+  const setGoals = useCallback(
+    (goalIds: string[]) => {
+      localGoal.setGoals(goalIds);
+
+      if (isAuthenticated) {
+        syncToServer();
+      }
+    },
+    [localGoal, isAuthenticated, syncToServer],
+  );
+
+  /**
+   * Clear goals with sync
+   */
+  const clearGoals = useCallback(() => {
+    localGoal.clearGoals();
+
+    if (isAuthenticated) {
+      // Sync empty goals to server
+      preferencesApi
+        .update({
+          learning_goals: { goal_ids: [] },
+        })
+        .then(() => {
+          setSyncStatus("synced");
+          setLastSynced(new Date());
+        })
+        .catch((error) => {
+          console.error("[SyncedGoal] Clear sync failed:", error);
+          setSyncStatus("error");
+        });
+    }
+  }, [localGoal, isAuthenticated]);
+
+  /**
+   * Manual resync
+   */
+  const resync = useCallback(async () => {
+    if (isAuthenticated) {
+      await mergeWithServer();
+    }
+  }, [isAuthenticated, mergeWithServer]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  return useMemo(
+    () => ({
+      // Pass through from local hook
+      selectedGoalIds: localGoal.selectedGoalIds,
+      selectedGoals: localGoal.selectedGoals,
+      goalPrinciples: localGoal.goalPrinciples,
+      goals: localGoal.goals,
+      isSelected: localGoal.isSelected,
+      initialized: localGoal.initialized,
+
+      // Synced actions
+      toggleGoal,
+      setGoals,
+      clearGoals,
+
+      // Sync status
+      syncStatus,
+      lastSynced,
+      resync,
+    }),
+    [
+      localGoal.selectedGoalIds,
+      localGoal.selectedGoals,
+      localGoal.goalPrinciples,
+      localGoal.goals,
+      localGoal.isSelected,
+      localGoal.initialized,
+      toggleGoal,
+      setGoals,
+      clearGoals,
+      syncStatus,
+      lastSynced,
+      resync,
+    ],
+  );
+}

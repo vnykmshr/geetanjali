@@ -9,7 +9,7 @@ import {
 import { GoalSelector } from "../components/GoalSelector";
 import { TimeSelector, type SendTime } from "../components/TimeSelector";
 import { api } from "../lib/api";
-import { useLearningGoal } from "../hooks";
+import { useSyncedGoal } from "../hooks";
 
 type PageState = "loading" | "loaded" | "saving" | "saved" | "error";
 
@@ -23,7 +23,7 @@ interface Preferences {
 
 export default function NewsletterPreferences() {
   const { token } = useParams<{ token: string }>();
-  const { setGoals } = useLearningGoal();
+  const { setGoals } = useSyncedGoal();
 
   // Validate token upfront - if invalid, initialize with error state
   const initialError = useMemo<{ state: PageState; error: string }>(() => {
@@ -76,7 +76,7 @@ export default function NewsletterPreferences() {
   }, [token, initialError.state, setGoals]);
 
   // Get current goal selection from hook
-  const { selectedGoalIds } = useLearningGoal();
+  const { selectedGoalIds } = useSyncedGoal();
 
   const handleSave = async () => {
     if (!token) return;
@@ -269,7 +269,7 @@ export default function NewsletterPreferences() {
           <div className="text-center mt-6">
             <Link
               to={`/n/unsubscribe/${token}`}
-              className="text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+              className="inline-flex items-center justify-center min-h-[44px] px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 rounded-lg transition-colors"
             >
               Unsubscribe from Daily Wisdom
             </Link>

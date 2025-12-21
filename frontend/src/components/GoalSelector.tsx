@@ -1,4 +1,4 @@
-import { useLearningGoal } from "../hooks";
+import { useSyncedGoal } from "../hooks";
 import { GoalIconsById, GoalIcons, CheckIcon } from "./icons";
 import type { Goal } from "../lib/api";
 
@@ -116,7 +116,7 @@ export function GoalSelector({
     initialized,
     setGoals,
     clearGoals,
-  } = useLearningGoal();
+  } = useSyncedGoal();
 
   const handleToggle = (goalId: string) => {
     // Compute new selection BEFORE toggle to avoid stale closure
@@ -165,17 +165,17 @@ export function GoalSelector({
     <div>
       {/* Selection helpers */}
       <div className="flex items-center justify-between mb-2 text-xs">
-        <span className="text-gray-500 dark:text-gray-400">
+        <span className="text-gray-500 dark:text-gray-400 py-2">
           {selectedCount === 0
             ? "Select one or more"
             : `${selectedCount} selected`}
         </span>
-        <div className="flex gap-3">
+        <div className="flex gap-1">
           {!allSelected && (
             <button
               type="button"
               onClick={handleSelectAll}
-              className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:underline"
+              className="min-h-[44px] px-3 py-2 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-gray-700 active:bg-amber-100 dark:active:bg-gray-600 rounded-lg transition-colors"
             >
               Select all
             </button>
@@ -184,7 +184,7 @@ export function GoalSelector({
             <button
               type="button"
               onClick={handleClearAll}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline"
+              className="min-h-[44px] px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 rounded-lg transition-colors"
             >
               Clear
             </button>
