@@ -123,21 +123,39 @@ async def signup(
 
     # Check if email already exists
     user_repo = UserRepository(db)
-    if user_repo.email_exists(signup_data.email):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
+    existing_user = user_repo.get_by_email(signup_data.email)
+
+    if existing_user:
+        if existing_user.is_active:
+            # Active user with same email - reject
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
+            )
+        else:
+            # Inactive user - reactivate with fresh data (fresh start)
+            logger.info(f"Reactivating inactive account: {existing_user.id}")
+            password_hash = hash_password(signup_data.password)
+            user_repo.update(
+                existing_user.id,
+                {
+                    "is_active": True,
+                    "deleted_at": None,
+                    "name": signup_data.name,
+                    "password_hash": password_hash,
+                    "email_verified": False,  # Reset verification
+                    "last_login": None,
+                },
+            )
+            user = user_repo.get(existing_user.id)
+    else:
+        # New user - create fresh account
+        password_hash = hash_password(signup_data.password)
+        user = user_repo.create_user(
+            email=signup_data.email,
+            name=signup_data.name,
+            password_hash=password_hash,
+            role="user",
         )
-
-    # Hash password
-    password_hash = hash_password(signup_data.password)
-
-    # Create user
-    user = user_repo.create_user(
-        email=signup_data.email,
-        name=signup_data.name,
-        password_hash=password_hash,
-        role="user",
-    )
 
     # Migrate any anonymous session cases to this user
     if session_id:
@@ -187,7 +205,9 @@ async def login(
     user_repo = UserRepository(db)
     user = user_repo.get_by_email(login_data.email)
 
-    if not user or not user.password_hash:
+    # Check user exists, is active, and has password
+    # Inactive users are treated as non-existent (don't reveal account state)
+    if not user or not user.is_active or not user.password_hash:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=ERR_INVALID_CREDENTIALS
         )
@@ -260,7 +280,8 @@ async def refresh(request: Request, response: Response, db: Session = Depends(ge
     user_repo = UserRepository(db)
     user = user_repo.get(token_record.user_id)
 
-    if not user:
+    # Check user exists and is active
+    if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=ERR_USER_NOT_FOUND
         )
@@ -449,4 +470,71 @@ async def reset_password(
     logger.info(f"Password reset successful for user: {user.id}")
     return MessageResponse(
         message="Your password has been reset successfully. Please sign in with your new password."
+    )
+
+
+@router.delete("/account", response_model=MessageResponse)
+async def delete_account(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Delete current user's account (soft delete).
+
+    This will:
+    - Delete all user's cases, preferences, and refresh tokens (CASCADE data)
+    - Nullify user_id on feedback and subscriber records (SET NULL data)
+    - Mark user as inactive with deleted_at timestamp
+    - Clear password hash
+
+    The user can re-register with the same email later (fresh start).
+
+    Args:
+        request: FastAPI request object
+        response: FastAPI response object
+        db: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        Success message
+    """
+    from models.case import Case
+    from models.user_preferences import UserPreferences
+    from models.refresh_token import RefreshToken
+    from models.feedback import Feedback
+    from models.subscriber import Subscriber
+
+    user_id = current_user.id
+    logger.info(f"Account deletion requested for user: {user_id}")
+
+    # Delete CASCADE data (user's own data)
+    db.query(Case).filter(Case.user_id == user_id).delete()
+    db.query(UserPreferences).filter(UserPreferences.user_id == user_id).delete()
+    db.query(RefreshToken).filter(RefreshToken.user_id == user_id).delete()
+
+    # SET NULL data (preserve records for analytics, remove user association)
+    db.query(Feedback).filter(Feedback.user_id == user_id).update({"user_id": None})
+    db.query(Subscriber).filter(Subscriber.user_id == user_id).update({"user_id": None})
+
+    # Soft delete user
+    user_repo = UserRepository(db)
+    user_repo.update(
+        user_id,
+        {
+            "is_active": False,
+            "deleted_at": datetime.utcnow(),
+            "password_hash": None,  # Clear sensitive data
+        },
+    )
+
+    db.commit()
+
+    # Clear auth cookies
+    response.delete_cookie(key=REFRESH_TOKEN_COOKIE_KEY, path="/")
+
+    logger.info(f"Account deleted (soft delete) for user: {user_id}")
+    return MessageResponse(
+        message="Your account has been deleted. You can create a new account with the same email if you wish to return."
     )

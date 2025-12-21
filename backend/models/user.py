@@ -23,6 +23,10 @@ class User(Base, TimestampMixin):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
 
+    # Account status
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     # Authentication
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
