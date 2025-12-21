@@ -234,8 +234,8 @@ async def create_case(
 # ============================================================================
 
 
-# Cache TTL for featured cases (1 hour)
-FEATURED_CASES_TTL = 3600
+# Use centralized cache TTL from config
+FEATURED_CASES_TTL = settings.CACHE_TTL_FEATURED_CASES
 # Cooldown to prevent DoS via repeated job enqueueing
 CURATION_COOLDOWN_SECONDS = 300  # 5 minutes
 
@@ -769,11 +769,9 @@ async def record_public_view(
     # Get client identifier (IP address, with fallback)
     client_ip = request.client.host if request.client else "unknown"
 
-    # Check if this client has already viewed this case (24h dedupe window)
+    # Check if this client has already viewed this case (dedupe window from config)
     view_key = public_case_view_key(slug, client_ip)
-    VIEW_DEDUPE_TTL = 86400  # 24 hours
-
-    is_new_view = cache.setnx(view_key, True, VIEW_DEDUPE_TTL)
+    is_new_view = cache.setnx(view_key, True, settings.CACHE_TTL_VIEW_DEDUPE)
 
     if is_new_view:
         # Only increment if this is a new unique view

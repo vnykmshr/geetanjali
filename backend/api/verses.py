@@ -26,8 +26,8 @@ from services.cache import (
 )
 from config import settings
 
-# Cache TTL for verse ID lists (1 hour)
-VERSE_IDS_CACHE_TTL = 3600
+# Use centralized cache TTL from config
+VERSE_IDS_CACHE_TTL = settings.CACHE_TTL_VERSE_LIST
 
 logger = logging.getLogger(__name__)
 
