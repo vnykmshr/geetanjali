@@ -19,6 +19,7 @@ Cron Schedule (UTC):
 
 import argparse
 import logging
+import signal
 import sys
 from datetime import datetime, date
 from typing import Optional, Any
@@ -38,6 +39,19 @@ logger = logging.getLogger(__name__)
 
 # Lock TTL: 5 minutes (scheduler should complete well within this)
 SCHEDULER_LOCK_TTL_SECONDS = 300
+
+# Maximum execution time: 4 minutes (less than lock TTL to ensure clean exit)
+SCHEDULER_TIMEOUT_SECONDS = 240
+
+
+class SchedulerTimeoutError(Exception):
+    """Raised when scheduler exceeds maximum execution time."""
+    pass
+
+
+def _timeout_handler(signum, frame):
+    """Signal handler for scheduler timeout."""
+    raise SchedulerTimeoutError("Scheduler exceeded maximum execution time")
 
 
 def _acquire_scheduler_lock(send_time: str) -> Optional[str]:
@@ -228,14 +242,30 @@ def main():
         action="store_true",
         help="Log what would be queued without actually enqueueing",
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=SCHEDULER_TIMEOUT_SECONDS,
+        help=f"Maximum execution time in seconds (default: {SCHEDULER_TIMEOUT_SECONDS})",
+    )
 
     args = parser.parse_args()
+
+    # Set up timeout signal handler (Unix only)
+    if hasattr(signal, "SIGALRM"):
+        signal.signal(signal.SIGALRM, _timeout_handler)
+        signal.alarm(args.timeout)
+        logger.info(f"Scheduler timeout set to {args.timeout} seconds")
 
     try:
         stats = schedule_daily_digests(
             send_time=args.send_time,
             dry_run=args.dry_run,
         )
+
+        # Cancel alarm on successful completion
+        if hasattr(signal, "SIGALRM"):
+            signal.alarm(0)
 
         # Exit with error if any failed to queue
         if stats.get("jobs_failed", 0) > 0:
@@ -245,6 +275,9 @@ def main():
         if stats.get("error"):
             sys.exit(1)
 
+    except SchedulerTimeoutError as e:
+        logger.error(f"Scheduler timeout: {e}")
+        sys.exit(2)
     except Exception as e:
         logger.exception(f"Fatal error in newsletter scheduler: {e}")
         sys.exit(1)
