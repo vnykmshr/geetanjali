@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useTaxonomy } from "./useTaxonomy";
 import type { Goal, Principle } from "../lib/api";
 
@@ -102,13 +102,17 @@ export function useLearningGoal() {
   // Get selected goal IDs
   const selectedGoalIds: string[] = storedGoals?.goalIds ?? [];
 
-  // Get full goal data for all selected goals
-  const selectedGoals: Goal[] = selectedGoalIds
-    .map((id) => getGoal(id))
-    .filter((g): g is Goal => g !== undefined);
+  // Get full goal data for all selected goals (memoized)
+  const selectedGoals: Goal[] = useMemo(
+    () =>
+      selectedGoalIds
+        .map((id) => getGoal(id))
+        .filter((g): g is Goal => g !== undefined),
+    [selectedGoalIds, getGoal],
+  );
 
-  // Get combined principles from all selected goals (deduplicated)
-  const goalPrinciples: Principle[] = (() => {
+  // Get combined principles from all selected goals (deduplicated, memoized)
+  const goalPrinciples: Principle[] = useMemo(() => {
     const allPrinciples = selectedGoalIds.flatMap((id) =>
       getPrinciplesForGoal(id),
     );
@@ -119,26 +123,40 @@ export function useLearningGoal() {
       seen.add(p.id);
       return true;
     });
-  })();
+  }, [selectedGoalIds, getPrinciplesForGoal]);
 
-  return {
-    // Current selection
-    selectedGoalIds,
-    selectedGoals,
-    goalPrinciples,
+  // Memoize return value to prevent cascading re-renders
+  return useMemo(
+    () => ({
+      // Current selection
+      selectedGoalIds,
+      selectedGoals,
+      goalPrinciples,
 
-    // Available goals from taxonomy
-    goals,
+      // Available goals from taxonomy
+      goals,
 
-    // Actions
-    toggleGoal,
-    setGoals,
-    clearGoals,
-    isSelected,
+      // Actions
+      toggleGoal,
+      setGoals,
+      clearGoals,
+      isSelected,
 
-    // Loading state
-    initialized,
-  };
+      // Loading state
+      initialized,
+    }),
+    [
+      selectedGoalIds,
+      selectedGoals,
+      goalPrinciples,
+      goals,
+      toggleGoal,
+      setGoals,
+      clearGoals,
+      isSelected,
+      initialized,
+    ],
+  );
 }
 
 export default useLearningGoal;

@@ -8,7 +8,7 @@
  * - Get all favorite IDs
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 
 const STORAGE_KEY = "geetanjali_favorites";
 const MAX_FAVORITES = 100; // Reasonable limit to prevent localStorage bloat
@@ -183,14 +183,26 @@ export function useFavorites(): UseFavoritesReturn {
     saveFavorites(newFavorites);
   }, []);
 
-  return {
-    favorites,
-    isFavorite,
-    toggleFavorite,
-    addFavorite,
-    removeFavorite,
-    clearFavorites,
-    setAllFavorites,
-    favoritesCount: favorites.size,
-  };
+  // Memoize return value to prevent cascading re-renders
+  return useMemo(
+    () => ({
+      favorites,
+      isFavorite,
+      toggleFavorite,
+      addFavorite,
+      removeFavorite,
+      clearFavorites,
+      setAllFavorites,
+      favoritesCount: favorites.size,
+    }),
+    [
+      favorites,
+      isFavorite,
+      toggleFavorite,
+      addFavorite,
+      removeFavorite,
+      clearFavorites,
+      setAllFavorites,
+    ],
+  );
 }
