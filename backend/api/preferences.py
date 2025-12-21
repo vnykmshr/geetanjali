@@ -19,6 +19,19 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/users/me", tags=["preferences"])
 
+# Minimum datetime for comparison (timezone-aware)
+MIN_DATETIME = datetime.min.replace(tzinfo=timezone.utc)
+
+
+def normalize_timestamp(ts: Optional[datetime]) -> datetime:
+    """Normalize timestamp to timezone-aware UTC for comparison."""
+    if ts is None:
+        return MIN_DATETIME
+    # Make naive datetimes UTC-aware
+    if ts.tzinfo is None:
+        return ts.replace(tzinfo=timezone.utc)
+    return ts
+
 # Maximum favorites per user
 MAX_FAVORITES = 500
 
@@ -305,8 +318,8 @@ async def merge_preferences(
 
     # Reading: Most recent wins
     if local.reading:
-        local_ts = local.reading.updated_at or datetime.min
-        server_ts = prefs.reading_updated_at or datetime.min
+        local_ts = normalize_timestamp(local.reading.updated_at)
+        server_ts = normalize_timestamp(prefs.reading_updated_at)
 
         if local_ts > server_ts:
             # Local is newer - use local values
@@ -323,8 +336,8 @@ async def merge_preferences(
 
     # Learning goals: Most recent wins
     if local.learning_goals:
-        local_ts = local.learning_goals.updated_at or datetime.min
-        server_ts = prefs.learning_goal_updated_at or datetime.min
+        local_ts = normalize_timestamp(local.learning_goals.updated_at)
+        server_ts = normalize_timestamp(prefs.learning_goal_updated_at)
 
         if local_ts > server_ts:
             prefs.learning_goal_ids = local.learning_goals.goal_ids

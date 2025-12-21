@@ -94,18 +94,35 @@ async def geetanjali_exception_handler(
     )
 
 
+def _sanitize_error(error: dict) -> dict:
+    """Remove non-JSON-serializable objects from validation error."""
+    sanitized = {}
+    for key, value in error.items():
+        if key == "ctx":
+            # Convert context values to strings (handles ValueError, etc.)
+            sanitized[key] = {k: str(v) for k, v in value.items()} if value else {}
+        elif isinstance(value, (str, int, float, bool, type(None), list, tuple)):
+            sanitized[key] = value
+        else:
+            sanitized[key] = str(value)
+    return sanitized
+
+
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
     """Handle request validation errors."""
     logger.warning(f"Validation error: {exc.errors()}")
 
+    # Sanitize errors to ensure JSON serializability
+    sanitized_errors = [_sanitize_error(e) for e in exc.errors()]
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "error": "ValidationError",
             "message": "Request validation failed",
-            "details": exc.errors(),
+            "details": sanitized_errors,
         },
         headers={"Cache-Control": "no-store"},
     )
