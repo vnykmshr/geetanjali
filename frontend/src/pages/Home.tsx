@@ -47,7 +47,7 @@ export default function Home() {
     casesApi
       .list(0, 3)
       .then((data) => {
-        if (!cancelled) setRecentCases(data);
+        if (!cancelled) setRecentCases(data.cases);
       })
       .catch(() => {
         if (!cancelled) setCasesError(true);

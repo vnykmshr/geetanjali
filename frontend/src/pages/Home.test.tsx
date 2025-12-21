@@ -71,7 +71,10 @@ describe("Home Page", () => {
       environment: "test",
     });
     vi.mocked(api.versesApi.getRandom).mockResolvedValue(mockVerse);
-    vi.mocked(api.casesApi.list).mockResolvedValue([]);
+    vi.mocked(api.casesApi.list).mockResolvedValue({
+      cases: [],
+      counts: { all: 0, completed: 0, in_progress: 0, failed: 0, shared: 0 },
+    });
     vi.mocked(tokenStorage.getToken).mockReturnValue(null);
   });
 
@@ -106,7 +109,10 @@ describe("Home Page", () => {
     beforeEach(() => {
       vi.mocked(tokenStorage.getToken).mockReturnValue("valid-token");
       vi.mocked(authApi.getCurrentUser).mockResolvedValue(mockUser);
-      vi.mocked(api.casesApi.list).mockResolvedValue([mockCase]);
+      vi.mocked(api.casesApi.list).mockResolvedValue({
+        cases: [mockCase],
+        counts: { all: 1, completed: 1, in_progress: 0, failed: 0, shared: 0 },
+      });
     });
 
     it("should show recent consultations for authenticated users", async () => {
