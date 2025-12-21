@@ -89,6 +89,8 @@ export default function Settings() {
   // Danger zone
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Prefill from logged-in user
   useEffect(() => {
@@ -207,6 +209,32 @@ export default function Settings() {
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    try {
+      await api.delete("/auth/account");
+
+      // Clear local data
+      const keysToRemove = [
+        "geetanjali_favorites",
+        "geetanjali:learningGoals",
+        "geetanjali:readingPosition",
+        "geetanjali:readingSettings",
+        "geetanjali:theme",
+        "geetanjali:readingDefaults",
+      ];
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+      // Redirect to home
+      navigate("/");
+      window.location.reload();
+    } catch (err) {
+      console.error("Failed to delete account:", err);
+      setIsDeletingAccount(false);
+      setShowDeleteAccountConfirm(false);
     }
   };
 
@@ -594,24 +622,25 @@ export default function Settings() {
             </button>
             {isAuthenticated && (
               <button
-                disabled
-                className="px-3 py-1.5 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-lg cursor-not-allowed"
-                title="Coming soon"
+                onClick={() => setShowDeleteAccountConfirm(true)}
+                className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg transition-colors"
               >
                 Delete account
               </button>
             )}
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            Deleting local data will clear favorites, reading progress, and preferences from this device.
-            {isAuthenticated && " Your cloud data will remain safe."}
+            {isAuthenticated
+              ? "Delete local data clears this device only. Delete account removes all data from the cloud permanently."
+              : "Deleting local data will clear favorites, reading progress, and preferences from this device."
+            }
           </p>
         </section>
       </main>
 
       <Footer />
 
-      {/* Delete confirmation modal */}
+      {/* Delete local data confirmation modal */}
       <ConfirmModal
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
@@ -619,6 +648,17 @@ export default function Settings() {
         title="Delete local data?"
         message="This will clear all your favorites, reading progress, goals, and preferences from this device. This action cannot be undone."
         confirmText={isDeleting ? "Deleting..." : "Delete"}
+        confirmVariant="danger"
+      />
+
+      {/* Delete account confirmation modal */}
+      <ConfirmModal
+        isOpen={showDeleteAccountConfirm}
+        onClose={() => setShowDeleteAccountConfirm(false)}
+        onConfirm={handleDeleteAccount}
+        title="Delete your account?"
+        message="This will permanently delete your account and all associated data including consultations, preferences, and favorites. This action cannot be undone. You can create a new account with the same email later."
+        confirmText={isDeletingAccount ? "Deleting..." : "Delete account"}
         confirmVariant="danger"
       />
     </div>
