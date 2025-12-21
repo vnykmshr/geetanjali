@@ -474,6 +474,7 @@ async def reset_password(
 
 
 @router.delete("/account", response_model=MessageResponse)
+@limiter.limit("3/hour")
 async def delete_account(
     request: Request,
     response: Response,
