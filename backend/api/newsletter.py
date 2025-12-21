@@ -391,6 +391,8 @@ async def unsubscribe(
 
     # Soft delete - preserve data for analytics
     subscriber.unsubscribed_at = datetime.utcnow()
+    # Rotate token to invalidate old unsubscribe/preferences links
+    subscriber.verification_token = generate_verification_token()
     try:
         db.commit()
     except Exception:
