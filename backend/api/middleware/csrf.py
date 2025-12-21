@@ -19,7 +19,16 @@ CSRF_EXEMPT_PATHS = {
     "/api/v1/auth/logout",
     "/api/v1/auth/forgot-password",  # Pre-auth flow, no session to protect
     "/api/v1/auth/reset-password",  # Pre-auth flow, uses one-time token
+    # Newsletter endpoints - protected by rate limiting and/or secret tokens
+    "/api/v1/newsletter/subscribe",  # Rate limited 3/hr, requires email verification
 }
+
+# Path prefixes exempt from CSRF (for parameterized routes)
+CSRF_EXEMPT_PREFIXES = (
+    "/api/v1/newsletter/verify/",      # Token-based auth (token in URL)
+    "/api/v1/newsletter/unsubscribe/",  # Token-based auth (token in URL)
+    "/api/v1/newsletter/preferences/",  # Token-based auth (token in URL)
+)
 
 
 class CSRFMiddleware(BaseHTTPMiddleware):
@@ -39,6 +48,10 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         # Skip exempt paths (login, signup, etc.)
         if request.url.path in CSRF_EXEMPT_PATHS:
+            return await call_next(request)
+
+        # Skip exempt path prefixes (token-based routes)
+        if request.url.path.startswith(CSRF_EXEMPT_PREFIXES):
             return await call_next(request)
 
         # Skip if no cookies present (API key auth, first-time visitors)
