@@ -93,27 +93,34 @@ export function Toast({
                    rounded-xl shadow-lg px-4 py-3 flex items-center gap-3"
       >
         {/* Message */}
-        <p className="flex-1 text-sm">{message}</p>
+        <p className="flex-1 text-base sm:text-sm">{message}</p>
 
         {/* Optional link */}
         {linkText && linkTo && (
           <Link
             to={linkTo}
-            className="text-amber-400 dark:text-amber-600 font-medium text-sm hover:text-amber-300 dark:hover:text-amber-700 transition-colors whitespace-nowrap"
+            className="text-orange-400 dark:text-orange-600 font-medium text-base sm:text-sm
+                       hover:text-orange-300 dark:hover:text-orange-700 transition-colors whitespace-nowrap"
             onClick={handleDismiss}
           >
             {linkText}
           </Link>
         )}
 
-        {/* Dismiss button */}
+        {/* Dismiss button - 44px touch target for mobile */}
         <button
           onClick={handleDismiss}
-          className="p-2 -m-1 text-gray-400 dark:text-gray-500 hover:text-white dark:hover:text-gray-900 transition-colors"
+          className="min-w-11 min-h-11 flex items-center justify-center -m-2
+                     text-gray-400 dark:text-gray-500
+                     hover:text-white dark:hover:text-gray-900
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500
+                     focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900
+                     dark:focus-visible:ring-offset-gray-100
+                     rounded-lg transition-colors"
           aria-label="Dismiss notification"
         >
           <svg
-            className="w-4 h-4"
+            className="w-5 h-5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
