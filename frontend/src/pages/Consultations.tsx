@@ -1,14 +1,24 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Virtuoso } from "react-virtuoso";
 import { casesApi } from "../lib/api";
 import type { Case, CaseStatus, ShareMode } from "../types";
 import { Navbar, ConfirmModal, Footer } from "../components";
 import { ShareBar } from "../components/case";
-import { SpinnerIcon, ChevronDownIcon } from "../components/icons";
+import {
+  SpinnerIcon,
+  ChevronDownIcon,
+  GridIcon,
+  CheckIcon,
+  ShareIcon,
+  XCircleIcon,
+} from "../components/icons";
 import { errorMessages } from "../lib/errorMessages";
 import { useAuth } from "../contexts/AuthContext";
 import { useSEO } from "../hooks";
+
+// Filter modes for the segmented control
+type FilterMode = "all" | "completed" | "in-progress" | "failed" | "shared";
 
 const CASES_PER_PAGE = 10;
 
@@ -73,6 +83,49 @@ export default function Consultations() {
   const [shareBarOpen, setShareBarOpen] = useState<string | null>(null);
   const { isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Parse filter from URL, default to "all"
+  const getInitialFilter = (): FilterMode => {
+    const filter = searchParams.get("filter");
+    if (filter === "completed" || filter === "in-progress" || filter === "failed" || filter === "shared") {
+      return filter;
+    }
+    return "all";
+  };
+  const [filterMode, setFilterMode] = useState<FilterMode>(getInitialFilter);
+
+  // Server-provided counts for filter badges
+  const [filterCounts, setFilterCounts] = useState({
+    all: 0,
+    completed: 0,
+    inProgress: 0,
+    failed: 0,
+    shared: 0,
+  });
+
+  // Handle filter change - triggers new data fetch
+  const handleFilterChange = (mode: FilterMode) => {
+    setFilterMode(mode);
+    // Update URL for bookmarkability
+    if (mode === "all") {
+      setSearchParams({});
+    } else {
+      setSearchParams({ filter: mode });
+    }
+  };
+
+  // Sync filter with URL changes (browser back/forward)
+  useEffect(() => {
+    const urlFilter = searchParams.get("filter");
+    const newMode: FilterMode =
+      urlFilter === "completed" || urlFilter === "in-progress" || urlFilter === "failed" || urlFilter === "shared"
+        ? urlFilter
+        : "all";
+    if (newMode !== filterMode) {
+      setFilterMode(newMode);
+    }
+  }, [searchParams, filterMode]);
 
   const handleRetry = async (e: React.MouseEvent, caseId: string) => {
     e.preventDefault();
@@ -191,18 +244,29 @@ export default function Consultations() {
     setTimeout(() => setCopySuccess(null), 2000);
   };
 
+  // Load cases when auth or filter changes
   useEffect(() => {
     if (authLoading) return;
 
+    setLoading(true);
+    setCases([]); // Clear cases when filter changes
+
     casesApi
-      .list(0, CASES_PER_PAGE)
-      .then((data) => {
-        setCases(data);
-        setHasMore(data.length === CASES_PER_PAGE);
+      .list(0, CASES_PER_PAGE, filterMode)
+      .then((response) => {
+        setCases(response.cases);
+        setFilterCounts({
+          all: response.counts.all,
+          completed: response.counts.completed,
+          inProgress: response.counts.in_progress,
+          failed: response.counts.failed,
+          shared: response.counts.shared,
+        });
+        setHasMore(response.cases.length === CASES_PER_PAGE);
       })
       .catch((err) => setError(errorMessages.caseLoad(err)))
       .finally(() => setLoading(false));
-  }, [authLoading]);
+  }, [authLoading, filterMode]);
 
   const loadMore = useCallback(async () => {
     if (loadingMore) return;
@@ -210,15 +274,15 @@ export default function Consultations() {
     setError(null);
 
     try {
-      const data = await casesApi.list(cases.length, CASES_PER_PAGE);
-      setCases((prev) => [...prev, ...data]);
-      setHasMore(data.length === CASES_PER_PAGE);
+      const response = await casesApi.list(cases.length, CASES_PER_PAGE, filterMode);
+      setCases((prev) => [...prev, ...response.cases]);
+      setHasMore(response.cases.length === CASES_PER_PAGE);
     } catch (err) {
       setError(errorMessages.caseLoad(err));
     } finally {
       setLoadingMore(false);
     }
-  }, [cases.length, loadingMore]);
+  }, [cases.length, loadingMore, filterMode]);
 
   if (loading) {
     return (
@@ -238,17 +302,13 @@ export default function Consultations() {
       <Navbar />
       <div className="flex-1 py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header - sticky below navbar, stack on mobile, row on desktop */}
-          <div className="sticky top-14 sm:top-16 z-10 bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 mb-4 sm:mb-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold font-heading text-gray-900 dark:text-gray-100 mb-1 sm:mb-2">
-                  My Cases
-                </h1>
-                <p className="text-sm sm:text-lg text-gray-600 dark:text-gray-400">
-                  Your consultation history
-                </p>
-              </div>
+          {/* Header - sticky below navbar, 2-line layout */}
+          <div className="sticky top-14 sm:top-16 z-10 bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-gray-900 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 sm:py-5 mb-4 sm:mb-6">
+            {/* Line 1: Title + CTA */}
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl sm:text-3xl font-bold font-heading text-gray-900 dark:text-gray-100">
+                My Cases
+              </h1>
               {/* CTA visible on tablet+ only, FAB handles mobile */}
               <Link
                 to="/cases/new"
@@ -257,6 +317,143 @@ export default function Consultations() {
                 Ask a Question
               </Link>
             </div>
+
+            {/* Line 2: Filter Segmented Control - Order: All → In Progress → Done → Failed → Shared */}
+            {filterCounts.all > 0 && (
+              <div className="mt-3">
+                <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-0.5 shadow-sm">
+                  {/* All Segment */}
+                  <button
+                    onClick={() => handleFilterChange("all")}
+                    className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-2 rounded-md text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800 ${
+                      filterMode === "all"
+                        ? "bg-orange-600 text-white shadow-sm"
+                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    }`}
+                  >
+                    <GridIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">All</span>
+                    <span
+                      className={`min-w-[1.25rem] text-center text-xs tabular-nums ${
+                        filterMode === "all"
+                          ? "text-white/80"
+                          : "text-gray-500 dark:text-gray-400"
+                      }`}
+                    >
+                      {filterCounts.all}
+                    </span>
+                  </button>
+
+                  {/* In Progress Segment - only show if there are any (actionable/urgent) */}
+                  {filterCounts.inProgress > 0 && (
+                    <>
+                      <div className="w-px bg-gray-200 dark:bg-gray-700 my-1" />
+                      <button
+                        onClick={() => handleFilterChange("in-progress")}
+                        className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-2 rounded-md text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800 ${
+                          filterMode === "in-progress"
+                            ? "bg-orange-600 text-white shadow-sm"
+                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        }`}
+                      >
+                        <SpinnerIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">In Progress</span>
+                        <span
+                          className={`min-w-[1.25rem] text-center text-xs tabular-nums ${
+                            filterMode === "in-progress"
+                              ? "text-white/80"
+                              : "text-yellow-600 dark:text-yellow-400"
+                          }`}
+                        >
+                          {filterCounts.inProgress}
+                        </span>
+                      </button>
+                    </>
+                  )}
+
+                  {/* Divider */}
+                  <div className="w-px bg-gray-200 dark:bg-gray-700 my-1" />
+
+                  {/* Done Segment (includes completed + policy_violation) */}
+                  <button
+                    onClick={() => handleFilterChange("completed")}
+                    className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-2 rounded-md text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800 ${
+                      filterMode === "completed"
+                        ? "bg-orange-600 text-white shadow-sm"
+                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    }`}
+                  >
+                    <CheckIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">Done</span>
+                    <span
+                      className={`min-w-[1.25rem] text-center text-xs tabular-nums ${
+                        filterMode === "completed"
+                          ? "text-white/80"
+                          : filterCounts.completed > 0
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-gray-500 dark:text-gray-400"
+                      }`}
+                    >
+                      {filterCounts.completed}
+                    </span>
+                  </button>
+
+                  {/* Failed Segment - only show if there are failed cases (needs attention) */}
+                  {filterCounts.failed > 0 && (
+                    <>
+                      <div className="w-px bg-gray-200 dark:bg-gray-700 my-1" />
+                      <button
+                        onClick={() => handleFilterChange("failed")}
+                        className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-2 rounded-md text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800 ${
+                          filterMode === "failed"
+                            ? "bg-orange-600 text-white shadow-sm"
+                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        }`}
+                      >
+                        <XCircleIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Failed</span>
+                        <span
+                          className={`min-w-[1.25rem] text-center text-xs tabular-nums ${
+                            filterMode === "failed"
+                              ? "text-white/80"
+                              : "text-red-600 dark:text-red-400"
+                          }`}
+                        >
+                          {filterCounts.failed}
+                        </span>
+                      </button>
+                    </>
+                  )}
+
+                  {/* Divider */}
+                  <div className="w-px bg-gray-200 dark:bg-gray-700 my-1" />
+
+                  {/* Shared Segment */}
+                  <button
+                    onClick={() => handleFilterChange("shared")}
+                    className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-2 rounded-md text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-800 ${
+                      filterMode === "shared"
+                        ? "bg-orange-600 text-white shadow-sm"
+                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    }`}
+                  >
+                    <ShareIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">Shared</span>
+                    <span
+                      className={`min-w-[1.25rem] text-center text-xs tabular-nums ${
+                        filterMode === "shared"
+                          ? "text-white/80"
+                          : filterCounts.shared > 0
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-gray-500 dark:text-gray-400"
+                      }`}
+                    >
+                      {filterCounts.shared}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Error Alert */}
@@ -292,7 +489,8 @@ export default function Consultations() {
           )}
 
           {/* Consultations List */}
-          {cases.length === 0 ? (
+          {filterCounts.all === 0 ? (
+            // No cases at all
             <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-8 sm:p-12 text-center">
               <img
                 src="/logo.svg"
@@ -309,6 +507,27 @@ export default function Consultations() {
               >
                 Ask Your First Question
               </Link>
+            </div>
+          ) : cases.length === 0 ? (
+            // Filter returned no results (but user has cases)
+            <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg p-6 sm:p-8 text-center">
+              <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base">
+                {filterMode === "in-progress"
+                  ? "No consultations in progress."
+                  : filterMode === "shared"
+                    ? "You haven't shared any consultations yet."
+                    : filterMode === "completed"
+                      ? "No finished consultations."
+                      : filterMode === "failed"
+                        ? "No failed consultations."
+                        : "No consultations match this filter."}
+              </p>
+              <button
+                onClick={() => handleFilterChange("all")}
+                className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 text-sm font-medium"
+              >
+                View all cases →
+              </button>
             </div>
           ) : (
             <>
@@ -334,7 +553,7 @@ export default function Consultations() {
                         className={`relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all border overflow-visible ${
                           case_.is_public
                             ? "border-green-200 dark:border-green-800 hover:border-green-300 dark:hover:border-green-700"
-                            : "border-gray-100 dark:border-gray-700 hover:border-red-200 dark:hover:border-gray-600"
+                            : "border-gray-200 dark:border-gray-700 hover:border-amber-200 dark:hover:border-gray-600"
                         }`}
                       >
                         <Link
@@ -349,7 +568,7 @@ export default function Consultations() {
                                 </h2>
                                 <StatusBadge status={case_.status} />
                               </div>
-                              <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500">
+                              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                 {new Date(
                                   case_.created_at || "",
                                 ).toLocaleDateString("en-US", {

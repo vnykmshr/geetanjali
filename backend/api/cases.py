@@ -447,12 +447,13 @@ async def get_case(request: Request, case: Case = Depends(get_case_with_access))
     return case
 
 
-@router.get("", response_model=List[CaseResponse])
+@router.get("")
 @limiter.limit("60/minute")
 async def list_cases(
     request: Request,
     skip: int = 0,
     limit: int = 100,
+    status_filter: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
     session_id: Optional[str] = Depends(get_session_id),
@@ -463,26 +464,37 @@ async def list_cases(
     Args:
         skip: Number of records to skip
         limit: Maximum number of records
+        status_filter: Optional filter - "completed", "in-progress", "shared"
         db: Database session
         current_user: Authenticated user (optional)
         session_id: Session ID from X-Session-ID header (for anonymous users)
 
     Returns:
-        List of cases
+        Dict with cases list and filter counts
     """
     repo = CaseRepository(db)
 
     if current_user:
         # Authenticated user: get their cases
-        cases = repo.get_by_user(current_user.id, skip=skip, limit=limit)
+        cases = repo.get_by_user(
+            current_user.id, skip=skip, limit=limit, status_filter=status_filter
+        )
+        counts = repo.count_by_user(current_user.id)
     elif session_id:
         # Anonymous user: get session-based cases
-        cases = repo.get_by_session(session_id, skip=skip, limit=limit)
+        cases = repo.get_by_session(
+            session_id, skip=skip, limit=limit, status_filter=status_filter
+        )
+        counts = repo.count_by_session(session_id)
     else:
         # No auth and no session - return empty
         cases = []
+        counts = {"all": 0, "completed": 0, "in_progress": 0, "failed": 0, "shared": 0}
 
-    return cases
+    return {
+        "cases": [CaseResponse.model_validate(c).model_dump(mode="json") for c in cases],
+        "counts": counts,
+    }
 
 
 @router.delete("/{case_id}", status_code=status.HTTP_204_NO_CONTENT)

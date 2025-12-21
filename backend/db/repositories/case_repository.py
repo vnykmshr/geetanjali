@@ -1,6 +1,7 @@
 """Case repository for database operations."""
 
 from typing import List, Optional
+from sqlalchemy import Integer
 from sqlalchemy.orm import Session
 
 from models.case import Case
@@ -13,7 +14,13 @@ class CaseRepository(BaseRepository[Case]):  # type: ignore[type-var]
     def __init__(self, db: Session):
         super().__init__(Case, db)
 
-    def get_by_user(self, user_id: str, skip: int = 0, limit: int = 100) -> List[Case]:
+    def get_by_user(
+        self,
+        user_id: str,
+        skip: int = 0,
+        limit: int = 100,
+        status_filter: Optional[str] = None,
+    ) -> List[Case]:
         """
         Get all non-deleted cases for a user.
 
@@ -21,21 +28,97 @@ class CaseRepository(BaseRepository[Case]):  # type: ignore[type-var]
             user_id: User ID
             skip: Number of records to skip
             limit: Maximum number of records
+            status_filter: Optional filter - "completed", "in-progress", "shared"
 
         Returns:
             List of cases (excluding soft-deleted)
         """
-        return (
-            self.db.query(Case)
-            .filter(Case.user_id == user_id, Case.is_deleted == False)  # noqa: E712
-            .order_by(Case.created_at.desc())
-            .offset(skip)
-            .limit(limit)
-            .all()
+        query = self.db.query(Case).filter(
+            Case.user_id == user_id, Case.is_deleted == False  # noqa: E712
         )
+        query = self._apply_status_filter(query, status_filter)
+        return query.order_by(Case.created_at.desc()).offset(skip).limit(limit).all()
+
+    def _apply_status_filter(self, query, status_filter: Optional[str]):
+        """Apply status filter to query."""
+        from models.case import CaseStatus
+
+        if status_filter == "completed":
+            # Completed includes: completed, policy_violation, or no status (legacy)
+            query = query.filter(
+                Case.status.in_(
+                    [CaseStatus.COMPLETED.value, CaseStatus.POLICY_VIOLATION.value, None]
+                )
+            )
+        elif status_filter == "in-progress":
+            # In progress: pending or processing
+            query = query.filter(
+                Case.status.in_([CaseStatus.PENDING.value, CaseStatus.PROCESSING.value])
+            )
+        elif status_filter == "failed":
+            query = query.filter(Case.status == CaseStatus.FAILED.value)
+        elif status_filter == "shared":
+            query = query.filter(Case.is_public == True)  # noqa: E712
+        # "all" or None = no additional filter
+        return query
+
+    def count_by_user(self, user_id: str) -> dict:
+        """
+        Get counts for all filter categories for a user.
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            Dict with counts: {all, completed, in_progress, shared}
+        """
+        from sqlalchemy import func
+        from models.case import CaseStatus
+
+        base_filter = (Case.user_id == user_id) & (Case.is_deleted == False)  # noqa: E712
+
+        # Single query with conditional aggregation
+        result = self.db.query(
+            func.count(Case.id).label("all"),
+            func.sum(
+                func.cast(
+                    Case.status.in_(
+                        [CaseStatus.COMPLETED.value, CaseStatus.POLICY_VIOLATION.value]
+                    )
+                    | Case.status.is_(None),
+                    Integer,
+                )
+            ).label("completed"),
+            func.sum(
+                func.cast(
+                    Case.status.in_(
+                        [CaseStatus.PENDING.value, CaseStatus.PROCESSING.value]
+                    ),
+                    Integer,
+                )
+            ).label("in_progress"),
+            func.sum(
+                func.cast(Case.status == CaseStatus.FAILED.value, Integer)
+            ).label("failed"),
+            func.sum(func.cast(Case.is_public == True, Integer)).label(  # noqa: E712
+                "shared"
+            ),
+        ).filter(base_filter).first()
+
+        return {
+            "all": result.all or 0,
+            "completed": result.completed or 0,
+            "in_progress": result.in_progress or 0,
+            "failed": result.failed or 0,
+            "shared": result.shared or 0,
+        }
 
     def get_by_session(
-        self, session_id: str, skip: int = 0, limit: int = 100
+        self,
+        session_id: str,
+        skip: int = 0,
+        limit: int = 100,
+        status_filter: Optional[str] = None,
     ) -> List[Case]:
         """
         Get all non-deleted cases for an anonymous session.
@@ -44,22 +127,72 @@ class CaseRepository(BaseRepository[Case]):  # type: ignore[type-var]
             session_id: Session ID
             skip: Number of records to skip
             limit: Maximum number of records
+            status_filter: Optional filter - "completed", "in-progress", "shared"
 
         Returns:
             List of cases (excluding soft-deleted)
         """
-        return (
-            self.db.query(Case)
-            .filter(
-                Case.session_id == session_id,
-                Case.user_id.is_(None),
-                Case.is_deleted == False,  # noqa: E712
-            )
-            .order_by(Case.created_at.desc())
-            .offset(skip)
-            .limit(limit)
-            .all()
+        query = self.db.query(Case).filter(
+            Case.session_id == session_id,
+            Case.user_id.is_(None),
+            Case.is_deleted == False,  # noqa: E712
         )
+        query = self._apply_status_filter(query, status_filter)
+        return query.order_by(Case.created_at.desc()).offset(skip).limit(limit).all()
+
+    def count_by_session(self, session_id: str) -> dict:
+        """
+        Get counts for all filter categories for a session.
+
+        Args:
+            session_id: Session ID
+
+        Returns:
+            Dict with counts: {all, completed, in_progress, shared}
+        """
+        from sqlalchemy import func
+        from models.case import CaseStatus
+
+        base_filter = (
+            (Case.session_id == session_id)
+            & Case.user_id.is_(None)
+            & (Case.is_deleted == False)  # noqa: E712
+        )
+
+        result = self.db.query(
+            func.count(Case.id).label("all"),
+            func.sum(
+                func.cast(
+                    Case.status.in_(
+                        [CaseStatus.COMPLETED.value, CaseStatus.POLICY_VIOLATION.value]
+                    )
+                    | Case.status.is_(None),
+                    Integer,
+                )
+            ).label("completed"),
+            func.sum(
+                func.cast(
+                    Case.status.in_(
+                        [CaseStatus.PENDING.value, CaseStatus.PROCESSING.value]
+                    ),
+                    Integer,
+                )
+            ).label("in_progress"),
+            func.sum(
+                func.cast(Case.status == CaseStatus.FAILED.value, Integer)
+            ).label("failed"),
+            func.sum(func.cast(Case.is_public == True, Integer)).label(  # noqa: E712
+                "shared"
+            ),
+        ).filter(base_filter).first()
+
+        return {
+            "all": result.all or 0,
+            "completed": result.completed or 0,
+            "in_progress": result.in_progress or 0,
+            "failed": result.failed or 0,
+            "shared": result.shared or 0,
+        }
 
     def get_by_sensitivity(
         self, sensitivity: str, skip: int = 0, limit: int = 100
