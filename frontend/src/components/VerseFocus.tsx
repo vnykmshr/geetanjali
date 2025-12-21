@@ -363,32 +363,6 @@ export function VerseFocus({
             </span>
           </div>
 
-          {/* Favorite button - centered below verse ref, subtle */}
-          <div className="flex justify-center mb-4">
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleFavorite(verse.canonical_id);
-              }}
-              className={`p-3 sm:p-1.5 rounded-full transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 ${
-                isFavorite(verse.canonical_id)
-                  ? "text-red-500 dark:text-red-400"
-                  : "text-gray-400/50 dark:text-gray-500/50 hover:text-red-400 dark:hover:text-red-400 hover:scale-110"
-              }`}
-              aria-label={
-                isFavorite(verse.canonical_id)
-                  ? "Remove from favorites"
-                  : "Add to favorites"
-              }
-            >
-              <HeartIcon
-                className="w-5 h-5 sm:w-4 sm:h-4"
-                filled={isFavorite(verse.canonical_id)}
-              />
-            </button>
-          </div>
-
           {/* Hints (only show when translation is hidden) */}
           {!showTranslation && (
             <div className="space-y-2">
@@ -402,6 +376,28 @@ export function VerseFocus({
             </div>
           )}
         </button>
+
+        {/* Favorite button - outside the translation toggle button to avoid nesting */}
+        <div className="flex justify-center mt-4 mb-2">
+          <button
+            onClick={() => toggleFavorite(verse.canonical_id)}
+            className={`p-3 sm:p-1.5 rounded-full transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 ${
+              isFavorite(verse.canonical_id)
+                ? "text-red-500 dark:text-red-400"
+                : "text-gray-400/50 dark:text-gray-500/50 hover:text-red-400 dark:hover:text-red-400 hover:scale-110"
+            }`}
+            aria-label={
+              isFavorite(verse.canonical_id)
+                ? "Remove from favorites"
+                : "Add to favorites"
+            }
+          >
+            <HeartIcon
+              className="w-5 h-5 sm:w-4 sm:h-4"
+              filled={isFavorite(verse.canonical_id)}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Translation panel - expands downward only */}
