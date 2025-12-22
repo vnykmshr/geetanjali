@@ -8,7 +8,7 @@
  * - Get all favorite IDs
  */
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 
 const STORAGE_KEY = "geetanjali_favorites";
 const MAX_FAVORITES = 100; // Reasonable limit to prevent localStorage bloat
@@ -73,6 +73,15 @@ export function useFavorites(): UseFavoritesReturn {
     loadFavorites(),
   );
 
+  // Ref to access current favorites without causing callback recreation
+  // This enables stable callback references for React.memo optimization
+  const favoritesRef = useRef(favorites);
+
+  // Keep ref in sync with state. We write to ref during render (not read),
+  // which is safe and allows callbacks to always access current value.
+  // eslint-disable-next-line react-hooks/refs
+  favoritesRef.current = favorites;
+
   // Sync with localStorage on changes from other tabs
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
@@ -87,48 +96,45 @@ export function useFavorites(): UseFavoritesReturn {
 
   /**
    * Check if a verse is favorited
+   * Stable reference - reads from ref to avoid recreation on favorites change
    */
-  const isFavorite = useCallback(
-    (verseId: string): boolean => {
-      return favorites.has(verseId);
-    },
-    [favorites],
-  );
+  const isFavorite = useCallback((verseId: string): boolean => {
+    return favoritesRef.current.has(verseId);
+  }, []);
 
   /**
    * Add a verse to favorites
    * Returns false if already at max limit
+   * Stable reference - reads from ref to avoid recreation on favorites change
    */
-  const addFavorite = useCallback(
-    (verseId: string): boolean => {
-      if (favorites.has(verseId)) {
-        return true; // Already favorited
-      }
+  const addFavorite = useCallback((verseId: string): boolean => {
+    if (favoritesRef.current.has(verseId)) {
+      return true; // Already favorited
+    }
 
-      if (favorites.size >= MAX_FAVORITES) {
-        console.warn("[Favorites] Maximum favorites limit reached");
-        return false;
-      }
+    if (favoritesRef.current.size >= MAX_FAVORITES) {
+      console.warn("[Favorites] Maximum favorites limit reached");
+      return false;
+    }
 
-      setFavorites((prev) => {
-        const newFavorites = new Set(prev);
-        newFavorites.add(verseId);
-        saveFavorites(newFavorites);
-        return newFavorites;
-      });
+    setFavorites((prev) => {
+      const newFavorites = new Set(prev);
+      newFavorites.add(verseId);
+      saveFavorites(newFavorites);
+      return newFavorites;
+    });
 
-      // Track favorite event
-      if (window.umami) {
-        window.umami.track("favorite_add", { verse_id: verseId });
-      }
+    // Track favorite event
+    if (window.umami) {
+      window.umami.track("favorite_add", { verse_id: verseId });
+    }
 
-      return true;
-    },
-    [favorites],
-  );
+    return true;
+  }, []);
 
   /**
    * Remove a verse from favorites
+   * Already stable - no dependencies
    */
   const removeFavorite = useCallback((verseId: string): void => {
     setFavorites((prev) => {
@@ -147,17 +153,18 @@ export function useFavorites(): UseFavoritesReturn {
   /**
    * Toggle favorite status
    * Returns true if verse is now favorited, false if removed
+   * Stable reference - reads from ref to avoid recreation on favorites change
    */
   const toggleFavorite = useCallback(
     (verseId: string): boolean => {
-      if (favorites.has(verseId)) {
+      if (favoritesRef.current.has(verseId)) {
         removeFavorite(verseId);
         return false;
       } else {
         return addFavorite(verseId);
       }
     },
-    [favorites, addFavorite, removeFavorite],
+    [addFavorite, removeFavorite],
   );
 
   /**

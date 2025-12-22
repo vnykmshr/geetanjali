@@ -83,7 +83,21 @@ let lastSyncTimestamp = 0;
  */
 export function useSyncedFavorites(): UseSyncedFavoritesReturn {
   const { isAuthenticated, user } = useAuth();
-  const localFavorites = useFavorites();
+
+  // Destructure to get stable callback references
+  // favorites Set changes, but callbacks are now stable (use ref pattern in useFavorites)
+  const {
+    favorites,
+    isFavorite: localIsFavorite,
+    addFavorite: localAddFavorite,
+    removeFavorite: localRemoveFavorite,
+    setAllFavorites,
+    favoritesCount,
+  } = useFavorites();
+
+  // Ref to access current favorites without causing callback recreation
+  const favoritesRef = useRef(favorites);
+  favoritesRef.current = favorites; // Safe: writing (not reading) during render
 
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
@@ -98,6 +112,7 @@ export function useSyncedFavorites(): UseSyncedFavoritesReturn {
 
   /**
    * Merge local favorites with server (used on login)
+   * Stable reference - reads from ref to avoid recreation on favorites change
    */
   const mergeWithServer = useCallback(async () => {
     // Throttle to prevent 429 on rapid remounts (e.g., React StrictMode)
@@ -112,8 +127,8 @@ export function useSyncedFavorites(): UseSyncedFavoritesReturn {
     setSyncStatus("syncing");
 
     try {
-      // Get current local favorites
-      const localItems = Array.from(localFavorites.favorites);
+      // Get current local favorites from ref
+      const localItems = Array.from(favoritesRef.current);
 
       // Merge with server
       const merged = await preferencesApi.merge({
@@ -121,7 +136,7 @@ export function useSyncedFavorites(): UseSyncedFavoritesReturn {
       });
 
       // Update local storage with merged result (atomic update to avoid race conditions)
-      localFavorites.setAllFavorites(merged.favorites.items);
+      setAllFavorites(merged.favorites.items);
 
       setSyncStatus("synced");
       setLastSynced(new Date());
@@ -136,12 +151,13 @@ export function useSyncedFavorites(): UseSyncedFavoritesReturn {
     } finally {
       isSyncingRef.current = false;
     }
-  }, [localFavorites]);
+  }, [setAllFavorites]);
 
   /**
    * Sync current favorites to server (debounced)
+   * Stable reference - reads from ref to avoid recreation on favorites change
    *
-   * Reads latest favorites from localStorage when sync fires to avoid
+   * Reads latest favorites from ref when sync fires to avoid
    * race conditions with rapid add/remove operations.
    */
   const syncToServer = useCallback(() => {
@@ -168,8 +184,8 @@ export function useSyncedFavorites(): UseSyncedFavoritesReturn {
       setSyncStatus("syncing");
 
       try {
-        // Read current favorites from localStorage at sync time (not call time)
-        const currentItems = Array.from(localFavorites.favorites);
+        // Read current favorites from ref at sync time (not call time)
+        const currentItems = Array.from(favoritesRef.current);
         await preferencesApi.update({
           favorites: { items: currentItems },
         });
@@ -182,7 +198,7 @@ export function useSyncedFavorites(): UseSyncedFavoritesReturn {
         isSyncingRef.current = false;
       }
     }, SYNC_DEBOUNCE_MS);
-  }, [isAuthenticated, localFavorites.favorites]);
+  }, [isAuthenticated]);
 
   /**
    * Handle login: merge local favorites with server
@@ -218,49 +234,52 @@ export function useSyncedFavorites(): UseSyncedFavoritesReturn {
 
   /**
    * Add a favorite (syncs to server if authenticated)
+   * Stable reference - uses stable callbacks from useFavorites
    */
   const addFavorite = useCallback(
     (verseId: string): boolean => {
-      const success = localFavorites.addFavorite(verseId);
+      const success = localAddFavorite(verseId);
 
       if (success && isAuthenticated) {
-        // Trigger debounced sync (reads latest from localStorage)
+        // Trigger debounced sync (reads latest from ref)
         syncToServer();
       }
 
       return success;
     },
-    [localFavorites, isAuthenticated, syncToServer],
+    [localAddFavorite, isAuthenticated, syncToServer],
   );
 
   /**
    * Remove a favorite (syncs to server if authenticated)
+   * Stable reference - uses stable callbacks from useFavorites
    */
   const removeFavorite = useCallback(
     (verseId: string): void => {
-      localFavorites.removeFavorite(verseId);
+      localRemoveFavorite(verseId);
 
       if (isAuthenticated) {
-        // Trigger debounced sync (reads latest from localStorage)
+        // Trigger debounced sync (reads latest from ref)
         syncToServer();
       }
     },
-    [localFavorites, isAuthenticated, syncToServer],
+    [localRemoveFavorite, isAuthenticated, syncToServer],
   );
 
   /**
    * Toggle favorite status
+   * Stable reference - uses stable callbacks from useFavorites
    */
   const toggleFavorite = useCallback(
     (verseId: string): boolean => {
-      if (localFavorites.isFavorite(verseId)) {
+      if (localIsFavorite(verseId)) {
         removeFavorite(verseId);
         return false;
       } else {
         return addFavorite(verseId);
       }
     },
-    [localFavorites, addFavorite, removeFavorite],
+    [localIsFavorite, addFavorite, removeFavorite],
   );
 
   /**
@@ -282,26 +301,27 @@ export function useSyncedFavorites(): UseSyncedFavoritesReturn {
   }, []);
 
   // Memoize return value to prevent unnecessary re-renders
+  // Note: favorites Set still changes, but all callbacks are now stable
   return useMemo(
     () => ({
-      favorites: localFavorites.favorites,
-      isFavorite: localFavorites.isFavorite,
+      favorites,
+      isFavorite: localIsFavorite,
       toggleFavorite,
       addFavorite,
       removeFavorite,
-      favoritesCount: localFavorites.favoritesCount,
+      favoritesCount,
       syncStatus,
       lastSynced,
       resync,
       didInitialSync,
     }),
     [
-      localFavorites.favorites,
-      localFavorites.isFavorite,
-      localFavorites.favoritesCount,
+      favorites,
+      localIsFavorite,
       toggleFavorite,
       addFavorite,
       removeFavorite,
+      favoritesCount,
       syncStatus,
       lastSynced,
       resync,
