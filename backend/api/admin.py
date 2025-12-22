@@ -568,7 +568,7 @@ def run_enrich_task(limit: int = 0, force: bool = False):
 
     def enrich_with_retry(verse_dict: dict, verse_id: str) -> dict:
         """Enrich a verse with exponential backoff on rate limit errors."""
-        last_error = None
+        last_error: Optional[Exception] = None
         for attempt in range(MAX_RETRIES + 1):
             try:
                 return enricher.enrich_verse(
@@ -592,7 +592,8 @@ def run_enrich_task(limit: int = 0, force: bool = False):
                         continue
                 # Non-rate-limit error or exhausted retries
                 raise last_error
-        raise last_error
+        # Should never reach here, but satisfy type checker
+        raise RuntimeError("Enrichment failed after retries") from last_error
 
     try:
         logger.info("=" * 80)
