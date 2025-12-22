@@ -40,6 +40,12 @@ from utils.metrics import (
     ollama_models_loaded,
     chromadb_up,
     chromadb_collection_count,
+    newsletter_subscribers_total,
+    newsletter_subscribers_by_time,
+    newsletter_emails_sent_24h,
+    shared_cases_total,
+    case_views_24h,
+    feedback_positive_rate,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,6 +55,7 @@ def collect_metrics() -> None:
     """Collect all application metrics and update Prometheus gauges."""
     try:
         _collect_business_metrics()
+        _collect_engagement_metrics()
         _collect_postgres_metrics()
         _collect_redis_metrics()
         _collect_ollama_metrics()
@@ -155,6 +162,94 @@ def _collect_business_metrics() -> None:
         )
     except Exception as e:
         logger.error(f"Failed to collect business metrics: {e}")
+    finally:
+        db.close()
+
+
+def _collect_engagement_metrics() -> None:
+    """Collect newsletter and engagement metrics from the database."""
+    db = SessionLocal()
+    try:
+        # Import models here to avoid circular imports
+        from models.subscriber import Subscriber
+        from models.feedback import Feedback
+
+        yesterday = datetime.utcnow() - timedelta(hours=24)
+
+        # Newsletter subscribers total (verified only)
+        subscribers_count = (
+            db.query(func.count(Subscriber.id))
+            .filter(Subscriber.verified.is_(True))
+            .filter(Subscriber.unsubscribed_at.is_(None))
+            .scalar()
+            or 0
+        )
+        newsletter_subscribers_total.set(subscribers_count)
+
+        # Subscribers by send time
+        for send_time in ["morning", "afternoon", "evening"]:
+            count = (
+                db.query(func.count(Subscriber.id))
+                .filter(Subscriber.verified.is_(True))
+                .filter(Subscriber.unsubscribed_at.is_(None))
+                .filter(Subscriber.send_time == send_time)
+                .scalar()
+                or 0
+            )
+            newsletter_subscribers_by_time.labels(send_time=send_time).set(count)
+
+        # Emails sent in last 24h (count subscribers with recent last_sent_at)
+        emails_24h = (
+            db.query(func.count(Subscriber.id))
+            .filter(Subscriber.last_sent_at >= yesterday)
+            .scalar()
+            or 0
+        )
+        newsletter_emails_sent_24h.set(emails_24h)
+
+        # Shared cases by mode
+        for mode in ["public", "unlisted"]:
+            count = (
+                db.query(func.count(Case.id))
+                .filter(Case.share_mode == mode)
+                .filter(Case.is_deleted.is_(False))
+                .scalar()
+                or 0
+            )
+            shared_cases_total.labels(mode=mode).set(count)
+
+        # Case views in last 24h (sum of view_count for recently viewed cases)
+        # Since we don't track view timestamps, we use total view_count for shared cases
+        total_views = (
+            db.query(func.sum(Case.view_count))
+            .filter(Case.share_mode.in_(["public", "unlisted"]))
+            .filter(Case.is_deleted.is_(False))
+            .scalar()
+            or 0
+        )
+        case_views_24h.set(total_views)
+
+        # Feedback positive rate
+        total_feedback = db.query(func.count(Feedback.id)).scalar() or 0
+        positive_feedback = (
+            db.query(func.count(Feedback.id))
+            .filter(Feedback.is_positive.is_(True))
+            .scalar()
+            or 0
+        )
+        if total_feedback > 0:
+            positive_rate = positive_feedback / total_feedback
+            feedback_positive_rate.set(round(positive_rate, 3))
+        else:
+            feedback_positive_rate.set(0)
+
+        logger.debug(
+            f"Engagement metrics: subscribers={subscribers_count}, "
+            f"emails_24h={emails_24h}, views={total_views}, "
+            f"feedback_positive_rate={positive_rate if total_feedback > 0 else 0}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to collect engagement metrics: {e}")
     finally:
         db.close()
 

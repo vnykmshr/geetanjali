@@ -129,3 +129,36 @@ chromadb_collection_count = Gauge(
     "geetanjali_chromadb_collection_count",
     "Number of vectors in ChromaDB collection",
 )
+
+# Newsletter & Engagement Metrics
+newsletter_subscribers_total = Gauge(
+    "geetanjali_newsletter_subscribers_total",
+    "Total active newsletter subscribers",
+)
+
+newsletter_subscribers_by_time = Gauge(
+    "geetanjali_newsletter_subscribers_by_time",
+    "Newsletter subscribers by preferred send time",
+    ["send_time"],
+)
+
+newsletter_emails_sent_24h = Gauge(
+    "geetanjali_newsletter_emails_sent_24h",
+    "Newsletter emails sent in the last 24 hours",
+)
+
+shared_cases_total = Gauge(
+    "geetanjali_shared_cases_total",
+    "Total shared cases by visibility mode",
+    ["mode"],
+)
+
+case_views_24h = Gauge(
+    "geetanjali_case_views_24h",
+    "Views on shared cases in the last 24 hours",
+)
+
+feedback_positive_rate = Gauge(
+    "geetanjali_feedback_positive_rate",
+    "Percentage of positive feedback (0-1)",
+)
