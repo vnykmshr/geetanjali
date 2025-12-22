@@ -102,7 +102,14 @@ def enqueue_task(
         delays = retry_delays or _parse_retry_delays()
         retry = Retry(max=len(delays), interval=delays) if delays else None
 
-        job = queue.enqueue(func, *args, retry=retry, **kwargs)
+        job = queue.enqueue(
+            func,
+            *args,
+            retry=retry,
+            result_ttl=settings.RQ_RESULT_TTL,
+            failure_ttl=settings.RQ_FAILURE_TTL,
+            **kwargs,
+        )
         logger.info(f"Enqueued task {func.__name__} with job ID: {job.id}")
         return str(job.id) if job.id else None
 

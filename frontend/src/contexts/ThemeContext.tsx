@@ -15,6 +15,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useMemo,
   type ReactNode,
 } from "react";
 
@@ -128,10 +129,14 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     applyTheme(resolvedTheme);
   }, [resolvedTheme]);
 
+  // Memoize context value to prevent unnecessary re-renders of consumers
+  const value = useMemo(
+    () => ({ theme, resolvedTheme, setTheme, cycleTheme }),
+    [theme, resolvedTheme, setTheme, cycleTheme],
+  );
+
   return (
-    <ThemeContext.Provider
-      value={{ theme, resolvedTheme, setTheme, cycleTheme }}
-    >
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

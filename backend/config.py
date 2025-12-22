@@ -161,6 +161,8 @@ class Settings(BaseSettings):
     RQ_QUEUE_NAME: str = "geetanjali"
     RQ_JOB_TIMEOUT: int = 300  # 5 minutes max per job
     RQ_RETRY_DELAYS: str = "30,120"  # Retry after 30s, then 2min (comma-separated)
+    RQ_RESULT_TTL: int = 86400  # 24 hours - cleanup successful job results
+    RQ_FAILURE_TTL: int = 86400  # 24 hours - cleanup failed job results
     STALE_PROCESSING_TIMEOUT: int = (
         300  # 5 minutes - auto-fail cases stuck in PROCESSING
     )

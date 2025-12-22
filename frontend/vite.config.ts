@@ -1,11 +1,26 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import compression from 'vite-plugin-compression'
 import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Generate pre-compressed .gz files (served by nginx's gzip_static)
+    compression({
+      algorithm: 'gzip',
+      ext: '.gz',
+      threshold: 1024, // Only compress files > 1KB
+    }),
+    // Generate pre-compressed .br files for Brotli (best compression)
+    compression({
+      algorithm: 'brotliCompress',
+      ext: '.br',
+      threshold: 1024,
+    }),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -22,6 +37,8 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom'],
           // Router (changes infrequently)
           'router': ['react-router-dom'],
+          // Virtualization library (used on Verses page)
+          'virtuoso': ['react-virtuoso'],
         },
       },
     },
