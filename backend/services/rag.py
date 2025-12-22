@@ -80,7 +80,13 @@ def _validate_source_reference(
     """
     if not isinstance(source_id, str):
         return False
-    source_canonical_ids = [s.get("canonical_id") for s in available_sources if s]
+    # Handle both dict sources ({"canonical_id": "BG_2_47"}) and string sources ("BG_2_47")
+    source_canonical_ids = []
+    for s in available_sources:
+        if isinstance(s, dict):
+            source_canonical_ids.append(s.get("canonical_id"))
+        elif isinstance(s, str):
+            source_canonical_ids.append(s)
     return source_id in source_canonical_ids
 
 
@@ -458,7 +464,13 @@ def _filter_source_references(output: Dict[str, Any]) -> None:
     Modifies output in place.
     """
     sources_array = output.get("sources", [])
-    valid_canonical_ids = {s.get("canonical_id") for s in sources_array if s}
+    # Handle both dict sources ({"canonical_id": "BG_2_47"}) and legacy string sources ("BG_2_47")
+    valid_canonical_ids = set()
+    for s in sources_array:
+        if isinstance(s, dict):
+            valid_canonical_ids.add(s.get("canonical_id"))
+        elif isinstance(s, str):
+            valid_canonical_ids.add(s)
 
     # Filter option sources
     for option_idx, option in enumerate(output.get("options", [])):

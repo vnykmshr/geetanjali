@@ -526,3 +526,78 @@ class TestValidationIntegration:
         assert len(result["options"]) == 1
         assert result["options"][0]["title"] == "Option"
         assert isinstance(result["options"][0]["pros"], list)
+
+    def test_filter_source_references_with_string_sources(self):
+        """Test that _filter_source_references handles string sources (legacy format)."""
+        from services.rag import _filter_source_references
+
+        # Simulate LLM returning string sources instead of dict sources
+        output = {
+            "executive_summary": "Test",
+            "options": [
+                {
+                    "title": "Option 1",
+                    "description": "Test",
+                    "pros": ["Pro"],
+                    "cons": ["Con"],
+                    "sources": ["BG_2_47", "BG_3_35"],  # Valid refs
+                },
+                {
+                    "title": "Option 2",
+                    "description": "Test",
+                    "pros": ["Pro"],
+                    "cons": ["Con"],
+                    "sources": ["INVALID", "BG_2_47"],  # One invalid
+                },
+            ],
+            "recommended_action": {
+                "option": 1,
+                "steps": ["Step 1"],
+                "sources": ["BG_2_47"],
+            },
+            # Legacy string sources format (not dict format)
+            "sources": ["BG_2_47", "BG_3_35", "BG_18_66"],
+        }
+
+        # Should not raise "'str' object has no attribute 'get'"
+        _filter_source_references(output)
+
+        # Option 1 sources should remain (both valid)
+        assert output["options"][0]["sources"] == ["BG_2_47", "BG_3_35"]
+        # Option 2 should have invalid source removed
+        assert output["options"][1]["sources"] == ["BG_2_47"]
+        # recommended_action sources should remain valid
+        assert output["recommended_action"]["sources"] == ["BG_2_47"]
+
+    def test_filter_source_references_with_mixed_sources(self):
+        """Test that _filter_source_references handles mix of dict and string sources."""
+        from services.rag import _filter_source_references
+
+        output = {
+            "executive_summary": "Test",
+            "options": [
+                {
+                    "title": "Option 1",
+                    "description": "Test",
+                    "pros": ["Pro"],
+                    "cons": ["Con"],
+                    "sources": ["BG_2_47"],
+                },
+            ],
+            "recommended_action": {
+                "option": 1,
+                "steps": ["Step 1"],
+                "sources": ["BG_2_47"],
+            },
+            # Dict format sources (normal case)
+            "sources": [
+                {"canonical_id": "BG_2_47", "paraphrase": "Test", "relevance": 0.8},
+                {"canonical_id": "BG_3_35", "paraphrase": "Test", "relevance": 0.7},
+            ],
+        }
+
+        # Should not raise any errors
+        _filter_source_references(output)
+
+        # Option sources should remain valid
+        assert output["options"][0]["sources"] == ["BG_2_47"]
