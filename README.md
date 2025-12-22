@@ -7,6 +7,8 @@
 
 Ethical leadership guidance from the Bhagavad Geeta.
 
+Free. Open source. Private by default.
+
 **[Live Demo](https://geetanjaliapp.com)**
 
 ![Geetanjali Architecture](docs/screenshots/infographic-architecture.png)
@@ -26,14 +28,24 @@ The system uses retrieval-augmented generation (RAG) to ground responses in actu
 
 ## Features
 
-- **Case Analysis** - Submit ethical dilemmas, get structured recommendations
-- **Follow-up Conversations** - Ask clarifying questions after initial consultation
+**Consultation**
+- **Case Analysis** - Submit ethical dilemmas, get structured recommendations with verse citations
+- **Follow-up Conversations** - Ask clarifying questions after initial guidance
+- **Featured Cases** - Browse curated example consultations
+- **Sharing** - Share cases publicly or via private link
+
+**Discovery**
 - **Verse Browser** - Explore 701 verses across 18 chapters with translations
-- **Reading Mode** - Distraction-free sequential reading with Sanskrit-first display
-- **Search** - Multi-strategy search by verse reference, Sanskrit, keywords, or meaning
+- **Reading Mode** - Distraction-free sequential reading, Sanskrit-first
+- **Search** - Find verses by reference, Sanskrit, keywords, or meaning
+- **Favorites** - Save verses for quick access
+
+**Platform**
+- **Dark Mode** - Full light/dark theme support
+- **Cross-device Sync** - Reading progress, favorites, and preferences sync for logged-in users
+- **Daily Wisdom** - Subscribe to daily verse emails
+- **Offline Support** - Works without network after first load
 - **Confidence Scoring** - Low-confidence responses flagged for review
-- **User Feedback** - Rate outputs to improve recommendations
-- **Session Tracking** - Anonymous users can save and revisit cases
 
 ## Tech Stack
 

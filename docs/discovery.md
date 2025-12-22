@@ -112,6 +112,26 @@ Single verse deep-dive with full context.
 - Keyboard navigation (← → arrows)
 - Adjacent verse prefetching
 
+## Favorites
+
+Users can save verses for quick access later.
+
+**How it works:**
+- Heart icon on verse cards and detail pages
+- Tap to toggle favorite status
+- Favorites appear in the Verses page filter bar
+- Logged-in users: favorites sync across devices
+- Anonymous users: favorites stored locally
+
+**Accessing Favorites:**
+- Verse Browser → tap "Favorites" filter segment
+- Shows only saved verses with quick remove option
+
+**Sync Behavior:**
+- On login, local favorites merge with server-side favorites
+- Toast notification confirms sync completion
+- Conflicts resolved by keeping both (union merge)
+
 ## Reading Mode
 
 Sequential reading for scripture study.
@@ -164,14 +184,17 @@ localStorage
 │   └── timestamp: ISO8601
 ├── geetanjali:readingSettings
 │   └── fontSize: "small" | "medium" | "large"
-└── geetanjali:readingOnboardingSeen
-    └── boolean (first-time tips)
+├── geetanjali:readingOnboardingSeen
+│   └── boolean (first-time tips)
+└── geetanjali:favorites
+    └── string[] (canonical IDs like "BG_2_47")
 ```
 
 - Position saved automatically on verse change
 - URL syncs with position (`?c=2&v=47`)
 - Deep links take priority over saved position
 - First-time onboarding overlay with navigation tips
+- Favorites sync to server on login (if authenticated)
 
 ## User Flow Summary
 
@@ -204,6 +227,8 @@ GET /api/v1/verses/{id}/translations  # All translations for verse
 GET /api/v1/verses/daily              # Daily featured verse
 GET /api/v1/reading/book              # Book metadata (title, tagline, intro)
 GET /api/v1/reading/chapters/{n}      # Chapter metadata (summary, themes)
+GET /api/v1/preferences               # Get user preferences (includes favorites)
+PUT /api/v1/preferences               # Update preferences (sync favorites, reading position)
 ```
 
 **Performance:**

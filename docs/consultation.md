@@ -257,6 +257,54 @@ sequenceDiagram
 - Enter to submit, Shift+Enter for newline
 - Each response can have expandable verse sources and feedback
 
+## Featured Cases
+
+The homepage displays curated example consultations to help new users understand what Geetanjali offers.
+
+**How it works:**
+- A background job periodically selects high-quality completed cases
+- Selection criteria: completed status, high confidence, positive feedback
+- Cases are displayed anonymously (no user attribution)
+- Click to view the full consultation and guidance
+
+**Display:**
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Featured Consultations                                      │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│   ┌─────────────────────┐   ┌─────────────────────┐          │
+│   │ A manager asked...  │   │ A professional...   │          │
+│   │                     │   │                     │          │
+│   │ [Read more →]       │   │ [Read more →]       │          │
+│   └─────────────────────┘   └─────────────────────┘          │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+## Sharing
+
+Users can share their consultations with others.
+
+**Share Modes:**
+
+| Mode | Visibility | Use Case |
+|------|------------|----------|
+| Private | Only the creator | Default state |
+| Unlisted | Anyone with the link | Share with specific people |
+| Public | Discoverable, can appear in featured | Contribute to community |
+
+**Sharing Flow:**
+1. Open a completed consultation
+2. Click the share button in the header
+3. Select share mode (unlisted or public)
+4. Copy the generated link
+
+**View Tracking:**
+- Public and unlisted cases track view counts
+- Views are deduplicated per session
+- View count displayed on shared case page
+
 ## User Flow Summary
 
 ```mermaid
@@ -293,9 +341,11 @@ GET  /api/v1/cases/{id}/outputs       # Get analysis outputs
 POST /api/v1/cases/{id}/follow-up     # Submit follow-up (HTTP 202)
 GET  /api/v1/cases/{id}/messages      # Get conversation history
 POST /api/v1/outputs/{id}/feedback    # Submit feedback
-POST /api/v1/cases/{id}/share         # Toggle public sharing
+POST /api/v1/cases/{id}/share         # Set share mode (unlisted/public)
 POST /api/v1/cases/{id}/retry         # Retry failed analysis
 DELETE /api/v1/cases/{id}             # Soft delete case
+GET  /api/v1/cases/featured           # Get curated example cases
+GET  /api/v1/cases/public/{id}        # View shared case (no auth required)
 ```
 
 **Processing:**

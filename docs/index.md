@@ -10,7 +10,34 @@ Ethical leadership guidance from the Bhagavad Geeta.
 
 Geetanjali helps you think through tough decisions by connecting your dilemmas to wisdom from 701 verses of the Bhagavad Geeta. It also lets you explore the scripture at your own pace — browse, search, or read cover to cover.
 
+Free. Open source. Private by default.
+
 **[Try it live →](https://geetanjaliapp.com)**
+
+---
+
+## What You Can Do
+
+**Get Guidance**
+- Submit an ethical dilemma, receive structured options with verse citations
+- Ask follow-up questions to refine the guidance
+- See example consultations from featured cases
+
+**Explore Scripture**
+- Browse 701 verses with Sanskrit, transliteration, and translations
+- Read sequentially in distraction-free Reading Mode
+- Search by verse reference, Sanskrit text, keywords, or meaning
+- Save favorites for quick access
+
+**Stay Connected**
+- Subscribe to Daily Wisdom emails
+- Sync reading progress and preferences across devices
+- Share consultations publicly or via private link
+
+**Make It Yours**
+- Dark mode throughout
+- Adjustable font sizes in Reading Mode
+- Works offline after first load
 
 ---
 
