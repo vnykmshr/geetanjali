@@ -7,6 +7,16 @@ from fastapi import status
 pytestmark = pytest.mark.integration
 
 
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    """Reset rate limiter storage before each test."""
+    from api.dependencies import limiter
+
+    # Clear the in-memory storage to reset rate limits
+    if hasattr(limiter, "_storage") and limiter._storage:
+        limiter._storage.reset()
+
+
 def test_signup_success(client):
     """Test successful user signup."""
     signup_data = {
@@ -337,6 +347,8 @@ def test_resend_verification_requires_auth(client):
 
 def test_resend_verification_success(client):
     """Test resend verification for authenticated user."""
+    from unittest.mock import patch
+
     # Signup and get token
     signup_data = {
         "email": "resend@example.com",
@@ -345,15 +357,21 @@ def test_resend_verification_success(client):
     }
     signup_response = client.post("/api/v1/auth/signup", json=signup_data)
     token = signup_response.json().get("access_token")
+    csrf_token = signup_response.cookies.get("csrf_token")
 
     if not token:
         pytest.skip("Token not returned in signup response")
 
-    # Request resend
-    response = client.post(
-        "/api/v1/auth/resend-verification",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    # Request resend with CSRF token and mocked email
+    headers = {"Authorization": f"Bearer {token}"}
+    if csrf_token:
+        headers["X-CSRF-Token"] = csrf_token
+
+    with patch("api.auth.send_account_verification_email", return_value=True):
+        response = client.post(
+            "/api/v1/auth/resend-verification",
+            headers=headers,
+        )
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -372,6 +390,7 @@ def test_resend_verification_already_verified(client, db_session):
     }
     signup_response = client.post("/api/v1/auth/signup", json=signup_data)
     token = signup_response.json().get("access_token")
+    csrf_token = signup_response.cookies.get("csrf_token")
 
     if not token:
         pytest.skip("Token not returned in signup response")
@@ -382,10 +401,14 @@ def test_resend_verification_already_verified(client, db_session):
         user.email_verified = True
         db_session.commit()
 
-    # Try resend
+    # Try resend with CSRF token
+    headers = {"Authorization": f"Bearer {token}"}
+    if csrf_token:
+        headers["X-CSRF-Token"] = csrf_token
+
     response = client.post(
         "/api/v1/auth/resend-verification",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=headers,
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
