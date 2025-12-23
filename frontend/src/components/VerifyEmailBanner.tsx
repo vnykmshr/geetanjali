@@ -78,14 +78,14 @@ export function VerifyEmailBanner() {
             Please verify your email.
           </span>
 
-          {/* Resend link */}
+          {/* Resend link - expanded tap area for mobile */}
           <button
             onClick={handleResend}
             disabled={isResending}
             className="font-medium text-orange-600 dark:text-orange-400
                        hover:text-orange-700 dark:hover:text-orange-300
                        disabled:opacity-50 disabled:cursor-not-allowed
-                       inline-flex items-center gap-1
+                       inline-flex items-center gap-1 py-1 -my-1
                        focus:outline-none focus:underline"
           >
             {isResending ? (
@@ -113,13 +113,13 @@ export function VerifyEmailBanner() {
             </span>
           )}
 
-          {/* Dismiss button */}
+          {/* Dismiss button - min 44px touch target */}
           <button
             onClick={handleDismiss}
-            className="p-0.5 text-gray-400 dark:text-gray-500
+            className="p-2 -m-1.5 text-gray-400 dark:text-gray-500
                        hover:text-gray-600 dark:hover:text-gray-300
                        rounded transition-colors
-                       focus:outline-none focus:ring-1 focus:ring-gray-400"
+                       focus:outline-none focus:ring-1 focus:ring-gray-400 focus:ring-offset-1 dark:focus:ring-offset-gray-900"
             aria-label="Dismiss"
           >
             <CloseIcon className="w-3.5 h-3.5" />
