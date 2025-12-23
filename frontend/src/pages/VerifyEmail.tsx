@@ -79,7 +79,7 @@ export default function VerifyEmail() {
         )}
 
         {state === "loading" && (
-          <>
+          <div role="status" aria-live="polite" aria-label="Verifying email">
             <SpinnerIcon className="w-16 h-16 text-orange-500 animate-spin mx-auto mb-4" />
             <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
               Verifying your email...
@@ -87,7 +87,7 @@ export default function VerifyEmail() {
             <p className="text-gray-600 dark:text-gray-400">
               Please wait while we confirm your email address.
             </p>
-          </>
+          </div>
         )}
 
         {state === "success" && (

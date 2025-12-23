@@ -153,6 +153,9 @@ async def signup(
                     "name": signup_data.name,
                     "password_hash": password_hash,
                     "email_verified": False,  # Reset verification
+                    "email_verification_token": None,  # Clear old tokens
+                    "email_verification_expires_at": None,
+                    "email_verified_at": None,
                     "last_login": None,
                 },
             )
@@ -613,8 +616,8 @@ async def verify_email(
     user_repo = UserRepository(db)
     user = user_repo.get_by_email_verification_token(token)
 
-    if not user:
-        logger.warning("Invalid email verification token")
+    if not user or not user.is_active:
+        logger.warning("Invalid email verification token or inactive user")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired verification link.",
