@@ -128,6 +128,16 @@ class MessageResponse(BaseModel):
     message: str = Field(..., description="Response message")
 
 
+class EmailVerificationResponse(BaseModel):
+    """Response schema for email verification endpoint."""
+
+    message: str = Field(..., description="Response message")
+    status: str = Field(
+        ...,
+        description="Verification status: 'verified' or 'already_verified'",
+    )
+
+
 # ============================================================================
 # Case Schemas
 # ============================================================================

@@ -39,7 +39,7 @@ export default function VerifyEmail() {
       // Refresh user data to update email_verified status
       await refreshUser();
 
-      if (response.data.message.includes("already")) {
+      if (response.data.status === "already_verified") {
         setState("already_verified");
       } else {
         setState("success");

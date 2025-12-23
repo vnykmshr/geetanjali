@@ -22,6 +22,7 @@ from api.schemas import (
     ForgotPasswordRequest,
     ResetPasswordRequest,
     MessageResponse,
+    EmailVerificationResponse,
 )
 from api.middleware.auth import get_current_user, get_session_id
 from db.connection import get_db
@@ -580,7 +581,7 @@ async def delete_account(
     )
 
 
-@router.post("/verify-email/{token}", response_model=MessageResponse)
+@router.post("/verify-email/{token}", response_model=EmailVerificationResponse)
 @limiter.limit("10/hour")
 async def verify_email(
     request: Request,
@@ -621,7 +622,10 @@ async def verify_email(
 
     # Check if already verified (idempotent)
     if user.email_verified:
-        return MessageResponse(message="Your email is already verified.")
+        return EmailVerificationResponse(
+            message="Your email is already verified.",
+            status="already_verified",
+        )
 
     # Check token expiry
     if (
@@ -638,7 +642,10 @@ async def verify_email(
     user_repo.verify_user_email(user)
 
     logger.info(f"Email verified for user: {user.id}")
-    return MessageResponse(message="Your email has been verified successfully!")
+    return EmailVerificationResponse(
+        message="Your email has been verified successfully!",
+        status="verified",
+    )
 
 
 @router.post("/resend-verification", response_model=MessageResponse)
