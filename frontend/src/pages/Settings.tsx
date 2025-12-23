@@ -12,7 +12,7 @@ import {
   GoalIconsById,
   SpinnerIcon,
 } from "../components/icons";
-import { useSyncedGoal, useSyncedFavorites, useSyncedReading, useSEO } from "../hooks";
+import { useSyncedGoal, useSyncedFavorites, useSyncedReading, useSEO, useResendVerification } from "../hooks";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme, type Theme } from "../contexts/ThemeContext";
 import { api, newsletterApi, type NewsletterPreferences } from "../lib/api";
@@ -132,12 +132,12 @@ export default function Settings() {
     setStorageItem(STORAGE_KEYS.defaultVersesTab, tab);
   };
 
-  // Email verification resend
-  const [isResendingVerification, setIsResendingVerification] = useState(false);
-  const [verificationMessage, setVerificationMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  // Email verification resend (shared hook with VerifyEmailBanner)
+  const {
+    resend: resendVerification,
+    isResending: isResendingVerification,
+    message: verificationMessage,
+  } = useResendVerification();
 
   // Danger zone
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -284,41 +284,6 @@ export default function Settings() {
     }
   };
 
-  const handleResendVerification = async () => {
-    setIsResendingVerification(true);
-    setVerificationMessage(null);
-
-    try {
-      await api.post("/auth/resend-verification");
-      setVerificationMessage({
-        type: "success",
-        text: "Verification email sent! Check your inbox.",
-      });
-    } catch (err: unknown) {
-      if (err && typeof err === "object" && "response" in err) {
-        const axiosErr = err as { response?: { data?: { detail?: string } } };
-        // If already verified, show success and could trigger a refresh
-        if (axiosErr.response?.data?.detail?.includes("already verified")) {
-          setVerificationMessage({ type: "success", text: "Your email is already verified!" });
-          // Optionally reload to refresh user state
-          window.location.reload();
-          return;
-        }
-        setVerificationMessage({
-          type: "error",
-          text: axiosErr.response?.data?.detail || "Failed to send email. Try again later.",
-        });
-      } else {
-        setVerificationMessage({
-          type: "error",
-          text: "Failed to send email. Try again later.",
-        });
-      }
-    } finally {
-      setIsResendingVerification(false);
-    }
-  };
-
   const handleExportData = () => {
     const data = exportUserData();
 
@@ -420,7 +385,7 @@ export default function Settings() {
                 ) : (
                   <div className="mt-0.5">
                     <button
-                      onClick={handleResendVerification}
+                      onClick={() => resendVerification()}
                       disabled={isResendingVerification}
                       className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-1 disabled:opacity-50"
                     >
@@ -441,6 +406,7 @@ export default function Settings() {
                     {verificationMessage && (
                       <p
                         role="alert"
+                        aria-live={verificationMessage.type === "error" ? "assertive" : "polite"}
                         className={`text-xs mt-1 ${
                           verificationMessage.type === "success"
                             ? "text-green-600 dark:text-green-400"

@@ -8,15 +8,16 @@
  */
 
 import { useState } from "react";
-import { api } from "../lib/api";
 import { MailIcon, SpinnerIcon, CloseIcon } from "./icons";
 import { STORAGE_KEYS } from "../lib/storage";
+import { useResendVerification } from "../hooks";
 
 const DISMISS_EXPIRY_DAYS = 7;
 const DISMISS_EXPIRY_MS = DISMISS_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
 
 /**
- * Check if the banner was dismissed and dismissal hasn't expired
+ * Check if the banner was dismissed and dismissal hasn't expired.
+ * Cleans up expired/invalid values for storage hygiene.
  */
 function isDismissalValid(): boolean {
   try {
@@ -24,9 +25,18 @@ function isDismissalValid(): boolean {
     if (!dismissedAt) return false;
 
     const timestamp = parseInt(dismissedAt, 10);
-    if (isNaN(timestamp)) return false;
+    if (isNaN(timestamp)) {
+      // Invalid value - clean up
+      localStorage.removeItem(STORAGE_KEYS.verifyBannerDismissed);
+      return false;
+    }
 
-    return Date.now() - timestamp < DISMISS_EXPIRY_MS;
+    const isValid = Date.now() - timestamp < DISMISS_EXPIRY_MS;
+    if (!isValid) {
+      // Expired - clean up
+      localStorage.removeItem(STORAGE_KEYS.verifyBannerDismissed);
+    }
+    return isValid;
   } catch {
     return false;
   }
@@ -38,58 +48,24 @@ interface VerifyEmailBannerProps {
 
 export function VerifyEmailBanner({ onVerified }: VerifyEmailBannerProps) {
   const [isDismissed, setIsDismissed] = useState(isDismissalValid);
-  const [isResending, setIsResending] = useState(false);
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  const { resend, isResending, message } = useResendVerification();
 
   const handleDismiss = () => {
     setIsDismissed(true);
     try {
       localStorage.setItem(STORAGE_KEYS.verifyBannerDismissed, Date.now().toString());
     } catch {
-      // Ignore storage errors
+      // Ignore storage errors - dismissal still works for this session
     }
+  };
+
+  const handleResend = () => {
+    resend(onVerified);
   };
 
   if (isDismissed) {
     return null;
   }
-
-  const handleResend = async () => {
-    setIsResending(true);
-    setMessage(null);
-
-    try {
-      await api.post("/auth/resend-verification");
-      setMessage({
-        type: "success",
-        text: "Verification email sent! Check your inbox.",
-      });
-    } catch (err: unknown) {
-      if (err && typeof err === "object" && "response" in err) {
-        const axiosErr = err as { response?: { data?: { detail?: string } } };
-        // If already verified, trigger refresh
-        if (axiosErr.response?.data?.detail?.includes("already verified")) {
-          setMessage({ type: "success", text: "Your email is already verified!" });
-          onVerified?.();
-          return;
-        }
-        setMessage({
-          type: "error",
-          text: axiosErr.response?.data?.detail || "Failed to send email. Try again later.",
-        });
-      } else {
-        setMessage({
-          type: "error",
-          text: "Failed to send email. Try again later.",
-        });
-      }
-    } finally {
-      setIsResending(false);
-    }
-  };
 
   return (
     <div

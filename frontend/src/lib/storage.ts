@@ -124,6 +124,8 @@ export function getClearableKeys(): string[] {
     STORAGE_KEYS.readingOnboardingSeen,
     STORAGE_KEYS.syncToastSession,
     STORAGE_KEYS.verseViewCount,
+    // Email verification
+    STORAGE_KEYS.verifyBannerDismissed,
   ];
 }
 
