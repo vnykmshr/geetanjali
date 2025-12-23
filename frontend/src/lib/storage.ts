@@ -45,6 +45,9 @@ export const STORAGE_KEYS = {
   // Feature-specific
   caseDraft: "geetanjali:caseDraft",
   featuredCasesCache: "geetanjali:featuredCases",
+
+  // Email verification
+  verifyBannerDismissed: "geetanjali:verifyBannerDismissed", // Timestamp of dismissal (7-day expiry)
 } as const;
 
 // Dynamic keys (contain variable parts like slugs/IDs)

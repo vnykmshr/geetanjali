@@ -3,27 +3,41 @@
  *
  * Shows a non-intrusive banner prompting users to verify their email.
  * Includes a button to resend the verification email and can be dismissed.
- * Dismissal is stored in sessionStorage (reappears on new session).
+ * Dismissal is stored in localStorage with 7-day expiry (respects user choice
+ * while gently reminding after a week).
  */
 
 import { useState } from "react";
 import { api } from "../lib/api";
 import { MailIcon, SpinnerIcon, CloseIcon } from "./icons";
+import { STORAGE_KEYS } from "../lib/storage";
 
-const DISMISSED_KEY = "geetanjali:verifyBannerDismissed";
+const DISMISS_EXPIRY_DAYS = 7;
+const DISMISS_EXPIRY_MS = DISMISS_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+
+/**
+ * Check if the banner was dismissed and dismissal hasn't expired
+ */
+function isDismissalValid(): boolean {
+  try {
+    const dismissedAt = localStorage.getItem(STORAGE_KEYS.verifyBannerDismissed);
+    if (!dismissedAt) return false;
+
+    const timestamp = parseInt(dismissedAt, 10);
+    if (isNaN(timestamp)) return false;
+
+    return Date.now() - timestamp < DISMISS_EXPIRY_MS;
+  } catch {
+    return false;
+  }
+}
 
 interface VerifyEmailBannerProps {
   onVerified?: () => void;
 }
 
 export function VerifyEmailBanner({ onVerified }: VerifyEmailBannerProps) {
-  const [isDismissed, setIsDismissed] = useState(() => {
-    try {
-      return sessionStorage.getItem(DISMISSED_KEY) === "true";
-    } catch {
-      return false;
-    }
-  });
+  const [isDismissed, setIsDismissed] = useState(isDismissalValid);
   const [isResending, setIsResending] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -33,7 +47,7 @@ export function VerifyEmailBanner({ onVerified }: VerifyEmailBannerProps) {
   const handleDismiss = () => {
     setIsDismissed(true);
     try {
-      sessionStorage.setItem(DISMISSED_KEY, "true");
+      localStorage.setItem(STORAGE_KEYS.verifyBannerDismissed, Date.now().toString());
     } catch {
       // Ignore storage errors
     }
