@@ -2,6 +2,31 @@
 
 All notable changes to Geetanjali are documented here.
 
+## [1.14.0] - 2025-12-23
+
+Deployment resilience, improved email verification UX, and test coverage.
+
+### Features
+- **Chunk Loading Recovery** - Automatic retry and page reload when users encounter stale chunks after deployment. Prevents "failed to load" errors during navigation.
+- **Email Verification UX** - Dismissible reminder banner (7-day localStorage expiry), resend link in Settings page, shared hook for code reuse.
+- **Enhanced Error Boundary** - Friendly "Update Available" UI for chunk errors with one-click refresh.
+
+### Infrastructure
+- **Version Check** - Proactive cache invalidation for long-running sessions via `/version.json`
+- **Service Worker** - Auto-generated cache version per build prevents stale assets
+- **Defense in Depth** - Primary (lazyWithRetry) + supplementary (versionCheck) chunk error handling
+
+### Technical
+- 29 new tests for chunk loading retry logic covering browser-specific error patterns
+- Centralized storage key management via `STORAGE_KEYS` registry
+- Atomic check-and-set prevents reload loops (30s cooldown)
+- Bundle size optimization: removed static Sentry import (~80KB savings)
+
+### Fixes
+- Race condition in chunk reload marking (atomic tryMarkReloadAttempt)
+- Service Worker uses `event.waitUntil()` for cache operations
+- Error handling around user refresh in verification hook
+
 ## [1.13.0] - 2025-12-23
 
 Email verification, performance optimizations, and newsletter improvements.
