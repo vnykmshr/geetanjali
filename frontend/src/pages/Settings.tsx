@@ -10,6 +10,7 @@ import {
   MailIcon,
   HeartIcon,
   GoalIconsById,
+  SpinnerIcon,
 } from "../components/icons";
 import { useSyncedGoal, useSyncedFavorites, useSyncedReading, useSEO } from "../hooks";
 import { useAuth } from "../contexts/AuthContext";
@@ -130,6 +131,13 @@ export default function Settings() {
     setDefaultVersesTab(tab);
     setStorageItem(STORAGE_KEYS.defaultVersesTab, tab);
   };
+
+  // Email verification resend
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   // Danger zone
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -276,6 +284,41 @@ export default function Settings() {
     }
   };
 
+  const handleResendVerification = async () => {
+    setIsResendingVerification(true);
+    setVerificationMessage(null);
+
+    try {
+      await api.post("/auth/resend-verification");
+      setVerificationMessage({
+        type: "success",
+        text: "Verification email sent! Check your inbox.",
+      });
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosErr = err as { response?: { data?: { detail?: string } } };
+        // If already verified, show success and could trigger a refresh
+        if (axiosErr.response?.data?.detail?.includes("already verified")) {
+          setVerificationMessage({ type: "success", text: "Your email is already verified!" });
+          // Optionally reload to refresh user state
+          window.location.reload();
+          return;
+        }
+        setVerificationMessage({
+          type: "error",
+          text: axiosErr.response?.data?.detail || "Failed to send email. Try again later.",
+        });
+      } else {
+        setVerificationMessage({
+          type: "error",
+          text: "Failed to send email. Try again later.",
+        });
+      }
+    } finally {
+      setIsResendingVerification(false);
+    }
+  };
+
   const handleExportData = () => {
     const data = exportUserData();
 
@@ -375,12 +418,39 @@ export default function Settings() {
                     Verified · Synced across devices
                   </p>
                 ) : (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5 flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    Email not verified
-                  </p>
+                  <div className="mt-0.5">
+                    <button
+                      onClick={handleResendVerification}
+                      disabled={isResendingVerification}
+                      className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {isResendingVerification ? (
+                        <>
+                          <SpinnerIcon className="w-3 h-3 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          Email not verified – Resend
+                        </>
+                      )}
+                    </button>
+                    {verificationMessage && (
+                      <p
+                        role="alert"
+                        className={`text-xs mt-1 ${
+                          verificationMessage.type === "success"
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-red-600 dark:text-red-400"
+                        }`}
+                      >
+                        {verificationMessage.text}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
               <button

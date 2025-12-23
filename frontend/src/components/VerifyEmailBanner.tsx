@@ -2,23 +2,46 @@
  * VerifyEmailBanner - Reminder banner for users with unverified email
  *
  * Shows a non-intrusive banner prompting users to verify their email.
- * Includes a button to resend the verification email.
+ * Includes a button to resend the verification email and can be dismissed.
+ * Dismissal is stored in sessionStorage (reappears on new session).
  */
 
 import { useState } from "react";
 import { api } from "../lib/api";
-import { MailIcon, SpinnerIcon } from "./icons";
+import { MailIcon, SpinnerIcon, CloseIcon } from "./icons";
+
+const DISMISSED_KEY = "geetanjali:verifyBannerDismissed";
 
 interface VerifyEmailBannerProps {
   onVerified?: () => void;
 }
 
 export function VerifyEmailBanner({ onVerified }: VerifyEmailBannerProps) {
+  const [isDismissed, setIsDismissed] = useState(() => {
+    try {
+      return sessionStorage.getItem(DISMISSED_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
   const [isResending, setIsResending] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  const handleDismiss = () => {
+    setIsDismissed(true);
+    try {
+      sessionStorage.setItem(DISMISSED_KEY, "true");
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
+  if (isDismissed) {
+    return null;
+  }
 
   const handleResend = async () => {
     setIsResending(true);
@@ -88,6 +111,19 @@ export function VerifyEmailBanner({ onVerified }: VerifyEmailBannerProps) {
             ) : (
               "Resend verification email"
             )}
+          </button>
+
+          {/* Dismiss button */}
+          <button
+            onClick={handleDismiss}
+            className="p-1 text-amber-600 dark:text-amber-400
+                       hover:text-amber-800 dark:hover:text-amber-200
+                       hover:bg-amber-100 dark:hover:bg-amber-800/30
+                       rounded transition-colors
+                       focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1"
+            aria-label="Dismiss verification reminder"
+          >
+            <CloseIcon className="w-4 h-4" />
           </button>
         </div>
 
