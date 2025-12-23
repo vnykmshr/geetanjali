@@ -6,6 +6,7 @@ export const mockUser: User = {
   name: "Test User",
   role: "user",
   org_id: null,
+  email_verified: true,
   created_at: "2024-01-01T00:00:00Z",
 };
 

@@ -116,6 +116,7 @@ export interface User {
   name: string;
   role: string;
   org_id: string | null;
+  email_verified: boolean;
   created_at: string;
 }
 

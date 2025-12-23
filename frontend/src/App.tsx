@@ -14,6 +14,7 @@ import {
   SkipLink,
   OfflineIndicator,
   SyncToast,
+  VerifyEmailBanner,
 } from "./components";
 
 // Eagerly loaded (critical path)
@@ -106,7 +107,7 @@ function PageLoader() {
 }
 
 function App() {
-  const { loading } = useAuth();
+  const { loading, user, refreshUser } = useAuth();
 
   // Sync newsletter subscription status on login
   useNewsletterSync();
@@ -129,6 +130,9 @@ function App() {
     <Router>
       <SkipLink />
       <OfflineIndicator />
+      {user && !user.email_verified && (
+        <VerifyEmailBanner onVerified={refreshUser} />
+      )}
       <SyncToast />
       <FloatingActionButton />
       <main id="main-content">
