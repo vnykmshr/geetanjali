@@ -37,8 +37,16 @@ from utils.auth import (
 )
 from utils.jwt import create_access_token, create_refresh_token
 from utils.csrf import generate_csrf_token, set_csrf_cookie
-from services.email import send_password_reset_email
+from services.email import (
+    send_password_reset_email,
+    send_account_verification_email,
+    send_password_changed_email,
+    send_account_deleted_email,
+)
 from config import settings
+
+# Email verification token settings
+EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS = 24
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +78,7 @@ def build_user_response(user: User) -> UserResponse:
         name=user.name,
         role=user.role,
         org_id=user.org_id,
+        email_verified=user.email_verified,
         created_at=user.created_at,
     )
 
@@ -166,6 +175,18 @@ async def signup(
             logger.info(
                 f"Migrated {migrated_count} anonymous consultations to user {user.id}"
             )
+
+    # Generate and send email verification
+    verification_token = secrets.token_urlsafe(32)
+    verification_expires = datetime.utcnow() + timedelta(
+        hours=EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS
+    )
+    user_repo.set_email_verification_token(user, verification_token, verification_expires)
+
+    verify_url = f"{settings.FRONTEND_URL}/verify-email/{verification_token}"
+    email_sent = send_account_verification_email(user.email, user.name, verify_url)
+    if not email_sent:
+        logger.warning(f"Failed to send verification email to {user.email}")
 
     # Create tokens and set cookies
     refresh_token = create_refresh_token()
@@ -454,6 +475,7 @@ async def reset_password(
         )
 
     # Update password and clear reset token
+    # Also mark email as verified (user proved ownership via email link)
     new_password_hash = hash_password(reset_data.password)
     user_repo.update(
         user.id,
@@ -462,11 +484,20 @@ async def reset_password(
             "reset_token_id": None,
             "reset_token_hash": None,
             "reset_token_expires": None,
+            "email_verified": True,
+            "email_verified_at": datetime.utcnow(),
+            "email_verification_token": None,
+            "email_verification_expires_at": None,
         },
     )
 
     # Revoke all existing refresh tokens for security
     RefreshTokenRepository(db).revoke_all_for_user(user.id)
+
+    # Send password changed confirmation email
+    email_sent = send_password_changed_email(user.email, user.name)
+    if not email_sent:
+        logger.warning(f"Failed to send password changed email to {user.email}")
 
     logger.info(f"Password reset successful for user: {user.id}")
     return MessageResponse(
@@ -509,6 +540,8 @@ async def delete_account(
     from models.subscriber import Subscriber
 
     user_id = current_user.id
+    user_email = current_user.email
+    user_name = current_user.name
     logger.info(f"Account deletion requested for user: {user_id}")
 
     # Delete CASCADE data (user's own data)
@@ -533,10 +566,134 @@ async def delete_account(
 
     db.commit()
 
+    # Send account deleted confirmation email
+    email_sent = send_account_deleted_email(user_email, user_name)
+    if not email_sent:
+        logger.warning(f"Failed to send account deleted email to {user_email}")
+
     # Clear auth cookies
     response.delete_cookie(key=REFRESH_TOKEN_COOKIE_KEY, path="/")
 
     logger.info(f"Account deleted (soft delete) for user: {user_id}")
     return MessageResponse(
         message="Your account has been deleted. You can create a new account with the same email if you wish to return."
+    )
+
+
+@router.post("/verify-email/{token}", response_model=MessageResponse)
+@limiter.limit("10/hour")
+async def verify_email(
+    request: Request,
+    token: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Verify user email address using token from email.
+
+    Args:
+        token: Email verification token
+        db: Database session
+
+    Returns:
+        Success message
+
+    Raises:
+        HTTPException: 400 if token is invalid/expired
+    """
+    # Validate token format (secrets.token_urlsafe(32) produces ~43 chars)
+    if not token or len(token) > 64 or len(token) < 32:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification link.",
+        )
+
+    logger.info("Email verification attempt")
+
+    user_repo = UserRepository(db)
+    user = user_repo.get_by_email_verification_token(token)
+
+    if not user:
+        logger.warning("Invalid email verification token")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification link.",
+        )
+
+    # Check if already verified (idempotent)
+    if user.email_verified:
+        return MessageResponse(message="Your email is already verified.")
+
+    # Check token expiry
+    if (
+        user.email_verification_expires_at
+        and user.email_verification_expires_at < datetime.utcnow()
+    ):
+        logger.warning(f"Expired email verification token for user: {user.id}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification link has expired. Please request a new one.",
+        )
+
+    # Mark email as verified
+    user_repo.verify_user_email(user)
+
+    logger.info(f"Email verified for user: {user.id}")
+    return MessageResponse(message="Your email has been verified successfully!")
+
+
+@router.post("/resend-verification", response_model=MessageResponse)
+@limiter.limit("3/hour")
+async def resend_verification(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Resend email verification for current user.
+
+    Args:
+        db: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        Success message
+
+    Raises:
+        HTTPException: 400 if already verified
+    """
+    logger.info(f"Resend verification requested for user: {current_user.id}")
+
+    # Check if already verified
+    if current_user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Your email is already verified.",
+        )
+
+    # Generate new verification token
+    user_repo = UserRepository(db)
+    verification_token = secrets.token_urlsafe(32)
+    verification_expires = datetime.utcnow() + timedelta(
+        hours=EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS
+    )
+    user_repo.set_email_verification_token(
+        current_user, verification_token, verification_expires
+    )
+
+    # Send verification email
+    verify_url = f"{settings.FRONTEND_URL}/verify-email/{verification_token}"
+    email_sent = send_account_verification_email(
+        current_user.email, current_user.name, verify_url
+    )
+
+    if not email_sent:
+        logger.warning(f"Failed to send verification email to {current_user.email}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send verification email. Please try again later.",
+        )
+
+    logger.info(f"Verification email resent for user: {current_user.id}")
+    return MessageResponse(
+        message="Verification email sent. Please check your inbox."
     )

@@ -32,6 +32,7 @@ class UserResponse(UserBase):
     """Schema for user response."""
 
     id: str
+    email_verified: bool = False
     created_at: datetime
 
     class Config:

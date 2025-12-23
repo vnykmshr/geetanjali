@@ -82,3 +82,60 @@ class UserRepository(BaseRepository):
             .filter(User.reset_token_expires > datetime.utcnow())
             .first()
         )
+
+    def get_by_email_verification_token(self, token: str) -> Optional[User]:
+        """
+        Get user by email verification token (O(1) indexed lookup).
+
+        Args:
+            token: Email verification token
+
+        Returns:
+            User if found, None otherwise (does not check expiry)
+        """
+        return (
+            self.db.query(User)
+            .filter(User.email_verification_token == token)
+            .first()
+        )
+
+    def set_email_verification_token(
+        self, user: User, token: str, expires_at: datetime
+    ) -> None:
+        """
+        Set email verification token for user.
+
+        Args:
+            user: User to update
+            token: Verification token
+            expires_at: Token expiration datetime
+        """
+        user.email_verification_token = token
+        user.email_verification_expires_at = expires_at
+        self.db.commit()
+
+    def verify_user_email(self, user: User) -> None:
+        """
+        Mark user email as verified and clear token fields.
+
+        Args:
+            user: User to verify
+        """
+        user.email_verified = True
+        user.email_verified_at = datetime.utcnow()
+        user.email_verification_token = None
+        user.email_verification_expires_at = None
+        self.db.commit()
+
+    def clear_email_verification_token(self, user: User) -> None:
+        """
+        Clear email verification token without verifying.
+
+        Used when token expires or is invalidated.
+
+        Args:
+            user: User to update
+        """
+        user.email_verification_token = None
+        user.email_verification_expires_at = None
+        self.db.commit()

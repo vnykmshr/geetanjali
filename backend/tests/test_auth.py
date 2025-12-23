@@ -295,3 +295,99 @@ def test_reset_password_missing_fields(client):
         "/api/v1/auth/reset-password", json={"password": "NewSecurePass123!"}
     )
     assert response2.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+# =============================================================================
+# Email Verification Tests
+# =============================================================================
+
+
+def test_signup_returns_email_verified_false(client):
+    """Test that signup returns email_verified=False."""
+    signup_data = {
+        "email": "newuser@example.com",
+        "name": "New User",
+        "password": "SecurePass123!",
+    }
+    response = client.post("/api/v1/auth/signup", json=signup_data)
+
+    assert response.status_code == status.HTTP_201_CREATED
+    data = response.json()
+    assert data["user"]["email_verified"] is False
+
+
+def test_verify_email_invalid_token(client):
+    """Test verify email with invalid token."""
+    response = client.post("/api/v1/auth/verify-email/invalid-token-12345")
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    data = response.json()
+    assert "invalid" in data["detail"].lower() or "expired" in data["detail"].lower()
+
+
+def test_resend_verification_requires_auth(client):
+    """Test resend verification requires authentication."""
+    response = client.post("/api/v1/auth/resend-verification")
+
+    assert response.status_code in [
+        status.HTTP_401_UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN,
+    ]
+
+
+def test_resend_verification_success(client):
+    """Test resend verification for authenticated user."""
+    # Signup and get token
+    signup_data = {
+        "email": "resend@example.com",
+        "name": "Resend User",
+        "password": "SecurePass123!",
+    }
+    signup_response = client.post("/api/v1/auth/signup", json=signup_data)
+    token = signup_response.json().get("access_token")
+
+    if not token:
+        pytest.skip("Token not returned in signup response")
+
+    # Request resend
+    response = client.post(
+        "/api/v1/auth/resend-verification",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert "sent" in data["message"].lower() or "verification" in data["message"].lower()
+
+
+def test_resend_verification_already_verified(client, db_session):
+    """Test resend verification when already verified."""
+    from models.user import User
+
+    # Signup and manually verify
+    signup_data = {
+        "email": "verified@example.com",
+        "name": "Verified User",
+        "password": "SecurePass123!",
+    }
+    signup_response = client.post("/api/v1/auth/signup", json=signup_data)
+    token = signup_response.json().get("access_token")
+
+    if not token:
+        pytest.skip("Token not returned in signup response")
+
+    # Manually mark as verified
+    user = db_session.query(User).filter(User.email == "verified@example.com").first()
+    if user:
+        user.email_verified = True
+        db_session.commit()
+
+    # Try resend
+    response = client.post(
+        "/api/v1/auth/resend-verification",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    data = response.json()
+    assert "already verified" in data["detail"].lower()
