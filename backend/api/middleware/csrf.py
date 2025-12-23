@@ -66,8 +66,21 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         # Validate CSRF token
         if not validate_csrf(request):
+            # Log detailed failure reason for debugging
+            from utils.csrf import get_csrf_from_cookie, get_csrf_from_header
+
+            cookie_token = get_csrf_from_cookie(request)
+            header_token = get_csrf_from_header(request)
+
+            if not header_token:
+                reason = "missing X-CSRF-Token header"
+            elif not cookie_token:
+                reason = "missing csrf_token cookie"
+            else:
+                reason = "token mismatch"
+
             logger.warning(
-                f"CSRF validation failed for {request.method} {request.url.path}"
+                f"CSRF validation failed for {request.method} {request.url.path}: {reason}"
             )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="CSRF validation failed"
