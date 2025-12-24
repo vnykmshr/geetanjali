@@ -1,6 +1,6 @@
 """Prometheus metrics definitions for Geetanjali application."""
 
-from prometheus_client import Gauge, Counter
+from prometheus_client import Gauge, Counter, Histogram
 
 
 # Business Metrics
@@ -161,4 +161,23 @@ case_views_24h = Gauge(
 feedback_positive_rate = Gauge(
     "geetanjali_feedback_positive_rate",
     "Percentage of positive feedback (0-1)",
+)
+
+# Email Metrics
+email_sends_total = Counter(
+    "geetanjali_email_sends_total",
+    "Total email send attempts by type and result",
+    ["email_type", "result"],  # result: success, failure, circuit_open
+)
+
+email_send_duration_seconds = Histogram(
+    "geetanjali_email_send_duration_seconds",
+    "Email send duration in seconds",
+    ["email_type"],
+    buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+)
+
+email_circuit_breaker_state = Gauge(
+    "geetanjali_email_circuit_breaker_state",
+    "Email circuit breaker state (0=closed, 1=half_open, 2=open)",
 )

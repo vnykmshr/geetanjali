@@ -2,14 +2,25 @@
 
 import html
 import logging
-from typing import Optional, TYPE_CHECKING
+import time
+from functools import wraps
+from threading import Lock
+from typing import Callable, Optional, TYPE_CHECKING, TypeVar
 
 from config import settings
+from utils.metrics import (
+    email_sends_total,
+    email_send_duration_seconds,
+    email_circuit_breaker_state,
+)
 
 if TYPE_CHECKING:
     from models import Verse
 
 logger = logging.getLogger(__name__)
+
+# Type variable for generic return type
+T = TypeVar("T")
 
 
 # =============================================================================
@@ -56,6 +67,247 @@ class EmailSendError(EmailError):
     def __init__(self, message: str, cause: Optional[Exception] = None):
         super().__init__(message)
         self.cause = cause
+
+
+class EmailCircuitOpenError(EmailError):
+    """
+    Circuit breaker is open - email service temporarily disabled.
+
+    This is raised when too many consecutive failures have occurred.
+    The circuit will automatically close after the cooldown period.
+    """
+
+    pass
+
+
+# =============================================================================
+# Circuit Breaker (prevents hammering failing service)
+# =============================================================================
+
+
+class EmailCircuitBreaker:
+    """
+    Circuit breaker for email service resilience.
+
+    States:
+    - CLOSED: Normal operation, emails sent normally
+    - OPEN: Too many failures, emails rejected immediately
+    - HALF_OPEN: Testing if service recovered (one request allowed)
+
+    Thread-safe implementation using locks.
+    """
+
+    def __init__(
+        self,
+        failure_threshold: int = 5,
+        recovery_timeout: float = 60.0,
+    ):
+        """
+        Initialize circuit breaker.
+
+        Args:
+            failure_threshold: Consecutive failures before opening circuit
+            recovery_timeout: Seconds to wait before testing recovery
+        """
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self._failure_count = 0
+        self._last_failure_time: Optional[float] = None
+        self._state = "closed"
+        self._lock = Lock()
+
+    @property
+    def state(self) -> str:
+        """Get current circuit state (closed, open, half_open)."""
+        with self._lock:
+            self._check_recovery_timeout()
+            return self._state
+
+    def _check_recovery_timeout(self) -> None:
+        """Check if recovery timeout has passed and transition to half_open.
+
+        Must be called while holding self._lock.
+        """
+        if self._state == "open":
+            if (
+                self._last_failure_time
+                and time.time() - self._last_failure_time >= self.recovery_timeout
+            ):
+                self._state = "half_open"
+                self._update_metric(self._state)
+
+    def record_success(self) -> None:
+        """Record successful email send - reset circuit."""
+        with self._lock:
+            self._failure_count = 0
+            self._state = "closed"
+            self._update_metric(self._state)
+
+    def record_failure(self) -> None:
+        """Record failed email send - may open circuit."""
+        with self._lock:
+            self._failure_count += 1
+            self._last_failure_time = time.time()
+            if self._failure_count >= self.failure_threshold:
+                if self._state != "open":
+                    logger.warning(
+                        f"Email circuit breaker OPEN after {self._failure_count} failures. "
+                        f"Will retry in {self.recovery_timeout}s"
+                    )
+                self._state = "open"
+            self._update_metric(self._state)
+
+    def _update_metric(self, state: str) -> None:
+        """Update Prometheus metric for circuit breaker state.
+
+        Args:
+            state: Current state to record (passed explicitly for thread safety)
+        """
+        state_map = {"closed": 0, "half_open": 1, "open": 2}
+        email_circuit_breaker_state.set(state_map.get(state, 0))
+
+    def allow_request(self) -> bool:
+        """
+        Check if request should be allowed through.
+
+        Thread-safe: all state checks and transitions happen under lock.
+
+        Note: In half_open state, we allow multiple concurrent requests rather
+        than a single probe. This is a simplification acceptable for low-volume
+        email sending. A strict implementation would use a semaphore.
+        """
+        with self._lock:
+            self._check_recovery_timeout()
+            return self._state in ("closed", "half_open")
+
+    def reset(self) -> None:
+        """Manually reset circuit (for testing)."""
+        with self._lock:
+            self._failure_count = 0
+            self._last_failure_time = None
+            self._state = "closed"
+
+
+# Global circuit breaker instance
+_email_circuit_breaker = EmailCircuitBreaker()
+
+
+def get_circuit_breaker() -> EmailCircuitBreaker:
+    """Get the global email circuit breaker instance."""
+    return _email_circuit_breaker
+
+
+# =============================================================================
+# Retry Decorator with Circuit Breaker
+# =============================================================================
+
+
+def with_email_retry(
+    max_retries: int = 2,
+    base_delay: float = 1.0,
+    use_circuit_breaker: bool = True,
+) -> Callable[[Callable[..., bool]], Callable[..., bool]]:
+    """
+    Decorator for email functions with retry and circuit breaker.
+
+    Features:
+    - Exponential backoff: delay doubles each retry (1s, 2s, 4s...)
+    - Circuit breaker integration: stops retrying when service is down
+    - Prometheus metrics for monitoring
+    - Logs retry attempts with context
+
+    Args:
+        max_retries: Maximum retry attempts (default 2, so 3 total tries)
+        base_delay: Initial delay in seconds (default 1.0)
+        use_circuit_breaker: Whether to use circuit breaker (default True)
+
+    Returns:
+        Decorated function
+
+    Example:
+        @with_email_retry(max_retries=2)
+        def send_important_email(email: str) -> bool:
+            ...
+    """
+
+    def decorator(func: Callable[..., bool]) -> Callable[..., bool]:
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> bool:
+            circuit = _email_circuit_breaker if use_circuit_breaker else None
+            # Extract email type from function name (e.g., send_password_reset_email -> password_reset)
+            email_type = func.__name__.replace("send_", "").replace("_email", "")
+
+            # Check circuit breaker before attempting
+            if circuit and not circuit.allow_request():
+                logger.warning(
+                    f"Email circuit breaker OPEN - skipping {func.__name__}"
+                )
+                email_sends_total.labels(email_type=email_type, result="circuit_open").inc()
+                return False
+
+            last_error: Optional[Exception] = None
+            start_time = time.time()
+
+            for attempt in range(max_retries + 1):
+                try:
+                    result = func(*args, **kwargs)
+
+                    # Record duration for all completed sends (success or config failure)
+                    email_send_duration_seconds.labels(email_type=email_type).observe(
+                        time.time() - start_time
+                    )
+
+                    # Record success if we got True
+                    if result:
+                        if circuit:
+                            circuit.record_success()
+                        email_sends_total.labels(email_type=email_type, result="success").inc()
+                    else:
+                        # Function returned False (e.g., not configured)
+                        email_sends_total.labels(email_type=email_type, result="failure").inc()
+
+                    return result
+
+                except (EmailConfigurationError, EmailServiceUnavailable):
+                    # Non-retryable errors - don't retry
+                    email_sends_total.labels(email_type=email_type, result="failure").inc()
+                    raise
+
+                except Exception as e:
+                    last_error = e
+
+                    # Record failure for circuit breaker
+                    if circuit:
+                        circuit.record_failure()
+
+                    # Check if more retries available
+                    if attempt < max_retries:
+                        delay = base_delay * (2**attempt)  # Exponential backoff
+                        logger.warning(
+                            f"Email send failed (attempt {attempt + 1}/{max_retries + 1}), "
+                            f"retrying in {delay:.1f}s: {e}"
+                        )
+                        time.sleep(delay)
+
+                        # Re-check circuit breaker after delay
+                        if circuit and not circuit.allow_request():
+                            logger.warning(
+                                f"Email circuit breaker opened during retry - aborting"
+                            )
+                            email_sends_total.labels(email_type=email_type, result="circuit_open").inc()
+                            return False
+                    else:
+                        logger.error(
+                            f"Email send failed after {max_retries + 1} attempts: {e}"
+                        )
+                        email_sends_total.labels(email_type=email_type, result="failure").inc()
+
+            return False
+
+        return wrapper
+
+    return decorator
+
 
 # Lazy import resend to avoid import errors if not installed
 _resend_client: Optional[object] = None
@@ -478,9 +730,12 @@ Sent from Geetanjali Contact Form
         return False
 
 
+@with_email_retry(max_retries=2, base_delay=1.0)
 def send_password_reset_email(email: str, reset_url: str) -> bool:
     """
     Send password reset email to user.
+
+    Uses retry wrapper - user is waiting for this email.
 
     Args:
         email: User's email address
@@ -993,11 +1248,14 @@ Unsubscribe: {unsubscribe_url}
 # =============================================================================
 
 
+@with_email_retry(max_retries=2, base_delay=1.0)
 def send_account_verification_email(
     email: str, name: str, verify_url: str
 ) -> bool:
     """
     Send email verification for new account signups.
+
+    Uses retry wrapper - user is waiting for this email.
 
     Args:
         email: User's email address
@@ -1075,10 +1333,12 @@ Geetanjali - Wisdom for modern life
         return False
 
 
+@with_email_retry(max_retries=2, base_delay=1.0)
 def send_password_changed_email(email: str, name: str) -> bool:
     """
     Send confirmation when user's password is changed.
 
+    Uses retry wrapper - important security notification.
     This is a security notification - no action required unless unauthorized.
 
     Args:
