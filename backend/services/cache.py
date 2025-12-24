@@ -4,16 +4,21 @@ This module provides a caching layer that:
 - Uses Redis when available
 - Falls back to no-op when Redis is unavailable
 - Never blocks or crashes the application due to cache issues
+- Includes cache stampede protection via TTL jitter
 """
 
 import json
 import logging
+import random
 from typing import Optional, Any
 from datetime import datetime, timedelta
 
 from config import settings
 
 logger = logging.getLogger(__name__)
+
+# Thread-safe random for TTL jitter (cryptographically secure)
+_system_random = random.SystemRandom()
 
 # Redis client (lazy initialized)
 _redis_client = None
@@ -74,6 +79,55 @@ def calculate_midnight_ttl() -> int:
         hour=0, minute=0, second=0, microsecond=0
     )
     return int((midnight - now).total_seconds())
+
+
+def add_ttl_jitter(ttl: int, jitter_percent: float = 0.1) -> int:
+    """
+    Add random jitter to TTL to prevent cache stampede.
+
+    Cache stampede occurs when many cache entries expire at the same time,
+    causing all clients to hit the database simultaneously. By adding random
+    jitter to TTL values, cache expiration is spread out over time.
+
+    Args:
+        ttl: Base TTL in seconds
+        jitter_percent: Random variation as percentage (0.1 = ±10%)
+
+    Returns:
+        TTL with random jitter applied
+
+    Example:
+        >>> add_ttl_jitter(3600, 0.1)  # Returns 3240-3960 (±10%)
+        >>> add_ttl_jitter(86400, 0.05)  # Returns 82080-90720 (±5%)
+    """
+    if ttl <= 0:
+        return ttl
+
+    jitter_range = int(ttl * jitter_percent)
+    jitter = _system_random.randint(-jitter_range, jitter_range)
+    return max(1, ttl + jitter)
+
+
+def calculate_midnight_ttl_with_jitter(jitter_percent: float = 0.1) -> int:
+    """
+    Calculate seconds until midnight UTC with jitter for stampede protection.
+
+    The daily verse cache is a prime candidate for cache stampede because:
+    1. All users request the same endpoint
+    2. All caches expire at exactly midnight UTC
+    3. High traffic spike at midnight as everyone refetches
+
+    By adding ±10% jitter (default), cache expiration is spread over ~2.4 hours
+    centered around midnight (10:48 PM to 1:12 AM UTC equivalent).
+
+    Args:
+        jitter_percent: Random variation (default 0.1 = ±10%)
+
+    Returns:
+        Jittered TTL in seconds
+    """
+    base_ttl = calculate_midnight_ttl()
+    return add_ttl_jitter(base_ttl, jitter_percent)
 
 
 class CacheService:

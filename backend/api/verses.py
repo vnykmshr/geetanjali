@@ -22,7 +22,7 @@ from services.cache import (
     featured_count_key,
     featured_verse_ids_key,
     all_verse_ids_key,
-    calculate_midnight_ttl,
+    calculate_midnight_ttl_with_jitter,
 )
 from config import settings
 
@@ -330,9 +330,10 @@ async def get_verse_of_the_day(request: Request, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND, detail=ERR_VERSE_NOT_FOUND
         )
 
-    # Cache until midnight UTC
+    # Cache until approximately midnight UTC (with jitter to prevent stampede)
+    # Jitter spreads cache expiration over ~2.4 hours to prevent thundering herd
     verse_data = VerseResponse.model_validate(verse).model_dump()
-    ttl = calculate_midnight_ttl()
+    ttl = calculate_midnight_ttl_with_jitter()
     cache.set(cache_key, verse_data, ttl)
 
     logger.info(f"Verse of the day ({today}): {verse.canonical_id}")
