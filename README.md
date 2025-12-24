@@ -80,7 +80,7 @@ Services:
 | Database | PostgreSQL 15 |
 | Vector DB | ChromaDB |
 | Cache | Redis 7 |
-| LLM | Ollama (qwen2.5:3b) with Anthropic Claude fallback |
+| LLM | Ollama (qwen2.5:3b) primary, configurable fallback |
 | Embeddings | sentence-transformers/all-MiniLM-L6-v2 |
 
 The system uses circuit breakers for service resilience: Ollama falls back to Anthropic, ChromaDB falls back to SQL keyword search. See [Architecture](docs/architecture.md) for details.

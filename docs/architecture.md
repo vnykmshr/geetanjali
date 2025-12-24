@@ -103,17 +103,17 @@ External services are protected by circuit breakers that prevent cascading failu
 | Service | Failure Threshold | Recovery Timeout | Fallback |
 |---------|-------------------|------------------|----------|
 | Ollama LLM | 3 consecutive | 60s | Anthropic Claude API |
-| Anthropic API | 5 consecutive | 120s | Error response |
+| Anthropic API | 3 consecutive | 60s | Error response |
 | ChromaDB | 3 consecutive | 60s | SQL keyword search |
-| Email (Resend) | 3 consecutive | 60s | Queue for retry |
+| Email (Resend) | 5 consecutive | 60s | Queue for retry |
 
 ### Fallback Chains
 
-**LLM Inference:**
+**LLM Inference** (configurable via `LLM_PROVIDER` and `LLM_FALLBACK_PROVIDER`):
 ```
-Ollama (local) ──[CB open]──▶ Anthropic Claude ──[CB open]──▶ Error
-      │                              │
-      └── qwen2.5:3b                 └── claude-3-5-haiku
+Primary Provider ──[CB open]──▶ Fallback Provider ──[CB open]──▶ Error
+       │                               │
+       └── ollama (default)            └── anthropic | mock
 ```
 
 **Vector Search:**

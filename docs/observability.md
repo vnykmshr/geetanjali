@@ -102,7 +102,7 @@ Metrics are split across separate modules to prevent duplicate registration:
 | `geetanjali_worker_count` | Gauge | Active RQ workers |
 | `geetanjali_failed_jobs` | Gauge | Failed jobs in RQ registry |
 
-### LLM Metrics (Worker only)
+### LLM Metrics (Primarily Worker)
 
 | Metric | Type | Labels | Description |
 |--------|------|--------|-------------|
@@ -110,6 +110,8 @@ Metrics are split across separate modules to prevent duplicate registration:
 | `geetanjali_llm_tokens_total` | Counter | `provider`, `token_type` | Tokens used (input/output) |
 | `geetanjali_llm_fallback_total` | Counter | `primary`, `fallback`, `reason` | Fallback events |
 | `geetanjali_llm_circuit_breaker_state` | Gauge | `provider` | Circuit breaker state |
+
+**Note:** LLM metrics primarily come from the worker service. In development with RQ disabled, backend may also emit these metrics.
 
 ### Cache Metrics (Both services)
 
@@ -119,6 +121,12 @@ Metrics are split across separate modules to prevent duplicate registration:
 | `geetanjali_cache_misses_total` | Counter | `key_type` | Cache misses by type |
 
 Key types: `verse`, `search`, `metadata`, `case`, `rag`, `featured`, `other`
+
+### API Metrics (Both services)
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `geetanjali_api_errors_total` | Counter | `error_type`, `endpoint` | API errors by type |
 
 ### Email Metrics (Both services)
 
@@ -205,13 +213,13 @@ Event-based metrics (counters, histograms) are updated in real-time when events 
 
 ### Query Patterns
 
-Different metric types require different Prometheus queries:
+Different metric types require different Prometheus queries due to how metrics are collected:
 
-| Type | Pattern | Example |
-|------|---------|---------|
-| Gauges | Filter by job | `geetanjali_postgres_up{job="backend"}` |
-| Counters | Sum across jobs | `sum(geetanjali_cache_hits_total)` |
-| CB States | Max (worst state) | `max(geetanjali_llm_circuit_breaker_state{provider="ollama"})` |
+| Type | Pattern | Example | Why |
+|------|---------|---------|-----|
+| Gauges | Filter by job | `geetanjali_postgres_up{job="backend"}` | Collected only by backend scheduler |
+| Counters | Sum across jobs | `sum(geetanjali_cache_hits_total)` | Events occur in both services |
+| CB States | Max (worst state) | `max(geetanjali_llm_circuit_breaker_state{provider="ollama"})` | Show worst state across services |
 
 ## Prometheus Configuration
 
@@ -223,13 +231,13 @@ scrape_configs:
   - job_name: 'backend'
     static_configs:
       - targets: ['backend:8000']
-    scrape_interval: 15s
+    metrics_path: /metrics
 
   # Worker: event counters and LLM metrics only
   - job_name: 'worker'
     static_configs:
       - targets: ['worker:8001']
-    scrape_interval: 15s
+    metrics_path: /metrics
 ```
 
 ## Grafana Dashboards
