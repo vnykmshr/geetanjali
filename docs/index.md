@@ -16,29 +16,42 @@ Free. Open source. Private by default.
 
 ---
 
-## What You Can Do
+## Two Ways to Use Geetanjali
 
-**Get Guidance**
-- Submit an ethical dilemma, receive structured options with verse citations
-- Ask follow-up questions to refine the guidance
-- See example consultations from featured cases
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│          FACING A DILEMMA?            WANT TO LEARN?                │
+│                 │                            │                      │
+│                 ▼                            ▼                      │
+│   ┌─────────────────────────┐  ┌─────────────────────────┐          │
+│   │     CONSULTATION        │  │      DISCOVERY          │          │
+│   │                         │  │                         │          │
+│   │  Describe your          │  │  Browse 701 verses      │          │
+│   │  situation              │  │  across 18 chapters     │          │
+│   │         ↓               │  │         ↓               │          │
+│   │  AI retrieves relevant  │  │  Read sequentially or   │          │
+│   │  verses from scripture  │  │  search by meaning      │          │
+│   │         ↓               │  │         ↓               │          │
+│   │  Get structured options │  │  Sanskrit + translation │          │
+│   │  with verse citations   │  │  + modern insights      │          │
+│   │         ↓               │  │         ↓               │          │
+│   │  Ask follow-ups to      │  │  Save favorites, track  │          │
+│   │  refine guidance        │  │  reading progress       │          │
+│   │                         │  │                         │          │
+│   └─────────────────────────┘  └─────────────────────────┘          │
+│                                                                     │
+│        No hallucinated quotes — every recommendation cites          │
+│        actual verses. Runs locally. Works offline.                  │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
-**Explore Scripture**
-- Browse 701 verses with Sanskrit, transliteration, and translations
-- Read sequentially in distraction-free Reading Mode
-- Search by verse reference, Sanskrit text, keywords, or meaning
-- Save favorites for quick access
+**Consultation** — You have a tough decision. Layoffs? Whistleblowing? Conflicting loyalties? Describe it, get three options with tradeoffs, each grounded in specific verses. Continue the conversation until you're clear.
 
-**Stay Connected**
-- Subscribe to Daily Wisdom emails
-- Sync reading progress and preferences across devices
-- Share consultations publicly or via private link
-- Generate verse images for social sharing
+**Discovery** — You want to understand the Geeta. Browse by chapter, search by concept, or read cover to cover in Reading Mode. Sanskrit text with transliteration, multiple translations, and plain-language insights.
 
-**Make It Yours**
-- Dark mode throughout
-- Adjustable font sizes in Reading Mode
-- Works offline after first load
+Both paths. Same 701 verses. Your pace, your privacy.
 
 ---
 
