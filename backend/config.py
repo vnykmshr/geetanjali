@@ -159,6 +159,7 @@ class Settings(BaseSettings):
     CACHE_TTL_SITEMAP: int = 3600  # 1 hour
     CACHE_TTL_FEED: int = 3600  # 1 hour
     CACHE_TTL_RAG_OUTPUT: int = 86400  # 24 hours
+    CACHE_TTL_DAILY_COUNTER: int = 172800  # 48 hours - daily counters with timezone safety
 
     # Public case sharing
     PUBLIC_CASE_EXPIRY_DAYS: int = 90  # Days until public case links expire (0 = never)
@@ -192,6 +193,23 @@ class Settings(BaseSettings):
     # Monitoring (Sentry)
     SENTRY_DSN: Optional[str] = None  # Set in .env to enable error tracking
     SENTRY_TRACES_SAMPLE_RATE: float = 0.1  # 10% of requests for performance monitoring
+
+    # Circuit Breaker Configuration
+    # Circuit breakers protect against cascading failures by stopping requests
+    # to failing services. After recovery_timeout seconds, a single request
+    # is allowed through to test if the service has recovered.
+    #
+    # Email circuit breaker (higher threshold - email failures less critical)
+    CB_EMAIL_FAILURE_THRESHOLD: int = 5  # Failures before opening circuit
+    CB_EMAIL_RECOVERY_TIMEOUT: int = 60  # Seconds before testing recovery
+    #
+    # LLM circuit breaker (shared for Anthropic and Ollama)
+    CB_LLM_FAILURE_THRESHOLD: int = 3  # Failures before opening circuit
+    CB_LLM_RECOVERY_TIMEOUT: int = 60  # Seconds before testing recovery
+    #
+    # ChromaDB/VectorStore circuit breaker
+    CB_CHROMADB_FAILURE_THRESHOLD: int = 3  # Failures before opening circuit
+    CB_CHROMADB_RECOVERY_TIMEOUT: int = 60  # Seconds before testing recovery
 
     @field_validator(
         # Only apply to truly Optional fields (can be None)

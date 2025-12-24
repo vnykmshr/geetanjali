@@ -14,8 +14,35 @@ from typing import Optional, Any
 from datetime import datetime, timedelta
 
 from config import settings
+from utils.metrics import cache_hits_total, cache_misses_total
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_key_type(key: str) -> str:
+    """Extract key type from cache key for metrics labeling.
+
+    Examples:
+        "verse:BG_2_47" -> "verse"
+        "search:karma:ch2:pNone:l20:o0" -> "search"
+        "metadata:chapters:all" -> "metadata"
+        "public_case:abc123" -> "case"
+        "rag_output:hash123" -> "rag"
+    """
+    if key.startswith("verse:"):
+        return "verse"
+    elif key.startswith("search:"):
+        return "search"
+    elif key.startswith("metadata:"):
+        return "metadata"
+    elif key.startswith("public_case:") or key.startswith("case_view:"):
+        return "case"
+    elif key.startswith("rag_output:"):
+        return "rag"
+    elif key.startswith("featured_cases:"):
+        return "featured"
+    else:
+        return "other"
 
 # Thread-safe random for TTL jitter (cryptographically secure)
 _system_random = random.SystemRandom()
@@ -153,12 +180,17 @@ class CacheService:
         if not client:
             return None
 
+        key_type = _extract_key_type(key)
         try:
             value = client.get(key)
             if value:
+                cache_hits_total.labels(key_type=key_type).inc()
                 return json.loads(value)
+            else:
+                cache_misses_total.labels(key_type=key_type).inc()
         except Exception as e:
             logger.warning(f"Cache get error for {key}: {e}")
+            cache_misses_total.labels(key_type=key_type).inc()
 
         return None
 
@@ -265,6 +297,60 @@ class CacheService:
         except Exception as e:
             logger.warning(f"Cache setnx error for {key}: {e}")
             return True  # On error, allow operation to proceed
+
+    @staticmethod
+    def incr(key: str, ttl: int = 0) -> int:
+        """
+        Atomically increment a counter.
+
+        Args:
+            key: Cache key for the counter
+            ttl: Optional TTL for the key (only set on first incr)
+
+        Returns:
+            New counter value, or 0 if Redis unavailable
+        """
+        client = get_redis_client()
+        if not client:
+            return 0
+
+        try:
+            value = client.incr(key)
+            # Set expiry only on first increment (when value is 1)
+            if value == 1 and ttl > 0:
+                client.expire(key, ttl)
+            return value
+        except Exception as e:
+            logger.warning(f"Cache incr error for {key}: {e}")
+            return 0
+
+    @staticmethod
+    def get_int(key: str) -> int:
+        """
+        Get an integer value from cache.
+
+        Args:
+            key: Cache key
+
+        Returns:
+            Integer value or 0 if not found/unavailable
+        """
+        client = get_redis_client()
+        if not client:
+            return 0
+
+        try:
+            value = client.get(key)
+            if value:
+                try:
+                    return int(value)
+                except ValueError:
+                    logger.error(f"Cache corruption: non-integer value for {key}")
+                    return 0
+        except Exception as e:
+            logger.warning(f"Cache get_int error for {key}: {e}")
+
+        return 0
 
 
 # Cache key builders
@@ -379,6 +465,15 @@ def public_case_view_key(slug: str, client_id: str) -> str:
     Key expires after 24 hours.
     """
     return f"case_view:{slug}:{client_id}"
+
+
+def daily_views_counter_key() -> str:
+    """Build cache key for daily case views counter.
+
+    Used for accurate 24h view tracking. Key includes date
+    so it automatically resets daily.
+    """
+    return f"case_views_daily:{datetime.utcnow().date().isoformat()}"
 
 
 # Convenience instance

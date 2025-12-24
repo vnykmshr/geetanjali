@@ -14,6 +14,9 @@ import uuid
 from datetime import datetime
 from typing import List, Optional, Set
 
+# Thread-safe random for worker processes
+_secure_random = random.SystemRandom()
+
 from sqlalchemy import or_, cast
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
@@ -143,7 +146,7 @@ def select_verse_for_subscriber(
     verses = query.all()
 
     if verses:
-        return random.choice(verses)
+        return _secure_random.choice(verses)
 
     # No verses found with principle filter, try featured as fallback
     if fallback_to_featured and principles:
@@ -155,7 +158,7 @@ def select_verse_for_subscriber(
             featured_query = featured_query.filter(Verse.canonical_id.notin_(exclude_ids))
         featured_verses = featured_query.all()
         if featured_verses:
-            return random.choice(featured_verses)
+            return _secure_random.choice(featured_verses)
 
     return None
 

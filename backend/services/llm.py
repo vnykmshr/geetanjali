@@ -125,17 +125,16 @@ class LLMService:
             limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
         )
 
-        # Initialize per-provider circuit breakers
-        # Lower threshold (3) for faster failover, 60s recovery
+        # Initialize per-provider circuit breakers (uses config settings)
         self._anthropic_breaker = LLMCircuitBreaker(
             provider="anthropic",
-            failure_threshold=3,
-            recovery_timeout=60.0,
+            failure_threshold=settings.CB_LLM_FAILURE_THRESHOLD,
+            recovery_timeout=float(settings.CB_LLM_RECOVERY_TIMEOUT),
         )
         self._ollama_breaker = LLMCircuitBreaker(
             provider="ollama",
-            failure_threshold=3,
-            recovery_timeout=60.0,
+            failure_threshold=settings.CB_LLM_FAILURE_THRESHOLD,
+            recovery_timeout=float(settings.CB_LLM_RECOVERY_TIMEOUT),
         )
 
         logger.info(

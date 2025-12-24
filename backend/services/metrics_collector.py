@@ -16,7 +16,7 @@ from models.case import Case
 from models.output import Output
 from models.verse import Verse
 from models.message import Message
-from services.cache import get_redis_client
+from services.cache import get_redis_client, cache, daily_views_counter_key
 from utils.metrics import (
     consultations_total,
     verses_served_total,
@@ -32,6 +32,7 @@ from utils.metrics import (
     redis_memory_usage_percent,
     queue_depth,
     worker_count,
+    failed_jobs,
     postgres_connections_active,
     postgres_connections_idle,
     postgres_database_size_bytes,
@@ -218,16 +219,10 @@ def _collect_engagement_metrics() -> None:
             )
             shared_cases_total.labels(mode=mode).set(count)
 
-        # Case views in last 24h (sum of view_count for recently viewed cases)
-        # Since we don't track view timestamps, we use total view_count for shared cases
-        total_views = (
-            db.query(func.sum(Case.view_count))
-            .filter(Case.share_mode.in_(["public", "unlisted"]))
-            .filter(Case.is_deleted.is_(False))
-            .scalar()
-            or 0
-        )
-        case_views_24h.set(total_views)
+        # Case views in last 24h (from Redis daily counter)
+        # Falls back to 0 if Redis unavailable
+        daily_views = cache.get_int(daily_views_counter_key())
+        case_views_24h.set(daily_views)
 
         # Feedback positive rate
         total_feedback = db.query(func.count(Feedback.id)).scalar() or 0
@@ -245,7 +240,7 @@ def _collect_engagement_metrics() -> None:
 
         logger.debug(
             f"Engagement metrics: subscribers={subscribers_count}, "
-            f"emails_24h={emails_24h}, views={total_views}, "
+            f"emails_24h={emails_24h}, views={daily_views}, "
             f"feedback_positive_rate={positive_rate if total_feedback > 0 else 0}"
         )
     except Exception as e:
@@ -262,6 +257,7 @@ def _collect_redis_metrics() -> None:
         redis_memory_usage_percent.set(0)
         queue_depth.set(0)
         worker_count.set(0)
+        failed_jobs.set(0)
         return
 
     try:
@@ -291,10 +287,15 @@ def _collect_redis_metrics() -> None:
         active_workers = len(workers)
         worker_count.set(active_workers)
 
+        # RQ Failed jobs count
+        failed_count = client.zcard("rq:failed:geetanjali") or 0
+        failed_jobs.set(failed_count)
+
         logger.debug(
             f"Redis metrics: connections={connected_clients}, "
             f"memory_used={used_memory}, maxmemory={maxmemory}, "
-            f"queue_depth={queue_len}, workers={active_workers}"
+            f"queue_depth={queue_len}, workers={active_workers}, "
+            f"failed_jobs={failed_count}"
         )
     except Exception as e:
         logger.error(f"Failed to collect Redis metrics: {e}")
@@ -302,6 +303,7 @@ def _collect_redis_metrics() -> None:
         redis_memory_usage_percent.set(0)
         queue_depth.set(0)
         worker_count.set(0)
+        failed_jobs.set(0)
 
 
 def _collect_postgres_metrics() -> None:

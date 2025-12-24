@@ -30,6 +30,8 @@ from abc import ABC, abstractmethod
 from threading import Lock
 from typing import Optional
 
+from utils.metrics import circuit_breaker_transitions_total
+
 logger = logging.getLogger(__name__)
 
 
@@ -110,6 +112,29 @@ class CircuitBreaker(ABC):
         with self._lock:
             return self._failure_count
 
+    def _transition_to(self, new_state: str) -> None:
+        """
+        Transition to a new state and record the transition.
+
+        Must be called while holding self._lock.
+
+        Args:
+            new_state: The new state to transition to
+        """
+        if self._state == new_state:
+            return  # No transition needed
+
+        from_state = self._state
+        self._state = new_state
+        self._update_metric(new_state)
+
+        # Record transition in Prometheus counter
+        circuit_breaker_transitions_total.labels(
+            service=self.name,
+            from_state=from_state,
+            to_state=new_state,
+        ).inc()
+
     def _check_recovery_timeout(self) -> None:
         """
         Check if recovery timeout has passed and transition to half_open.
@@ -125,16 +150,14 @@ class CircuitBreaker(ABC):
                     f"Circuit breaker '{self.name}' transitioning to HALF_OPEN "
                     f"after {self.recovery_timeout:.0f}s recovery timeout"
                 )
-                self._state = self.STATE_HALF_OPEN
-                self._update_metric(self._state)
+                self._transition_to(self.STATE_HALF_OPEN)
 
     def record_success(self) -> None:
         """Record successful request - reset circuit to closed."""
         with self._lock:
             was_half_open = self._state == self.STATE_HALF_OPEN
             self._failure_count = 0
-            self._state = self.STATE_CLOSED
-            self._update_metric(self._state)
+            self._transition_to(self.STATE_CLOSED)
             if was_half_open:
                 logger.info(
                     f"Circuit breaker '{self.name}' CLOSED after successful probe"
@@ -151,7 +174,7 @@ class CircuitBreaker(ABC):
                 logger.warning(
                     f"Circuit breaker '{self.name}' OPEN after failed probe"
                 )
-                self._state = self.STATE_OPEN
+                self._transition_to(self.STATE_OPEN)
             elif self._failure_count >= self.failure_threshold:
                 if self._state != self.STATE_OPEN:
                     logger.warning(
@@ -159,9 +182,7 @@ class CircuitBreaker(ABC):
                         f"{self._failure_count} consecutive failures. "
                         f"Will retry in {self.recovery_timeout:.0f}s"
                     )
-                self._state = self.STATE_OPEN
-
-            self._update_metric(self._state)
+                self._transition_to(self.STATE_OPEN)
 
     def allow_request(self) -> bool:
         """
@@ -186,8 +207,7 @@ class CircuitBreaker(ABC):
         with self._lock:
             self._failure_count = 0
             self._last_failure_time = None
-            self._state = self.STATE_CLOSED
-            self._update_metric(self._state)
+            self._transition_to(self.STATE_CLOSED)
 
     @abstractmethod
     def _update_metric(self, state: str) -> None:

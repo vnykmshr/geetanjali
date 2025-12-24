@@ -145,6 +145,8 @@ class TestVectorStoreCircuitBreakerIntegration:
             mock_settings.CHROMA_MAX_RETRIES = 1
             mock_settings.CHROMA_RETRY_MIN_WAIT = 0.1
             mock_settings.CHROMA_RETRY_MAX_WAIT = 0.5
+            mock_settings.CB_CHROMADB_FAILURE_THRESHOLD = 3
+            mock_settings.CB_CHROMADB_RECOVERY_TIMEOUT = 60
 
             with patch("services.vector_store.chromadb.Client"):
                 with patch(
@@ -175,6 +177,8 @@ class TestVectorStoreCircuitBreakerIntegration:
             mock_settings.CHROMA_MAX_RETRIES = 1
             mock_settings.CHROMA_RETRY_MIN_WAIT = 0.1
             mock_settings.CHROMA_RETRY_MAX_WAIT = 0.5
+            mock_settings.CB_CHROMADB_FAILURE_THRESHOLD = 3
+            mock_settings.CB_CHROMADB_RECOVERY_TIMEOUT = 60
 
             mock_collection = MagicMock()
             mock_collection.query.return_value = {
@@ -216,6 +220,8 @@ class TestVectorStoreCircuitBreakerIntegration:
             mock_settings.CHROMA_MAX_RETRIES = 2
             mock_settings.CHROMA_RETRY_MIN_WAIT = 0.01
             mock_settings.CHROMA_RETRY_MAX_WAIT = 0.02
+            mock_settings.CB_CHROMADB_FAILURE_THRESHOLD = 3
+            mock_settings.CB_CHROMADB_RECOVERY_TIMEOUT = 60
 
             mock_collection = MagicMock()
             mock_collection.query.side_effect = ConnectionError("ChromaDB unavailable")
@@ -249,6 +255,8 @@ class TestVectorStoreCircuitBreakerIntegration:
             mock_settings.CHROMA_PERSIST_DIRECTORY = "./test_chroma"
             mock_settings.CHROMA_COLLECTION_NAME = "test"
             mock_settings.EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+            mock_settings.CB_CHROMADB_FAILURE_THRESHOLD = 3
+            mock_settings.CB_CHROMADB_RECOVERY_TIMEOUT = 60
 
             with patch("services.vector_store.chromadb.Client"):
                 with patch(
@@ -258,3 +266,91 @@ class TestVectorStoreCircuitBreakerIntegration:
 
             assert hasattr(store, "circuit_breaker")
             assert isinstance(store.circuit_breaker, VectorStoreCircuitBreaker)
+
+    def test_search_retries_on_connection_error(self):
+        """Test search retries on connection errors before recording circuit breaker failure."""
+        from services.vector_store import VectorStore
+
+        with patch("services.vector_store.settings") as mock_settings:
+            mock_settings.CHROMA_HOST = None
+            mock_settings.CHROMA_PORT = 8000
+            mock_settings.CHROMA_PERSIST_DIRECTORY = "./test_chroma"
+            mock_settings.CHROMA_COLLECTION_NAME = "test"
+            mock_settings.EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+            mock_settings.CHROMA_MAX_RETRIES = 2
+            mock_settings.CHROMA_RETRY_MIN_WAIT = 0.01
+            mock_settings.CHROMA_RETRY_MAX_WAIT = 0.02
+            mock_settings.CB_CHROMADB_FAILURE_THRESHOLD = 3
+            mock_settings.CB_CHROMADB_RECOVERY_TIMEOUT = 60
+
+            mock_collection = MagicMock()
+            # First call has connection error, second succeeds
+            mock_collection.query.side_effect = [
+                ConnectionError("ChromaDB connection refused"),
+                {
+                    "ids": [["BG_2_47"]],
+                    "distances": [[0.1]],
+                    "documents": [["Test document"]],
+                    "metadatas": [[{"chapter": 2}]],
+                },
+            ]
+
+            with patch("services.vector_store.chromadb.Client") as mock_client_cls:
+                mock_client = MagicMock()
+                mock_client.get_or_create_collection.return_value = mock_collection
+                mock_client_cls.return_value = mock_client
+
+                with patch(
+                    "services.vector_store.embedding_functions.SentenceTransformerEmbeddingFunction"
+                ):
+                    store = VectorStore()
+
+            # Search should succeed after retry
+            result = store.search("test query")
+
+            # Circuit breaker should NOT have recorded a failure (retry succeeded)
+            assert store._circuit_breaker.failure_count == 0
+            assert result["ids"] == ["BG_2_47"]
+            # Verify query was called twice (initial + 1 retry)
+            assert mock_collection.query.call_count == 2
+
+    def test_search_records_failure_after_all_connection_retries(self):
+        """Test circuit breaker records failure only after all connection retries exhaust."""
+        from services.vector_store import VectorStore
+
+        with patch("services.vector_store.settings") as mock_settings:
+            mock_settings.CHROMA_HOST = None
+            mock_settings.CHROMA_PORT = 8000
+            mock_settings.CHROMA_PERSIST_DIRECTORY = "./test_chroma"
+            mock_settings.CHROMA_COLLECTION_NAME = "test"
+            mock_settings.EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+            mock_settings.CHROMA_MAX_RETRIES = 3  # 3 total attempts
+            mock_settings.CHROMA_RETRY_MIN_WAIT = 0.01
+            mock_settings.CHROMA_RETRY_MAX_WAIT = 0.02
+            mock_settings.CB_CHROMADB_FAILURE_THRESHOLD = 3
+            mock_settings.CB_CHROMADB_RECOVERY_TIMEOUT = 60
+
+            mock_collection = MagicMock()
+            # All calls have connection errors
+            mock_collection.query.side_effect = ConnectionError("ChromaDB unavailable")
+
+            with patch("services.vector_store.chromadb.Client") as mock_client_cls:
+                mock_client = MagicMock()
+                mock_client.get_or_create_collection.return_value = mock_collection
+                mock_client_cls.return_value = mock_client
+
+                with patch(
+                    "services.vector_store.embedding_functions.SentenceTransformerEmbeddingFunction"
+                ):
+                    store = VectorStore()
+
+            assert store._circuit_breaker.failure_count == 0
+
+            # Search should fail after all retries
+            with pytest.raises(ConnectionError):
+                store.search("test query")
+
+            # Circuit breaker should record exactly 1 failure (not 3)
+            assert store._circuit_breaker.failure_count == 1
+            # Verify all attempts (stop_after_attempt=3 means 3 total attempts)
+            assert mock_collection.query.call_count == 3

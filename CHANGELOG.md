@@ -2,6 +2,35 @@
 
 All notable changes to Geetanjali are documented here.
 
+## [1.15.0] - 2025-12-24
+
+Circuit breaker resilience, comprehensive observability, and operational metrics.
+
+### Features
+- **Circuit Breakers** - Per-service circuit breakers (LLM, ChromaDB, Email) with configurable thresholds and recovery timeouts. Prevents cascade failures during outages.
+- **LLM Fallback Tracking** - Metrics track fallback events with reason labels (circuit_open, retries_exhausted, error) for better debugging.
+- **Vector Search Fallback** - SQL keyword search fallback when ChromaDB is unavailable, tracked via metrics.
+- **Cache Metrics** - Hit/miss counters by key type (verse, search, metadata, case, rag) for cache efficiency monitoring.
+
+### Infrastructure
+- **Grafana Dashboard** - New sections: Resilience (circuit breaker states), Cache & Data Retrieval (hit rate, fallback tracking), Email Service (success rate, send duration), Worker Queue (depth, failed jobs).
+- **Prometheus Alerts** - Circuit breaker state alerts with configurable thresholds for proactive incident response.
+- **API Error Tracking** - `api_errors_total` counter wired to all exception handlers with normalized endpoint paths.
+- **Case Views Accuracy** - Daily views now tracked via Redis counter for accurate 24h metrics.
+
+### Technical
+- Abstract `CircuitBreaker` base class with state transitions and metrics integration
+- Per-provider LLM circuit breakers (Anthropic, Ollama) with independent failure tracking
+- Cache TTL jitter prevents stampede during high-traffic periods
+- Retry-before-circuit pattern: retries exhaust before recording circuit failure
+- 24+ new tests for cache operations and circuit breaker behavior
+
+### Improvements
+- Email retry decorator with metrics integration for all email types
+- Failed jobs metric for RQ worker queue monitoring
+- Endpoint path normalization prevents Prometheus cardinality explosion
+- Config constant for daily counter TTL (timezone-safe 48h window)
+
 ## [1.14.0] - 2025-12-23
 
 Deployment resilience, improved email verification UX, and test coverage.

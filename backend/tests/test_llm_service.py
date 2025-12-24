@@ -163,6 +163,8 @@ class TestLLMServiceCircuitBreakerIntegration:
             mock_settings.OLLAMA_BASE_URL = "http://localhost:11434"
             mock_settings.OLLAMA_MODEL = "qwen2.5:3b"
             mock_settings.OLLAMA_TIMEOUT = 300
+            mock_settings.CB_LLM_FAILURE_THRESHOLD = 3
+            mock_settings.CB_LLM_RECOVERY_TIMEOUT = 60
 
             with patch("services.llm.Anthropic"):
                 service = LLMService()
@@ -194,6 +196,8 @@ class TestLLMServiceCircuitBreakerIntegration:
             mock_settings.OLLAMA_BASE_URL = "http://localhost:11434"
             mock_settings.OLLAMA_MODEL = "qwen2.5:3b"
             mock_settings.OLLAMA_TIMEOUT = 300
+            mock_settings.CB_LLM_FAILURE_THRESHOLD = 3
+            mock_settings.CB_LLM_RECOVERY_TIMEOUT = 60
 
             service = LLMService()
 
@@ -226,6 +230,8 @@ class TestLLMServiceCircuitBreakerIntegration:
             mock_settings.OLLAMA_BASE_URL = "http://localhost:11434"
             mock_settings.OLLAMA_MODEL = "qwen2.5:3b"
             mock_settings.OLLAMA_TIMEOUT = 300
+            mock_settings.CB_LLM_FAILURE_THRESHOLD = 3
+            mock_settings.CB_LLM_RECOVERY_TIMEOUT = 60
 
             with patch("services.llm.Anthropic"):
                 service = LLMService()
@@ -242,6 +248,94 @@ class TestLLMServiceCircuitBreakerIntegration:
             )
 
             assert result["provider"] == "mock"
+
+    def test_timeout_error_triggers_retry_not_immediate_circuit_failure(self):
+        """Test APITimeoutError triggers retry, doesn't immediately record circuit failure."""
+        from services.llm import LLMService
+        from anthropic import APITimeoutError
+
+        with patch("services.llm.settings") as mock_settings:
+            mock_settings.USE_MOCK_LLM = False
+            mock_settings.LLM_PROVIDER = "anthropic"
+            mock_settings.LLM_FALLBACK_PROVIDER = "mock"
+            mock_settings.LLM_FALLBACK_ENABLED = True
+            mock_settings.ANTHROPIC_API_KEY = "test-key"
+            mock_settings.ANTHROPIC_MODEL = "claude-3-sonnet"
+            mock_settings.ANTHROPIC_MAX_TOKENS = 1024
+            mock_settings.ANTHROPIC_TIMEOUT = 60
+            mock_settings.OLLAMA_ENABLED = False
+            mock_settings.OLLAMA_BASE_URL = "http://localhost:11434"
+            mock_settings.OLLAMA_MODEL = "qwen2.5:3b"
+            mock_settings.OLLAMA_TIMEOUT = 300
+
+            mock_client = MagicMock()
+            mock_response = MagicMock()
+            mock_response.content = [MagicMock(text='{"key": "value"}')]
+            mock_response.usage = MagicMock(input_tokens=10, output_tokens=20)
+
+            # First call times out, second succeeds
+            mock_client.messages.create.side_effect = [
+                APITimeoutError(request=MagicMock()),
+                mock_response,
+            ]
+
+            with patch("services.llm.Anthropic", return_value=mock_client):
+                service = LLMService()
+
+            assert service._anthropic_breaker.failure_count == 0
+
+            # Generate should succeed after retry
+            result = service._generate_anthropic(
+                prompt="Test prompt",
+                system_prompt="Test system",
+            )
+
+            # Circuit breaker should NOT have recorded a failure (retry succeeded)
+            assert service._anthropic_breaker.failure_count == 0
+            assert "key" in result["response"]
+
+    def test_connection_error_triggers_retry(self):
+        """Test APIConnectionError triggers retry before circuit breaker failure."""
+        from services.llm import LLMService
+        from anthropic import APIConnectionError
+
+        with patch("services.llm.settings") as mock_settings:
+            mock_settings.USE_MOCK_LLM = False
+            mock_settings.LLM_PROVIDER = "anthropic"
+            mock_settings.LLM_FALLBACK_PROVIDER = "mock"
+            mock_settings.LLM_FALLBACK_ENABLED = True
+            mock_settings.ANTHROPIC_API_KEY = "test-key"
+            mock_settings.ANTHROPIC_MODEL = "claude-3-sonnet"
+            mock_settings.ANTHROPIC_MAX_TOKENS = 1024
+            mock_settings.ANTHROPIC_TIMEOUT = 60
+            mock_settings.OLLAMA_ENABLED = False
+            mock_settings.OLLAMA_BASE_URL = "http://localhost:11434"
+            mock_settings.OLLAMA_MODEL = "qwen2.5:3b"
+            mock_settings.OLLAMA_TIMEOUT = 300
+
+            mock_client = MagicMock()
+            mock_response = MagicMock()
+            mock_response.content = [MagicMock(text='{"result": "success"}')]
+            mock_response.usage = MagicMock(input_tokens=10, output_tokens=20)
+
+            # First call has connection error, second succeeds
+            mock_client.messages.create.side_effect = [
+                APIConnectionError(request=MagicMock()),
+                mock_response,
+            ]
+
+            with patch("services.llm.Anthropic", return_value=mock_client):
+                service = LLMService()
+
+            # Generate should succeed after retry
+            result = service._generate_anthropic(
+                prompt="Test prompt",
+                system_prompt="Test system",
+            )
+
+            # Circuit breaker should NOT have recorded a failure
+            assert service._anthropic_breaker.failure_count == 0
+            assert "result" in result["response"]
 
 
 class TestLLMService:

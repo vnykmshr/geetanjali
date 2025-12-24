@@ -1,0 +1,119 @@
+# Circuit Breaker Alerting Rules
+# Alerts for service degradation and fallback events
+
+groups:
+  - name: circuit_breakers
+    interval: 30s
+    rules:
+      # =============================================================================
+      # LLM Circuit Breaker Alerts
+      # =============================================================================
+
+      - alert: LLMCircuitBreakerOpen
+        expr: geetanjali_llm_circuit_breaker_state{provider=~"anthropic|ollama"} == 2
+        for: 2m
+        labels:
+          severity: warning
+          component: llm
+        annotations:
+          summary: "LLM circuit breaker open for {{ $labels.provider }}"
+          description: "{{ $labels.provider }} circuit breaker has been open for 2 minutes. Requests are being rejected or falling back to secondary provider."
+          runbook_url: "https://github.com/geetanjaliapp/geetanjali/blob/main/docs/runbooks/llm-circuit-breaker.md"
+
+      - alert: LLMCircuitBreakerHalfOpen
+        expr: geetanjali_llm_circuit_breaker_state{provider=~"anthropic|ollama"} == 1
+        for: 5m
+        labels:
+          severity: info
+          component: llm
+        annotations:
+          summary: "LLM circuit breaker stuck in half-open for {{ $labels.provider }}"
+          description: "{{ $labels.provider }} circuit breaker has been in half-open state for 5 minutes. May indicate flapping service."
+
+      # =============================================================================
+      # ChromaDB Circuit Breaker Alerts
+      # =============================================================================
+
+      - alert: ChromaDBCircuitBreakerOpen
+        expr: geetanjali_chromadb_circuit_breaker_state == 2
+        for: 2m
+        labels:
+          severity: warning
+          component: vector_store
+        annotations:
+          summary: "ChromaDB circuit breaker open"
+          description: "Vector search is unavailable. RAG pipeline is using SQL keyword fallback. Search quality may be degraded."
+          runbook_url: "https://github.com/geetanjaliapp/geetanjali/blob/main/docs/runbooks/chromadb-circuit-breaker.md"
+
+      # =============================================================================
+      # Email Circuit Breaker Alerts
+      # =============================================================================
+
+      - alert: EmailCircuitBreakerOpen
+        expr: geetanjali_email_circuit_breaker_state == 2
+        for: 5m
+        labels:
+          severity: critical
+          component: email
+        annotations:
+          summary: "Email circuit breaker open"
+          description: "Email service unavailable for 5 minutes. Password resets, account verification, and notifications are failing."
+          runbook_url: "https://github.com/geetanjaliapp/geetanjali/blob/main/docs/runbooks/email-circuit-breaker.md"
+
+      # =============================================================================
+      # Fallback Rate Alerts
+      # =============================================================================
+
+      - alert: HighLLMFallbackRate
+        expr: |
+          rate(geetanjali_llm_fallback_total[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: llm
+        annotations:
+          summary: "High LLM fallback rate"
+          description: "Primary LLM provider {{ $labels.primary }} is experiencing frequent fallbacks to {{ $labels.fallback }} ({{ $value | printf \"%.2f\" }}/s). Reason: {{ $labels.reason }}"
+
+      - alert: LLMFallbackCircuitOpen
+        expr: |
+          increase(geetanjali_llm_fallback_total{reason="circuit_open"}[15m]) > 10
+        labels:
+          severity: warning
+          component: llm
+        annotations:
+          summary: "Frequent LLM fallbacks due to circuit breaker"
+          description: "{{ $value | printf \"%.0f\" }} fallbacks in last 15 minutes due to circuit breaker. Primary provider {{ $labels.primary }} may be experiencing sustained issues."
+
+      # =============================================================================
+      # All Circuit Breakers Summary
+      # =============================================================================
+
+      - alert: MultipleCircuitBreakersOpen
+        expr: |
+          (geetanjali_llm_circuit_breaker_state{provider="anthropic"} == 2)
+          + (geetanjali_llm_circuit_breaker_state{provider="ollama"} == 2)
+          + (geetanjali_chromadb_circuit_breaker_state == 2)
+          + (geetanjali_email_circuit_breaker_state == 2)
+          >= 2
+        for: 2m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Multiple circuit breakers open"
+          description: "Two or more circuit breakers are open simultaneously. System is in degraded state. Immediate investigation required."
+
+      # =============================================================================
+      # Circuit Breaker Flapping Detection
+      # =============================================================================
+
+      - alert: CircuitBreakerFlapping
+        expr: |
+          increase(geetanjali_circuit_breaker_transitions_total{to_state="open"}[15m]) >= 3
+        labels:
+          severity: warning
+          component: resilience
+        annotations:
+          summary: "Circuit breaker flapping for {{ $labels.service }}"
+          description: "Service {{ $labels.service }} has opened {{ $value | printf \"%.0f\" }} times in 15 minutes. May indicate intermittent service issues or misconfigured thresholds."

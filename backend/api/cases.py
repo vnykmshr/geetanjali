@@ -28,6 +28,7 @@ from models.case import Case
 from models.user import User
 from services.cache import (
     cache,
+    daily_views_counter_key,
     featured_cases_key,
     public_case_key,
     public_case_messages_key,
@@ -777,6 +778,10 @@ async def record_public_view(
         # Only increment if this is a new unique view
         case.view_count = (case.view_count or 0) + 1
         db.commit()
+
+        # Increment daily views counter for accurate 24h metrics
+        cache.incr(daily_views_counter_key(), ttl=settings.CACHE_TTL_DAILY_COUNTER)
+
         logger.debug(f"Public case {slug} new view from {client_ip}, count: {case.view_count}")
     else:
         logger.debug(f"Public case {slug} duplicate view from {client_ip}, count unchanged")

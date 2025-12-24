@@ -5,6 +5,10 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+# Alerting rules for circuit breakers and service health
+rule_files:
+  - "alerts/*.yml"
+
 scrape_configs:
   # Backend FastAPI metrics
   - job_name: 'backend'

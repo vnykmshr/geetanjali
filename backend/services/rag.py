@@ -26,6 +26,7 @@ from db import SessionLocal
 from db.repositories.verse_repository import VerseRepository
 from utils.json_parsing import extract_json_from_text
 from utils.validation import validate_canonical_id
+from utils.metrics import vector_search_fallback_total
 
 logger = logging.getLogger(__name__)
 
@@ -629,6 +630,7 @@ class RAGPipeline:
             logger.warning(
                 "ChromaDB circuit breaker open, falling back to SQL keyword search"
             )
+            vector_search_fallback_total.labels(reason="circuit_open").inc()
             return self._retrieve_verses_sql_fallback(query, top_k)
 
         except Exception as e:
@@ -636,6 +638,7 @@ class RAGPipeline:
             logger.warning(
                 f"Vector search failed ({e}), falling back to SQL keyword search"
             )
+            vector_search_fallback_total.labels(reason="error").inc()
             return self._retrieve_verses_sql_fallback(query, top_k)
 
     def _format_vector_results(

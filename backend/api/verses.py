@@ -3,6 +3,9 @@
 import logging
 import random
 from typing import List, Optional
+
+# Thread-safe random for concurrent request handling
+_secure_random = random.SystemRandom()
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
@@ -236,8 +239,8 @@ async def get_random_verse(
             status_code=status.HTTP_404_NOT_FOUND, detail=ERR_NO_VERSES_IN_DB
         )
 
-    # Pick random ID and load single verse
-    selected_id = random.choice(verse_ids)
+    # Pick random ID and load single verse (thread-safe)
+    selected_id = _secure_random.choice(verse_ids)
 
     # Try verse cache first
     verse_cache_key = verse_key(selected_id)

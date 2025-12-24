@@ -120,8 +120,11 @@ class EmailCircuitBreaker(CircuitBreaker):
         email_circuit_breaker_state.set(self.STATE_VALUES.get(state, 0))
 
 
-# Global circuit breaker instance
-_email_circuit_breaker = EmailCircuitBreaker()
+# Global circuit breaker instance (uses config settings)
+_email_circuit_breaker = EmailCircuitBreaker(
+    failure_threshold=settings.CB_EMAIL_FAILURE_THRESHOLD,
+    recovery_timeout=float(settings.CB_EMAIL_RECOVERY_TIMEOUT),
+)
 
 
 def get_circuit_breaker() -> EmailCircuitBreaker:
@@ -502,6 +505,7 @@ def _email_fallback_link(url: str) -> str:
     """
 
 
+@with_email_retry(max_retries=2, base_delay=1.0)
 def send_alert_email(subject: str, message: str) -> bool:
     """
     Send an alert/notification email to the configured admin.
@@ -551,6 +555,7 @@ def send_alert_email(subject: str, message: str) -> bool:
         return False
 
 
+@with_email_retry(max_retries=2, base_delay=1.0)
 def send_contact_email(
     name: str, email: str, message_type: str, subject: Optional[str], message: str
 ) -> bool:
@@ -740,6 +745,7 @@ Geetanjali - Ethical Guidance from the Bhagavad Geeta
         return False
 
 
+@with_email_retry(max_retries=2, base_delay=1.0)
 def send_newsletter_verification_email(
     email: str, name: Optional[str], verify_url: str
 ) -> bool:
@@ -824,6 +830,7 @@ Geetanjali - Ethical Guidance from the Bhagavad Geeta
         return False
 
 
+@with_email_retry(max_retries=2, base_delay=1.0)
 def send_newsletter_welcome_email(
     email: str,
     name: Optional[str],
@@ -966,6 +973,7 @@ def _format_sanskrit_lines(text: str) -> list[str]:
     return result
 
 
+@with_email_retry(max_retries=2, base_delay=1.0)
 def send_newsletter_digest_email(
     email: str,
     name: str,
@@ -1351,6 +1359,7 @@ Geetanjali - Wisdom for modern life
         return False
 
 
+@with_email_retry(max_retries=2, base_delay=1.0)
 def send_account_deleted_email(email: str, name: str) -> bool:
     """
     Send confirmation when user's account is deleted.

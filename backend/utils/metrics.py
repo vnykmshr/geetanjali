@@ -76,6 +76,11 @@ worker_count = Gauge(
     "Number of active RQ workers",
 )
 
+failed_jobs = Gauge(
+    "geetanjali_failed_jobs",
+    "Number of failed jobs in the RQ failed registry",
+)
+
 # Error Metrics
 api_errors_total = Counter(
     "geetanjali_api_errors_total",
@@ -185,4 +190,31 @@ email_send_duration_seconds = Histogram(
 email_circuit_breaker_state = Gauge(
     "geetanjali_email_circuit_breaker_state",
     "Email circuit breaker state (0=closed, 1=half_open, 2=open)",
+)
+
+# Circuit breaker state transition counter (tracks all services)
+circuit_breaker_transitions_total = Counter(
+    "geetanjali_circuit_breaker_transitions_total",
+    "Circuit breaker state transitions by service and transition type",
+    ["service", "from_state", "to_state"],
+)
+
+# Cache Metrics
+cache_hits_total = Counter(
+    "geetanjali_cache_hits_total",
+    "Total cache hits by key type",
+    ["key_type"],  # verse, search, metadata, case, rag
+)
+
+cache_misses_total = Counter(
+    "geetanjali_cache_misses_total",
+    "Total cache misses by key type",
+    ["key_type"],
+)
+
+# Vector Search Metrics
+vector_search_fallback_total = Counter(
+    "geetanjali_vector_search_fallback_total",
+    "Total vector search fallbacks to SQL by reason",
+    ["reason"],  # circuit_open, error
 )
