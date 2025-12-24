@@ -23,7 +23,12 @@ from config import settings
 from services.mock_llm import MockLLMService
 from utils.circuit_breaker import CircuitBreaker, CircuitBreakerOpen
 from utils.exceptions import LLMError, RetryableLLMError
-from utils.metrics_llm import llm_requests_total, llm_tokens_total, llm_circuit_breaker_state
+from utils.metrics_llm import (
+    llm_requests_total,
+    llm_tokens_total,
+    llm_circuit_breaker_state,
+    llm_fallback_total,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -426,8 +431,23 @@ class LLMService:
 
         # Try fallback if primary failed and fallback is enabled
         if primary_error and self.fallback_enabled:
+            # Determine fallback reason for metrics
+            fallback_reason = "error"
+            if isinstance(primary_error, CircuitBreakerOpen):
+                fallback_reason = "circuit_open"
+            elif isinstance(primary_error, RetryableLLMError):
+                fallback_reason = "retries_exhausted"
+
+            # Track fallback event
+            llm_fallback_total.labels(
+                primary=self.primary_provider.value,
+                fallback=self.fallback_provider.value,
+                reason=fallback_reason,
+            ).inc()
+
             logger.info(
-                f"Attempting fallback provider: {self.fallback_provider.value}"
+                f"Attempting fallback provider: {self.fallback_provider.value} "
+                f"(reason: {fallback_reason})"
             )
             try:
                 # Use simplified prompts for fallback if provided

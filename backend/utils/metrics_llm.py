@@ -20,6 +20,13 @@ llm_tokens_total = Counter(
     ["provider", "token_type"],
 )
 
+# LLM Fallback Metrics
+llm_fallback_total = Counter(
+    "geetanjali_llm_fallback_total",
+    "Total LLM fallback events by primary and fallback provider",
+    ["primary", "fallback", "reason"],
+)
+
 # LLM Circuit Breaker Metrics (one per provider)
 # Values: 0=closed, 1=half_open, 2=open
 llm_circuit_breaker_state = Gauge(

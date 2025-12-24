@@ -60,6 +60,8 @@ class Settings(BaseSettings):
     )
     # Fallback provider: anthropic, ollama, or mock
     # Provides resilience when primary provider fails or circuit breaker opens
+    # Fallback events are tracked via geetanjali_llm_fallback_total metric
+    # with labels: primary, fallback, reason (circuit_open, retries_exhausted, error)
     LLM_FALLBACK_PROVIDER: str = "mock"  # Fallback provider
     LLM_FALLBACK_ENABLED: bool = True  # Enable fallback to secondary provider
     USE_MOCK_LLM: bool = False  # Use mock LLM for testing (overrides provider setting)
