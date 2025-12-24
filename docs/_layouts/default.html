@@ -107,31 +107,91 @@
       </footer>
     </main>
 
-    <!-- Mermaid.js for diagram rendering -->
+    <!-- Mermaid.js for diagram rendering with dark mode support -->
     <script type="module">
       import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 
-      mermaid.initialize({
-        startOnLoad: false,
-        theme: 'neutral',
-        securityLevel: 'loose',
-        flowchart: {
-          useMaxWidth: true,
-          htmlLabels: true
-        }
-      });
+      // Detect if dark mode is active
+      function isDarkMode() {
+        const root = document.documentElement;
+        if (root.classList.contains('dark')) return true;
+        if (root.classList.contains('light')) return false;
+        // System preference fallback
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
 
-      // Find all mermaid code blocks and render them
+      // Get Mermaid theme based on current mode
+      function getMermaidTheme() {
+        return isDarkMode() ? 'dark' : 'neutral';
+      }
+
+      // Store original diagram sources for re-rendering
+      const diagramSources = [];
+
+      // Initialize Mermaid with current theme
+      function initMermaid() {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: getMermaidTheme(),
+          securityLevel: 'loose',
+          flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true
+          },
+          themeVariables: isDarkMode() ? {
+            primaryColor: '#4b5563',
+            primaryTextColor: '#f3f4f6',
+            primaryBorderColor: '#6b7280',
+            lineColor: '#9ca3af',
+            secondaryColor: '#374151',
+            tertiaryColor: '#1f2937',
+            background: '#1f2937',
+            mainBkg: '#374151',
+            nodeBorder: '#6b7280',
+            clusterBkg: '#374151',
+            clusterBorder: '#4b5563',
+            titleColor: '#f3f4f6',
+            edgeLabelBackground: '#374151'
+          } : {}
+        });
+      }
+
+      // Find all mermaid code blocks and convert them
       document.querySelectorAll('pre code.language-mermaid').forEach((block, index) => {
         const pre = block.parentElement;
         const container = document.createElement('div');
         container.className = 'mermaid';
-        container.textContent = block.textContent;
+        container.id = `mermaid-${index}`;
+        const source = block.textContent;
+        diagramSources.push({ id: container.id, source });
+        container.textContent = source;
         pre.parentNode.replaceChild(container, pre);
       });
 
-      // Render all mermaid diagrams
+      // Initial render
+      initMermaid();
       await mermaid.run();
+
+      // Re-render on theme change
+      const observer = new MutationObserver(async (mutations) => {
+        for (const mutation of mutations) {
+          if (mutation.attributeName === 'class') {
+            // Reset and re-render all diagrams with new theme
+            initMermaid();
+            for (const { id, source } of diagramSources) {
+              const el = document.getElementById(id);
+              if (el) {
+                el.removeAttribute('data-processed');
+                el.innerHTML = source;
+              }
+            }
+            await mermaid.run();
+            break;
+          }
+        }
+      });
+
+      observer.observe(document.documentElement, { attributes: true });
     </script>
 
     <style>
