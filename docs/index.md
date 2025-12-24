@@ -100,8 +100,16 @@ For operators and contributors:
 
 ## Reference
 
+- **[API Reference](api.md)** — REST API endpoints, authentication, rate limits, examples
+- **[Reference](reference.md)** — Environment variables, error codes, glossary, scripts
 - **[Data Sources](data.md)** — Bhagavad Geeta content, licensing, ingestion pipeline
 - **[SEO](seo.md)** — Search engine setup and why we skipped prerendering
+
+---
+
+## About
+
+- **[About Geetanjali](about.md)** — Vision, principles, FAQ, and accessibility statement
 
 ---
 
