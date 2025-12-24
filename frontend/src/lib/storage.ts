@@ -39,7 +39,6 @@ export const STORAGE_KEYS = {
 
   // Onboarding/UI state
   readingOnboardingSeen: "geetanjali:readingOnboardingSeen",
-  syncToastSession: "geetanjali:syncToastSession",
   verseViewCount: "geetanjali:verseViewCount", // For newsletter nudge trigger
 
   // Feature-specific
@@ -122,7 +121,6 @@ export function getClearableKeys(): string[] {
     STORAGE_KEYS.newsletterToastShown,
     // UI state
     STORAGE_KEYS.readingOnboardingSeen,
-    STORAGE_KEYS.syncToastSession,
     STORAGE_KEYS.verseViewCount,
     // Email verification
     STORAGE_KEYS.verifyBannerDismissed,

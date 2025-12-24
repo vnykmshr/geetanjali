@@ -13,7 +13,6 @@ import {
   FloatingActionButton,
   SkipLink,
   OfflineIndicator,
-  SyncToast,
 } from "./components";
 import { lazyWithRetry } from "./lib/lazyWithRetry";
 
@@ -131,7 +130,6 @@ function App() {
     <Router>
       <SkipLink />
       <OfflineIndicator />
-      <SyncToast />
       <FloatingActionButton />
       <main id="main-content">
         <Suspense fallback={<PageLoader />}>
