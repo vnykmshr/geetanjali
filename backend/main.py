@@ -1,6 +1,10 @@
 """Main FastAPI application."""
 
+import asyncio
 import uuid
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -49,11 +53,147 @@ from api.dependencies import limiter
 
 logger = setup_logging()
 
+
+# =============================================================================
+# Application Lifespan (startup/shutdown)
+# =============================================================================
+
+
+def _load_vector_store_sync() -> None:
+    """Load vector store synchronously in a thread."""
+    try:
+        logger.info("Pre-loading vector store in background (loads embedding model)...")
+        from services.vector_store import get_vector_store
+
+        get_vector_store()  # Initialize vector store
+        logger.info("Vector store pre-loaded successfully")
+    except Exception as e:
+        logger.error(f"Failed to pre-load vector store: {e} (will load on first request)")
+
+
+def _warm_daily_verse_cache() -> None:
+    """Pre-warm daily verse cache to avoid cold-start latency."""
+    try:
+        from datetime import date
+        from sqlalchemy import func
+
+        from db import SessionLocal
+        from models.verse import Verse
+        from api.schemas import VerseResponse
+        from services.cache import (
+            cache,
+            daily_verse_key,
+            featured_count_key,
+            featured_verse_ids_key,
+            calculate_midnight_ttl,
+        )
+
+        # Skip if cache is not available
+        if not cache.is_available():
+            logger.debug("Cache not available, skipping daily verse warm-up")
+            return
+
+        # Check if already cached
+        cache_key = daily_verse_key()
+        if cache.get(cache_key):
+            logger.debug("Daily verse already cached, skipping warm-up")
+            return
+
+        logger.info("Warming daily verse cache...")
+
+        with SessionLocal() as db:
+            # Warm featured verse count
+            count_key = featured_count_key()
+            featured_count = cache.get(count_key)
+            if featured_count is None:
+                featured_count = (
+                    db.query(func.count(Verse.id))
+                    .filter(Verse.is_featured.is_(True))
+                    .scalar()
+                )
+                cache.set(count_key, featured_count, settings.CACHE_TTL_FEATURED_COUNT)
+
+            # Warm featured verse IDs (used by random verse)
+            ids_key = featured_verse_ids_key()
+            if not cache.get(ids_key):
+                verse_ids = [
+                    row[0]
+                    for row in db.query(Verse.canonical_id)
+                    .filter(Verse.is_featured.is_(True))
+                    .all()
+                ]
+                if verse_ids:
+                    cache.set(ids_key, verse_ids, 3600)  # 1 hour TTL
+
+            # Calculate and cache daily verse
+            if featured_count and featured_count > 0:
+                today = date.today()
+                day_of_year = today.timetuple().tm_yday
+                verse_index = day_of_year % featured_count
+                verse = (
+                    db.query(Verse)
+                    .filter(Verse.is_featured.is_(True))
+                    .offset(verse_index)
+                    .first()
+                )
+                if verse:
+                    verse_data = VerseResponse.model_validate(verse).model_dump()
+                    ttl = calculate_midnight_ttl()
+                    cache.set(cache_key, verse_data, ttl)
+                    logger.info(f"Daily verse cached: {verse.canonical_id} (TTL: {ttl}s)")
+
+    except Exception as e:
+        logger.warning(f"Failed to warm daily verse cache: {e}")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """
+    Application lifespan manager.
+
+    Handles startup and shutdown events using modern FastAPI pattern.
+    Replaces deprecated @app.on_event("startup") and @app.on_event("shutdown").
+    """
+    # === STARTUP ===
+    logger.info(f"Starting {settings.APP_NAME} in {settings.APP_ENV} mode")
+
+    # Run blocking I/O in thread pool to avoid blocking event loop
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(None, _load_vector_store_sync)
+    loop.run_in_executor(None, _warm_daily_verse_cache)
+
+    # Start metrics scheduler (collects business metrics every 60s)
+    start_metrics_scheduler(collect_metrics, interval_seconds=60)
+
+    logger.info("Application startup complete")
+
+    yield  # Application runs here
+
+    # === SHUTDOWN ===
+    logger.info("Application shutdown initiated")
+
+    stop_metrics_scheduler()
+
+    # Clean up services to release resources
+    from services.llm import cleanup_llm_service
+    from services.vector_store import cleanup_vector_store
+
+    cleanup_llm_service()
+    cleanup_vector_store()
+
+    logger.info("Application shutdown complete")
+
+
+# =============================================================================
+# FastAPI Application
+# =============================================================================
+
 app = FastAPI(
     title=settings.APP_NAME,
     description="Ethical leadership guidance from the Bhagavad Geeta",
     version=settings.APP_VERSION,
     debug=settings.DEBUG,
+    lifespan=lifespan,
 )
 
 app.state.limiter = limiter
@@ -141,125 +281,6 @@ app.include_router(preferences.router, tags=["Preferences"])
 
 # Prometheus metrics instrumentation (excludes /metrics from instrumentation)
 Instrumentator().instrument(app).expose(app, include_in_schema=False)
-
-logger.info(f"Starting {settings.APP_NAME} in {settings.APP_ENV} mode")
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Run on application startup."""
-    import asyncio
-
-    def load_vector_store_sync():
-        """Load vector store synchronously in a thread."""
-        try:
-            logger.info(
-                "Pre-loading vector store in background (loads embedding model)..."
-            )
-            from services.vector_store import get_vector_store
-
-            get_vector_store()  # Initialize vector store
-            logger.info("Vector store pre-loaded successfully")
-        except Exception as e:
-            logger.error(
-                f"Failed to pre-load vector store: {e} (will load on first request)"
-            )
-
-    def warm_daily_verse_cache():
-        """Pre-warm daily verse cache to avoid cold-start latency."""
-        try:
-            from datetime import date
-            from sqlalchemy import func
-
-            from db import SessionLocal
-            from models.verse import Verse
-            from api.schemas import VerseResponse
-            from services.cache import (
-                cache,
-                daily_verse_key,
-                featured_count_key,
-                featured_verse_ids_key,
-                calculate_midnight_ttl,
-            )
-
-            # Skip if cache is not available
-            if not cache.is_available():
-                logger.debug("Cache not available, skipping daily verse warm-up")
-                return
-
-            # Check if already cached
-            cache_key = daily_verse_key()
-            if cache.get(cache_key):
-                logger.debug("Daily verse already cached, skipping warm-up")
-                return
-
-            logger.info("Warming daily verse cache...")
-
-            with SessionLocal() as db:
-                # Warm featured verse count
-                count_key = featured_count_key()
-                featured_count = cache.get(count_key)
-                if featured_count is None:
-                    featured_count = (
-                        db.query(func.count(Verse.id))
-                        .filter(Verse.is_featured.is_(True))
-                        .scalar()
-                    )
-                    cache.set(
-                        count_key, featured_count, settings.CACHE_TTL_FEATURED_COUNT
-                    )
-
-                # Warm featured verse IDs (used by random verse)
-                ids_key = featured_verse_ids_key()
-                if not cache.get(ids_key):
-                    verse_ids = [
-                        row[0]
-                        for row in db.query(Verse.canonical_id)
-                        .filter(Verse.is_featured.is_(True))
-                        .all()
-                    ]
-                    if verse_ids:
-                        cache.set(ids_key, verse_ids, 3600)  # 1 hour TTL
-
-                # Calculate and cache daily verse
-                if featured_count and featured_count > 0:
-                    today = date.today()
-                    day_of_year = today.timetuple().tm_yday
-                    verse_index = day_of_year % featured_count
-                    verse = (
-                        db.query(Verse)
-                        .filter(Verse.is_featured.is_(True))
-                        .offset(verse_index)
-                        .first()
-                    )
-                    if verse:
-                        verse_data = VerseResponse.model_validate(verse).model_dump()
-                        ttl = calculate_midnight_ttl()
-                        cache.set(cache_key, verse_data, ttl)
-                        logger.info(
-                            f"Daily verse cached: {verse.canonical_id} (TTL: {ttl}s)"
-                        )
-
-        except Exception as e:
-            logger.warning(f"Failed to warm daily verse cache: {e}")
-
-    # Run blocking I/O in a thread pool to avoid blocking event loop
-    loop = asyncio.get_event_loop()
-    loop.run_in_executor(None, load_vector_store_sync)
-    loop.run_in_executor(None, warm_daily_verse_cache)
-
-    # Start metrics scheduler (collects business metrics every 60s)
-    start_metrics_scheduler(collect_metrics, interval_seconds=60)
-
-    logger.info("Application startup complete")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Run on application shutdown."""
-    stop_metrics_scheduler()
-    logger.info("Application shutdown")
-
 
 @app.get("/")
 async def root():
