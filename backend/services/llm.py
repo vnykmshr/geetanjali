@@ -21,8 +21,9 @@ except ImportError:
 
 from config import settings
 from services.mock_llm import MockLLMService
+from utils.circuit_breaker import CircuitBreaker, CircuitBreakerOpen
 from utils.exceptions import LLMError, RetryableLLMError
-from utils.metrics_llm import llm_requests_total, llm_tokens_total
+from utils.metrics_llm import llm_requests_total, llm_tokens_total, llm_circuit_breaker_state
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,42 @@ class LLMProvider(str, Enum):
     ANTHROPIC = "anthropic"
     OLLAMA = "ollama"
     MOCK = "mock"
+
+
+class LLMCircuitBreaker(CircuitBreaker):
+    """
+    Circuit breaker for LLM providers.
+
+    Each provider (Anthropic, Ollama) has its own circuit breaker instance
+    to allow independent failure isolation.
+    """
+
+    def __init__(
+        self,
+        provider: str,
+        failure_threshold: int = 3,
+        recovery_timeout: float = 60.0,
+    ):
+        """
+        Initialize LLM circuit breaker.
+
+        Args:
+            provider: Provider name for metrics (e.g., "anthropic", "ollama")
+            failure_threshold: Consecutive failures before opening (default: 3)
+            recovery_timeout: Seconds before testing recovery (default: 60)
+        """
+        super().__init__(
+            name=f"llm-{provider}",
+            failure_threshold=failure_threshold,
+            recovery_timeout=recovery_timeout,
+        )
+        self._provider = provider
+
+    def _update_metric(self, state: str) -> None:
+        """Update Prometheus gauge for this provider's circuit breaker state."""
+        llm_circuit_breaker_state.labels(provider=self._provider).set(
+            self.STATE_VALUES.get(state, 0)
+        )
 
 
 class LLMService:
@@ -83,6 +120,19 @@ class LLMService:
             limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
         )
 
+        # Initialize per-provider circuit breakers
+        # Lower threshold (3) for faster failover, 60s recovery
+        self._anthropic_breaker = LLMCircuitBreaker(
+            provider="anthropic",
+            failure_threshold=3,
+            recovery_timeout=60.0,
+        )
+        self._ollama_breaker = LLMCircuitBreaker(
+            provider="ollama",
+            failure_threshold=3,
+            recovery_timeout=60.0,
+        )
+
         logger.info(
             f"LLM Service initialized - Primary: {self.primary_provider.value}, "
             f"Fallback: {self.fallback_provider.value if self.fallback_enabled else 'disabled'}"
@@ -129,15 +179,22 @@ class LLMService:
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Generate response using Anthropic Claude with retry logic.
+        """Generate response using Anthropic Claude with retry and circuit breaker.
 
-        P1.2 FIX: Added tenacity retry decorator for transient failures.
-        Retries up to 3 times with exponential backoff (2s, 4s, 8s).
+        Retry: Up to 3 attempts with exponential backoff (2s, 4s, 8s).
+        Circuit Breaker: Opens after 3 consecutive failures, 60s recovery.
         Only retries on RetryableLLMError (timeout, connection errors).
         Permanent errors (auth, invalid request) fail immediately.
         """
         if not self.anthropic_client:
             raise LLMError("Anthropic client not initialized")
+
+        # Check circuit breaker before attempting request
+        if not self._anthropic_breaker.allow_request():
+            raise CircuitBreakerOpen(
+                self._anthropic_breaker.name,
+                self._anthropic_breaker.recovery_timeout,
+            )
 
         max_tokens = max_tokens or settings.ANTHROPIC_MAX_TOKENS
 
@@ -160,7 +217,7 @@ class LLMService:
                 f"{response.usage.input_tokens} in / {response.usage.output_tokens} out tokens"
             )
 
-            # Track LLM metrics
+            # Track LLM metrics and record circuit breaker success
             llm_requests_total.labels(provider="anthropic", status="success").inc()
             llm_tokens_total.labels(provider="anthropic", token_type="input").inc(
                 response.usage.input_tokens
@@ -168,6 +225,7 @@ class LLMService:
             llm_tokens_total.labels(provider="anthropic", token_type="output").inc(
                 response.usage.output_tokens
             )
+            self._anthropic_breaker.record_success()
 
             return {
                 "response": response_text,
@@ -179,11 +237,14 @@ class LLMService:
 
         except (APITimeoutError, APIConnectionError) as e:
             # Transient errors - use RetryableLLMError for retry logic
+            # Note: Don't record circuit breaker failure here - tenacity will retry.
+            # Failure is recorded in generate() after all retries exhaust.
             logger.error(f"Anthropic API error (retryable): {e}")
             llm_requests_total.labels(provider="anthropic", status="error").inc()
             raise RetryableLLMError(f"Anthropic request failed: {str(e)}")
         except AnthropicError as e:
-            # Permanent errors (auth, invalid request) - don't retry
+            # Permanent errors (auth, invalid request) - record failure immediately
+            self._anthropic_breaker.record_failure()
             logger.error(f"Anthropic error (permanent): {e}")
             llm_requests_total.labels(provider="anthropic", status="error").inc()
             raise LLMError(f"Anthropic error: {str(e)}")
@@ -213,14 +274,23 @@ class LLMService:
         json_mode: bool = True,
     ) -> Dict[str, Any]:
         """
-        Generate response using Ollama.
+        Generate response using Ollama with circuit breaker.
 
         Args:
             simplified: If True, use simplified prompt for faster response
             json_mode: If True, force JSON output format. Set False for prose/markdown.
+
+        Circuit Breaker: Opens after 3 consecutive failures, 60s recovery.
         """
         if not self.ollama_enabled:
             raise LLMError("Ollama not enabled")
+
+        # Check circuit breaker before attempting request
+        if not self._ollama_breaker.allow_request():
+            raise CircuitBreakerOpen(
+                self._ollama_breaker.name,
+                self._ollama_breaker.recovery_timeout,
+            )
 
         logger.debug(
             f"Calling Ollama ({self.ollama_model}) with {len(prompt)} char prompt, json_mode={json_mode}"
@@ -254,10 +324,11 @@ class LLMService:
 
             logger.info(f"Ollama response: {len(result.get('response', ''))} chars")
 
-            # Track LLM metrics
+            # Track LLM metrics and record circuit breaker success
             eval_count = result.get("eval_count", 0)
             llm_requests_total.labels(provider="ollama", status="success").inc()
             llm_tokens_total.labels(provider="ollama", token_type="output").inc(eval_count)
+            self._ollama_breaker.record_success()
 
             return {
                 "response": result.get("response", ""),
@@ -268,12 +339,17 @@ class LLMService:
             }
 
         except httpx.TimeoutException as e:
+            # Timeout after retries exhausted - record failure
+            # Note: _make_ollama_request has its own retry, so this is after exhaustion
+            self._ollama_breaker.record_failure()
             logger.error(
                 f"Ollama timeout after {settings.OLLAMA_MAX_RETRIES} retries: {e}"
             )
             llm_requests_total.labels(provider="ollama", status="error").inc()
             raise LLMError("Ollama request timed out")
         except Exception as e:
+            # Other errors (connection, HTTP errors) - record failure
+            self._ollama_breaker.record_failure()
             logger.error(f"Ollama error: {e}")
             llm_requests_total.labels(provider="ollama", status="error").inc()
             raise
@@ -317,6 +393,7 @@ class LLMService:
             )
 
         # Try primary provider
+        primary_error = None
         try:
             if self.primary_provider == LLMProvider.ANTHROPIC:
                 return self._generate_anthropic(
@@ -326,61 +403,77 @@ class LLMService:
                 return self._generate_ollama(
                     prompt, system_prompt, temperature, max_tokens, json_mode=json_mode
                 )
+        except CircuitBreakerOpen as e:
+            primary_error = e
+            logger.warning(
+                f"Primary provider {self.primary_provider.value} circuit breaker open: {e}"
+            )
+        except RetryableLLMError as e:
+            # Retries exhausted for transient errors - now record circuit breaker failure
+            primary_error = e
+            if self.primary_provider == LLMProvider.ANTHROPIC:
+                self._anthropic_breaker.record_failure()
+            elif self.primary_provider == LLMProvider.OLLAMA:
+                self._ollama_breaker.record_failure()
+            logger.warning(
+                f"Primary provider {self.primary_provider.value} failed after retries: {e}"
+            )
         except Exception as e:
+            primary_error = e
             logger.warning(
                 f"Primary provider {self.primary_provider.value} failed: {e}"
             )
 
-            # Try fallback if enabled
-            if self.fallback_enabled:
-                logger.info(
-                    f"Attempting fallback provider: {self.fallback_provider.value}"
-                )
-                try:
-                    # Use simplified prompts for fallback if provided
-                    fb_prompt = fallback_prompt or prompt
-                    fb_system = fallback_system or system_prompt
+        # Try fallback if primary failed and fallback is enabled
+        if primary_error and self.fallback_enabled:
+            logger.info(
+                f"Attempting fallback provider: {self.fallback_provider.value}"
+            )
+            try:
+                # Use simplified prompts for fallback if provided
+                fb_prompt = fallback_prompt or prompt
+                fb_system = fallback_system or system_prompt
 
-                    if self.fallback_provider == LLMProvider.MOCK:
-                        return dict(
-                            self.mock_service.generate(
-                                fb_prompt,
-                                fb_system,
-                                temperature,
-                                max_tokens,
-                                fallback_prompt,
-                                fallback_system,
-                            )
-                        )
-                    elif self.fallback_provider == LLMProvider.OLLAMA:
-                        return self._generate_ollama(
+                if self.fallback_provider == LLMProvider.MOCK:
+                    return dict(
+                        self.mock_service.generate(
                             fb_prompt,
                             fb_system,
                             temperature,
                             max_tokens,
-                            simplified=True,
-                            json_mode=json_mode,
+                            fallback_prompt,
+                            fallback_system,
                         )
-                    elif self.fallback_provider == LLMProvider.ANTHROPIC:
-                        if self.anthropic_client:
-                            return self._generate_anthropic(
-                                fb_prompt, fb_system, temperature, max_tokens
-                            )
-                        else:
-                            raise LLMError(
-                                "Anthropic fallback not available (no API key)"
-                            )
+                    )
+                elif self.fallback_provider == LLMProvider.OLLAMA:
+                    return self._generate_ollama(
+                        fb_prompt,
+                        fb_system,
+                        temperature,
+                        max_tokens,
+                        simplified=True,
+                        json_mode=json_mode,
+                    )
+                elif self.fallback_provider == LLMProvider.ANTHROPIC:
+                    if self.anthropic_client:
+                        return self._generate_anthropic(
+                            fb_prompt, fb_system, temperature, max_tokens
+                        )
                     else:
                         raise LLMError(
-                            f"Unknown fallback provider: {self.fallback_provider}"
+                            "Anthropic fallback not available (no API key)"
                         )
-                except Exception as fallback_error:
-                    logger.error(f"Fallback provider also failed: {fallback_error}")
+                else:
                     raise LLMError(
-                        f"All LLM providers failed. Primary: {e}, Fallback: {fallback_error}"
+                        f"Unknown fallback provider: {self.fallback_provider}"
                     )
-            else:
-                raise
+            except Exception as fallback_error:
+                logger.error(f"Fallback provider also failed: {fallback_error}")
+                raise LLMError(
+                    f"All LLM providers failed. Primary: {primary_error}, Fallback: {fallback_error}"
+                )
+        elif primary_error:
+            raise primary_error
 
         raise LLMError("No LLM provider succeeded")
 
