@@ -1,220 +1,116 @@
-"""Prometheus metrics definitions for Geetanjali application."""
+"""Prometheus metrics - BACKEND FACADE.
 
-from prometheus_client import Gauge, Counter, Histogram
+This module re-exports all metrics for backward compatibility in backend.
+DO NOT import this module in worker - it will register business/infra gauges.
 
+For worker, import from:
+- utils.metrics_llm (LLM counters)
+- utils.metrics_events (email, cache, circuit breaker counters)
+"""
 
-# Business Metrics
-consultations_total = Gauge(
-    "geetanjali_consultations_total",
-    "Total number of consultations in the system",
+# Re-export business metrics (backend-only gauges)
+from utils.metrics_business import (
+    consultations_total,
+    verses_served_total,
+    exports_total,
+    registered_users_total,
+    active_users_24h,
+    consultations_24h,
+    signups_24h,
+    consultation_completion_rate,
+    exports_24h,
+    avg_messages_per_case,
+    newsletter_subscribers_total,
+    newsletter_subscribers_by_time,
+    newsletter_emails_sent_24h,
+    shared_cases_total,
+    case_views_24h,
+    feedback_positive_rate,
 )
 
-verses_served_total = Gauge(
-    "geetanjali_verses_served_total",
-    "Total number of verses served across all consultations",
+# Re-export infrastructure metrics (backend-only gauges)
+from utils.metrics_infra import (
+    redis_connections,
+    redis_memory_usage_percent,
+    queue_depth,
+    worker_count,
+    failed_jobs,
+    postgres_connections_active,
+    postgres_connections_idle,
+    postgres_database_size_bytes,
+    postgres_up,
+    ollama_up,
+    ollama_models_loaded,
+    chromadb_up,
+    chromadb_collection_count,
 )
 
-exports_total = Gauge(
-    "geetanjali_exports_total",
-    "Total number of exports generated",
+# Re-export event metrics (shared between backend and worker)
+from utils.metrics_events import (
+    api_errors_total,
+    email_sends_total,
+    email_send_duration_seconds,
+    email_circuit_breaker_state,
+    cache_hits_total,
+    cache_misses_total,
+    vector_search_fallback_total,
+    chromadb_circuit_breaker_state,
+    circuit_breaker_transitions_total,
 )
 
-registered_users_total = Gauge(
-    "geetanjali_registered_users_total",
-    "Total number of registered users",
+# Re-export LLM metrics for backward compatibility
+from utils.metrics_llm import (
+    llm_requests_total,
+    llm_tokens_total,
+    llm_fallback_total,
+    llm_circuit_breaker_state,
 )
 
-active_users_24h = Gauge(
-    "geetanjali_active_users_24h",
-    "Number of users active in the last 24 hours",
-)
-
-consultations_24h = Gauge(
-    "geetanjali_consultations_24h",
-    "Number of consultations completed in the last 24 hours",
-)
-
-signups_24h = Gauge(
-    "geetanjali_signups_24h",
-    "Number of new user registrations in the last 24 hours",
-)
-
-consultation_completion_rate = Gauge(
-    "geetanjali_consultation_completion_rate",
-    "Ratio of completed to total consultations (0-1)",
-)
-
-exports_24h = Gauge(
-    "geetanjali_exports_24h",
-    "Number of exports generated in the last 24 hours",
-)
-
-avg_messages_per_case = Gauge(
-    "geetanjali_avg_messages_per_case",
-    "Average number of messages per consultation",
-)
-
-# Infrastructure Metrics
-redis_connections = Gauge(
-    "geetanjali_redis_connections",
-    "Number of active Redis connections",
-)
-
-redis_memory_usage_percent = Gauge(
-    "geetanjali_redis_memory_usage_percent",
-    "Redis memory usage as percentage of maxmemory",
-)
-
-# Worker/Queue Metrics
-queue_depth = Gauge(
-    "geetanjali_queue_depth",
-    "Number of jobs in the RQ queue",
-)
-
-worker_count = Gauge(
-    "geetanjali_worker_count",
-    "Number of active RQ workers",
-)
-
-failed_jobs = Gauge(
-    "geetanjali_failed_jobs",
-    "Number of failed jobs in the RQ failed registry",
-)
-
-# Error Metrics
-api_errors_total = Counter(
-    "geetanjali_api_errors_total",
-    "Total API errors by type",
-    ["error_type", "endpoint"],
-)
-
-# PostgreSQL Metrics
-postgres_connections_active = Gauge(
-    "geetanjali_postgres_connections_active",
-    "Number of active PostgreSQL connections",
-)
-
-postgres_connections_idle = Gauge(
-    "geetanjali_postgres_connections_idle",
-    "Number of idle PostgreSQL connections",
-)
-
-postgres_database_size_bytes = Gauge(
-    "geetanjali_postgres_database_size_bytes",
-    "PostgreSQL database size in bytes",
-)
-
-postgres_up = Gauge(
-    "geetanjali_postgres_up",
-    "PostgreSQL availability (1=up, 0=down)",
-)
-
-# LLM/Ollama Metrics
-ollama_up = Gauge(
-    "geetanjali_ollama_up",
-    "Ollama availability (1=up, 0=down)",
-)
-
-ollama_models_loaded = Gauge(
-    "geetanjali_ollama_models_loaded",
-    "Number of models loaded in Ollama",
-)
-
-# LLM request/token metrics are defined in metrics_llm.py
-# Re-export for backward compatibility with existing imports
-from utils.metrics_llm import llm_requests_total, llm_tokens_total  # noqa: E402, F401
-
-# ChromaDB/Vector Store Metrics
-chromadb_up = Gauge(
-    "geetanjali_chromadb_up",
-    "ChromaDB availability (1=up, 0=down)",
-)
-
-chromadb_collection_count = Gauge(
-    "geetanjali_chromadb_collection_count",
-    "Number of vectors in ChromaDB collection",
-)
-
-chromadb_circuit_breaker_state = Gauge(
-    "geetanjali_chromadb_circuit_breaker_state",
-    "ChromaDB circuit breaker state (0=closed, 1=half_open, 2=open)",
-)
-
-# Newsletter & Engagement Metrics
-newsletter_subscribers_total = Gauge(
-    "geetanjali_newsletter_subscribers_total",
-    "Total active newsletter subscribers",
-)
-
-newsletter_subscribers_by_time = Gauge(
-    "geetanjali_newsletter_subscribers_by_time",
-    "Newsletter subscribers by preferred send time",
-    ["send_time"],
-)
-
-newsletter_emails_sent_24h = Gauge(
-    "geetanjali_newsletter_emails_sent_24h",
-    "Newsletter emails sent in the last 24 hours",
-)
-
-shared_cases_total = Gauge(
-    "geetanjali_shared_cases_total",
-    "Total shared cases by visibility mode",
-    ["mode"],
-)
-
-case_views_24h = Gauge(
-    "geetanjali_case_views_24h",
-    "Views on shared cases in the last 24 hours",
-)
-
-feedback_positive_rate = Gauge(
-    "geetanjali_feedback_positive_rate",
-    "Percentage of positive feedback (0-1)",
-)
-
-# Email Metrics
-email_sends_total = Counter(
-    "geetanjali_email_sends_total",
-    "Total email send attempts by type and result",
-    ["email_type", "result"],  # result: success, failure, circuit_open
-)
-
-email_send_duration_seconds = Histogram(
-    "geetanjali_email_send_duration_seconds",
-    "Email send duration in seconds",
-    ["email_type"],
-    buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
-)
-
-email_circuit_breaker_state = Gauge(
-    "geetanjali_email_circuit_breaker_state",
-    "Email circuit breaker state (0=closed, 1=half_open, 2=open)",
-)
-
-# Circuit breaker state transition counter (tracks all services)
-circuit_breaker_transitions_total = Counter(
-    "geetanjali_circuit_breaker_transitions_total",
-    "Circuit breaker state transitions by service and transition type",
-    ["service", "from_state", "to_state"],
-)
-
-# Cache Metrics
-cache_hits_total = Counter(
-    "geetanjali_cache_hits_total",
-    "Total cache hits by key type",
-    ["key_type"],  # verse, search, metadata, case, rag
-)
-
-cache_misses_total = Counter(
-    "geetanjali_cache_misses_total",
-    "Total cache misses by key type",
-    ["key_type"],
-)
-
-# Vector Search Metrics
-vector_search_fallback_total = Counter(
-    "geetanjali_vector_search_fallback_total",
-    "Total vector search fallbacks to SQL by reason",
-    ["reason"],  # circuit_open, error
-)
+__all__ = [
+    # Business
+    "consultations_total",
+    "verses_served_total",
+    "exports_total",
+    "registered_users_total",
+    "active_users_24h",
+    "consultations_24h",
+    "signups_24h",
+    "consultation_completion_rate",
+    "exports_24h",
+    "avg_messages_per_case",
+    "newsletter_subscribers_total",
+    "newsletter_subscribers_by_time",
+    "newsletter_emails_sent_24h",
+    "shared_cases_total",
+    "case_views_24h",
+    "feedback_positive_rate",
+    # Infrastructure
+    "redis_connections",
+    "redis_memory_usage_percent",
+    "queue_depth",
+    "worker_count",
+    "failed_jobs",
+    "postgres_connections_active",
+    "postgres_connections_idle",
+    "postgres_database_size_bytes",
+    "postgres_up",
+    "ollama_up",
+    "ollama_models_loaded",
+    "chromadb_up",
+    "chromadb_collection_count",
+    # Events
+    "api_errors_total",
+    "email_sends_total",
+    "email_send_duration_seconds",
+    "email_circuit_breaker_state",
+    "cache_hits_total",
+    "cache_misses_total",
+    "vector_search_fallback_total",
+    "chromadb_circuit_breaker_state",
+    "circuit_breaker_transitions_total",
+    # LLM
+    "llm_requests_total",
+    "llm_tokens_total",
+    "llm_fallback_total",
+    "llm_circuit_breaker_state",
+]

@@ -26,7 +26,7 @@ from db import SessionLocal
 from db.repositories.verse_repository import VerseRepository
 from utils.json_parsing import extract_json_from_text
 from utils.validation import validate_canonical_id
-from utils.metrics import vector_search_fallback_total
+from utils.metrics_events import vector_search_fallback_total
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,7 @@ from typing import Callable, Optional, TYPE_CHECKING, TypeVar
 
 from config import settings
 from utils.circuit_breaker import CircuitBreaker, CircuitBreakerOpen
-from utils.metrics import (
+from utils.metrics_events import (
     email_sends_total,
     email_send_duration_seconds,
     email_circuit_breaker_state,

@@ -30,7 +30,7 @@ from abc import ABC, abstractmethod
 from threading import Lock
 from typing import Optional
 
-from utils.metrics import circuit_breaker_transitions_total
+from utils.metrics_events import circuit_breaker_transitions_total
 
 logger = logging.getLogger(__name__)
 

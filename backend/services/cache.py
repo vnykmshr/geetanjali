@@ -14,7 +14,7 @@ from typing import Optional, Any
 from datetime import datetime, timedelta
 
 from config import settings
-from utils.metrics import cache_hits_total, cache_misses_total
+from utils.metrics_events import cache_hits_total, cache_misses_total
 
 logger = logging.getLogger(__name__)
 

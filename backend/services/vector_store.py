@@ -15,7 +15,7 @@ from tenacity import (
 
 from config import settings
 from utils.circuit_breaker import CircuitBreaker, CircuitBreakerOpen
-from utils.metrics import chromadb_circuit_breaker_state
+from utils.metrics_events import chromadb_circuit_breaker_state
 
 logger = logging.getLogger(__name__)
 
