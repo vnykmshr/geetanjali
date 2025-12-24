@@ -124,7 +124,7 @@ uvicorn main:app --reload --port 8000
 | `/api/v1/auth/refresh` | POST | Refresh access token |
 | `/api/v1/cases` | POST | Create consultation |
 | `/api/v1/cases/{id}` | GET | Get case details |
-| `/api/v1/cases/{id}/analyze` | POST | Trigger RAG analysis |
+| `/api/v1/cases/{id}/analyze/async` | POST | Trigger RAG analysis (async) |
 | `/api/v1/cases/{id}/follow-up` | POST | Submit follow-up question |
 | `/api/v1/outputs/{id}` | GET | Get analysis output |
 | `/api/v1/outputs/{id}/feedback` | POST | Submit feedback |

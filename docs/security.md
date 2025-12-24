@@ -219,7 +219,7 @@ Sensitive values are stored in `.env` (git-ignored):
 
 - **Rate Limiting**: Multi-layer protection
   - nginx: 10 req/s for API, 5 req/min for auth endpoints (brute-force protection)
-  - Backend: `/api/v1/analyze` limited to 10 requests/hour per IP
+  - Backend: `/api/v1/cases/{id}/analyze/async` limited to 10 requests/hour per IP
 - **JWT Authentication**: User sessions use JWT tokens with configurable expiration
 - **CORS**: Configured for specific allowed origins
 - **Security Headers**: nginx adds X-Frame-Options, X-Content-Type-Options, CSP, etc.

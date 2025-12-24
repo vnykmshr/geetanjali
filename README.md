@@ -127,7 +127,7 @@ Key endpoints:
 
 ```
 POST /api/v1/cases                  # Create case
-POST /api/v1/cases/{id}/analyze     # Analyze case
+POST /api/v1/cases/{id}/analyze/async  # Analyze case (async)
 POST /api/v1/cases/{id}/follow-up   # Follow-up question
 GET  /api/v1/verses                 # List verses
 GET  /api/v1/verses/daily           # Daily verse

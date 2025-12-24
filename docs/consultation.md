@@ -90,7 +90,7 @@ Self, Family, Team, Organization, Community
 ```mermaid
 flowchart TD
     A[Submit Case] -->|POST /cases| B[Create Case]
-    B -->|POST /cases/:id/analyze| C[Queue Job]
+    B -->|POST /cases/:id/analyze/async| C[Queue Job]
     C -->|RQ Worker| D[RAG Pipeline]
     D --> E{Confidence?}
     E -->|High| F[Return Output]
