@@ -108,7 +108,7 @@
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "title": "Worker",
       "type": "stat",
-      "targets": [{ "expr": "clamp_max(sum(geetanjali_worker_count), 1) or vector(0)", "refId": "A" }]
+      "targets": [{ "expr": "up{job=\"worker\"}", "refId": "A" }]
     },
     {
       "collapsed": false,
@@ -313,7 +313,7 @@
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "title": "Ollama CB",
       "type": "stat",
-      "targets": [{ "expr": "geetanjali_llm_circuit_breaker_state{provider=\"ollama\"}", "refId": "A" }]
+      "targets": [{ "expr": "max(geetanjali_llm_circuit_breaker_state{provider=\"ollama\"})", "refId": "A" }]
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -329,7 +329,7 @@
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "title": "Anthropic CB",
       "type": "stat",
-      "targets": [{ "expr": "geetanjali_llm_circuit_breaker_state{provider=\"anthropic\"}", "refId": "A" }]
+      "targets": [{ "expr": "max(geetanjali_llm_circuit_breaker_state{provider=\"anthropic\"})", "refId": "A" }]
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -345,7 +345,7 @@
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "title": "ChromaDB CB",
       "type": "stat",
-      "targets": [{ "expr": "geetanjali_chromadb_circuit_breaker_state", "refId": "A" }]
+      "targets": [{ "expr": "max(geetanjali_chromadb_circuit_breaker_state)", "refId": "A" }]
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -361,7 +361,7 @@
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "title": "Email CB",
       "type": "stat",
-      "targets": [{ "expr": "geetanjali_email_circuit_breaker_state", "refId": "A" }]
+      "targets": [{ "expr": "max(geetanjali_email_circuit_breaker_state)", "refId": "A" }]
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },

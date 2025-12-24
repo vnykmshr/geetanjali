@@ -18,9 +18,9 @@ from api.dependencies import verify_admin_api_key
 from config import settings
 from services.cache import get_redis_client
 
-# Import LLM metrics only - worker should not expose backend business metrics
-# This ensures only LLM request/token counters are registered for this service
-import utils.metrics_llm  # noqa: F401
+# Import worker-specific metrics - explicitly excludes business/infra gauges
+# See utils/metrics_worker.py for detailed documentation on what's exposed
+import utils.metrics_worker  # noqa: F401
 
 logger = logging.getLogger(__name__)
 

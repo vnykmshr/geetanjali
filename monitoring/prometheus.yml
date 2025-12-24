@@ -1,5 +1,25 @@
 # Prometheus Configuration for Geetanjali
-# Scrapes metrics from backend and worker services
+#
+# METRICS ARCHITECTURE:
+# Each Python process has its OWN Prometheus registry. We scrape both:
+#
+# Backend (8000): ALL metrics
+#   - Business gauges (consultations, users, etc.) - from scheduled collector
+#   - Infrastructure gauges (postgres, redis, ollama status)
+#   - Queue gauges (queue_depth, worker_count, failed_jobs)
+#   - Event counters/histograms (when jobs run in-process with RQ disabled)
+#
+# Worker (8001): EVENT metrics only (see utils/metrics_worker.py)
+#   - LLM request/token counters (analysis jobs)
+#   - Email send counters (newsletter jobs)
+#   - Cache hit/miss counters
+#   - Circuit breaker states
+#   - NO business/infra gauges (prevents duplicates)
+#
+# QUERY PATTERNS:
+#   Counters: sum(metric) or sum by (label)(metric) - aggregates both sources
+#   Gauges:   metric{job="backend"} - only from backend
+#   CB State: max(metric) - worst state across both processes
 
 global:
   scrape_interval: 15s
@@ -10,12 +30,17 @@ rule_files:
   - "alerts/*.yml"
 
 scrape_configs:
-  # Backend FastAPI metrics (includes all business + infra metrics)
-  # Worker not scraped separately - shares same Prometheus registry,
-  # and LLM metrics are tracked in backend when processing RQ jobs
+  # Backend - ALL metrics (business gauges + event counters)
   - job_name: 'backend'
     static_configs:
       - targets: ['backend:8000']
+    metrics_path: /metrics
+
+  # Worker - EVENT metrics only (counters, histograms, CB states)
+  # Excludes business/infra gauges to prevent duplicates
+  - job_name: 'worker'
+    static_configs:
+      - targets: ['worker:8001']
     metrics_path: /metrics
 
   # Prometheus self-monitoring
