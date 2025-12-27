@@ -228,7 +228,8 @@ def _extract_canonical_id(verse: Any, fallback: str) -> str:
         Canonical ID string
     """
     if isinstance(verse, dict):
-        return verse.get("canonical_id", fallback)
+        canonical_id = verse.get("canonical_id", fallback)
+        return canonical_id if isinstance(canonical_id, str) else fallback
     elif isinstance(verse, str) and validate_canonical_id(verse):
         return verse
     return fallback
